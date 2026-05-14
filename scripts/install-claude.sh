@@ -46,6 +46,32 @@ done
 [ "$count" -gt 0 ] && echo "  $count agent(s) linked → $AGENTS_DIR"
 
 if [[ $NO_PLUGINS -eq 0 ]]; then
+  # ── Runtime deps ────────────────────────────────────────────────────────────
+  # claude-mem plugin needs Bun. Install if missing.
+  echo ""
+  echo "Plugin runtime dependencies:"
+  if command -v bun >/dev/null 2>&1; then
+    echo "  bun — already installed ($(bun --version))"
+  else
+    case "$(uname -s)" in
+      Darwin)
+        if command -v brew >/dev/null 2>&1; then
+          echo "  installing bun via brew ..."
+          brew install bun
+        else
+          echo "  installing bun via curl ..."
+          curl -fsSL https://bun.sh/install | bash
+          export PATH="$HOME/.bun/bin:$PATH"
+        fi ;;
+      Linux)
+        echo "  installing bun via curl ..."
+        curl -fsSL https://bun.sh/install | bash
+        export PATH="$HOME/.bun/bin:$PATH" ;;
+      *)
+        echo "  WARN: unknown OS — install bun manually: https://bun.sh" ;;
+    esac
+  fi
+
   # ── Marketplaces ────────────────────────────────────────────────────────────
   echo ""
   echo "Plugin marketplaces:"
