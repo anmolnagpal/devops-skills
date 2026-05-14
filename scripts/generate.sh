@@ -13,8 +13,6 @@ set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SRC_DIR="$REPO/skills"
 CURSOR_DIR="$REPO/.cursor/rules"
-AGENTS_FILE="$REPO/AGENTS.md"
-
 mkdir -p "$CURSOR_DIR"
 
 echo "generate: cursor + codex artifacts from $SRC_DIR"
