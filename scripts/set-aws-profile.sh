@@ -5,7 +5,6 @@
 set -euo pipefail
 
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
-AWS_MCP_SERVERS=("eks-mcp-server" "billing-mcp-server")
 
 if [ ! -f "$CLAUDE_SETTINGS" ]; then
   echo "Error: $CLAUDE_SETTINGS not found"
