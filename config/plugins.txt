@@ -1,0 +1,13 @@
+# Claude Code plugins for the team.
+# Run ./install.sh to install all of these (already-installed ones are skipped).
+#
+# Two formats:
+#   name@marketplace        → installed via: claude plugin install
+#   hub:github-org/repo     → installed via: npx claudepluginhub
+
+terraform-code-generation@hashicorp
+terraform-module-generation@hashicorp
+claude-mem@thedotmack
+engineering-workflow-skills@mhattingpete-claude-skills
+superpowers@claude-plugins-official
+caveman@caveman

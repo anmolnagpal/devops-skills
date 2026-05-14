@@ -1,0 +1,254 @@
+---
+name: github
+description: "GitHub repository operations — PRs, issues, releases, branch protection, CODEOWNERS, security settings. Use when user says 'review my PR', 'create a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', or asks about GitHub repo configuration."
+metadata:
+  version: 0.1.0
+  author: Anmol Nagpal
+  category: devops
+  updated: 2026-05-14
+paths:
+  - "**/.github/CODEOWNERS"
+  - "**/CODEOWNERS"
+  - "**/.github/pull_request_template.md"
+  - "**/.github/ISSUE_TEMPLATE/**"
+  - "**/.github/dependabot.yml"
+allowed-tools:
+  - Glob
+  - Read
+  - Bash
+---
+
+# GitHub Skill
+
+Configure GitHub repositories the right way: branch protection, CODEOWNERS, required checks, security settings, PR/issue templates, Dependabot, secret scanning, and `gh` CLI workflows.
+
+## Keywords
+github, gh cli, pull request, PR, issue, release, branch protection, ruleset, CODEOWNERS, required reviewers, required checks, status checks, dependabot, secret scanning, push protection, code scanning, codeql, vulnerability alerts, security advisories, repo settings, environments, deploy keys, fine-grained PAT, GITHUB_TOKEN, organization, team, permissions
+
+## Output Artifacts
+
+| Request | Output |
+|---------|--------|
+| `/github audit` | Repo settings checklist with current state and blocking gaps |
+| `/github new codeowners` | Generate `.github/CODEOWNERS` from a path → team mapping |
+| `/github new pr-template` | `.github/pull_request_template.md` with checklist |
+| `/github new dependabot` | `.github/dependabot.yml` covering all package ecosystems in the repo |
+| `/github new branch-protection` | `gh` commands to apply a recommended ruleset to `main` |
+| `/github release` | `gh release create` plan with auto-generated notes |
+
+---
+
+## TRIGGER — Decide what to do
+
+1. If user message names a mode (`audit`, `new <thing>`, `release`) → do that.
+2. Otherwise ask: "What do you need? **audit** repo settings / **new** file (codeowners / pr-template / dependabot / branch-protection) / **release** flow"
+
+Use `gh` CLI to read live state. Never modify settings without confirming the diff with the user first — branch protection and CODEOWNERS changes affect every contributor.
+
+---
+
+## AUDIT — Repo settings checklist
+
+Run `gh` commands to gather state, then report findings. Same blocking/advisory format as other skills.
+
+### Commands to run
+
+```bash
+# Repo basics
+gh api repos/{owner}/{repo} | jq '{visibility,default_branch,allow_squash_merge,allow_merge_commit,allow_rebase_merge,delete_branch_on_merge,allow_auto_merge,security_and_analysis}'
+
+# Branch protection (legacy) on default branch
+gh api repos/{owner}/{repo}/branches/{default}/protection 2>/dev/null || echo "no legacy branch protection"
+
+# Rulesets (modern equivalent)
+gh api repos/{owner}/{repo}/rulesets
+
+# CODEOWNERS presence
+gh api repos/{owner}/{repo}/contents/.github/CODEOWNERS 2>/dev/null || \
+  gh api repos/{owner}/{repo}/contents/CODEOWNERS 2>/dev/null || echo "no CODEOWNERS"
+
+# Required workflows
+gh api repos/{owner}/{repo}/actions/permissions
+
+# Environments
+gh api repos/{owner}/{repo}/environments
+```
+
+### Blocking findings
+
+1. Default branch has **no protection / no ruleset** → enable required PR reviews + required status checks + linear history.
+2. **CODEOWNERS missing or not required for review** → add file and require code owner review in ruleset.
+3. **Force pushes allowed on default branch** → disable.
+4. **Branch deletion allowed on default branch** → disable.
+5. **Required status checks not pinned** to specific workflows → without this, anyone can rename a workflow and bypass checks.
+6. **Secret scanning + push protection disabled** on public/private-with-secrets repo → enable.
+7. **Dependabot security updates disabled** → enable.
+8. **`Settings → Actions → General`: workflow permissions = read/write by default** → set to read-only, escalate per-workflow.
+9. **Fork PRs run workflows without approval** for first-time contributors → set "Require approval for all outside collaborators".
+
+### Advisory findings
+
+1. Squash-merge not enforced (mixed merge strategies create messy history).
+2. `delete_branch_on_merge` off (stale branches accumulate).
+3. No PR template / no issue templates.
+4. No environment protection on `production` / `prod`.
+5. No `dependabot.yml` (only security updates, no version updates).
+6. CodeQL / code scanning not enabled.
+
+---
+
+## NEW — Generate config files
+
+### CODEOWNERS
+
+Ask: "Which paths map to which teams? (format: path team) e.g. `terraform/ @org/devops`"
+
+Generate `.github/CODEOWNERS`:
+
+```
+# Global default
+*                       @org/platform
+
+# Infrastructure
+terraform/              @org/devops
+.github/workflows/      @org/devops @org/security
+
+# Services
+services/api/           @org/backend
+services/web/           @org/frontend
+
+# Security-sensitive
+**/*.tf                 @org/devops @org/security
+**/iam*.tf              @org/security
+.github/                @org/devops
+SECURITY.md             @org/security
+```
+
+Notes:
+- Most specific rule wins; last matching rule is applied.
+- Teams must have write access to the repo to be valid owners.
+- Verify with `gh api repos/{owner}/{repo}/codeowners/errors`.
+
+### Pull request template
+
+`.github/pull_request_template.md`:
+
+```markdown
+## What
+
+<!-- One-paragraph summary of the change -->
+
+## Why
+
+<!-- The problem, motivation, ticket link -->
+
+## How
+
+<!-- Implementation approach. Call out anything reviewers should focus on -->
+
+## Test plan
+
+- [ ] Unit tests added/updated
+- [ ] Manual verification: ...
+- [ ] Tested in staging (link to deploy)
+
+## Rollback
+
+<!-- How to revert this if it breaks production -->
+
+## Checklist
+
+- [ ] No secrets, credentials, or PII in code
+- [ ] Docs updated (README, runbook, ADR)
+- [ ] Backwards-compatible OR migration documented
+- [ ] Linked issue / Jira ticket: <!-- #123 / PROJ-456 -->
+```
+
+### Dependabot
+
+`.github/dependabot.yml` — detect all ecosystems in the repo and include them. Common shape:
+
+```yaml
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      actions: { patterns: ["*"] }
+
+  - package-ecosystem: terraform
+    directory: /
+    schedule: { interval: weekly }
+
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: weekly }
+
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      production: { dependency-type: production }
+      development: { dependency-type: development }
+```
+
+Add a directory entry per `package.json`, `requirements.txt`, `go.mod`, `Cargo.toml`, etc.
+
+### Branch protection (ruleset)
+
+Generate `gh` commands that apply a ruleset (modern; preferred over legacy branch protection):
+
+```bash
+gh api -X POST repos/{owner}/{repo}/rulesets \
+  -f name="default-branch-protection" \
+  -f target=branch \
+  -F enforcement=active \
+  -F 'conditions[ref_name][include][]=refs/heads/main' \
+  -F 'rules[][type]=deletion' \
+  -F 'rules[][type]=non_fast_forward' \
+  -F 'rules[][type]=required_linear_history' \
+  -F 'rules[][type]=required_signatures' \
+  -F 'rules[][type]=pull_request' \
+  -F 'rules[][parameters][required_approving_review_count]=1' \
+  -F 'rules[][parameters][require_code_owner_review]=true' \
+  -F 'rules[][parameters][dismiss_stale_reviews_on_push]=true' \
+  -F 'rules[][type]=required_status_checks' \
+  -F 'rules[][parameters][strict_required_status_checks_policy]=true' \
+  -F 'rules[][parameters][required_status_checks][][context]=ci/build' \
+  -F 'rules[][parameters][required_status_checks][][context]=ci/test'
+```
+
+Tell the user to replace `ci/build` and `ci/test` with their actual workflow check names (found via `gh api repos/{owner}/{repo}/commits/{default}/check-runs`).
+
+---
+
+## RELEASE — Tag a release
+
+Steps:
+
+1. Decide version: `vMAJOR.MINOR.PATCH` (SemVer).
+2. Verify the default branch is clean and CI green:
+   ```bash
+   gh run list --branch main --limit 1
+   ```
+3. Generate release notes from PRs since last tag:
+   ```bash
+   gh release create vX.Y.Z --generate-notes --target main
+   ```
+4. For prereleases: add `--prerelease` and tag like `vX.Y.Z-rc.1`.
+5. Upload artifacts:
+   ```bash
+   gh release upload vX.Y.Z dist/*.tar.gz
+   ```
+
+Confirm with the user before tagging. Releases are visible to anyone with repo access and trigger workflows that listen on `release: published`.
+
+---
+
+## Notes for Claude
+
+- `gh` requires `GH_TOKEN` or `gh auth login`. If commands fail with auth errors, tell the user to run `gh auth status`.
+- Org-level settings (SSO, IP allowlists, base permissions) live at `gh api orgs/{org}` — repo audits should mention but not modify org policy without explicit permission.
+- Fine-grained PATs are preferred over classic PATs. Suggest expiry ≤ 90 days.
+- Never paste secrets into the chat. If a secret leaks in a commit, the only safe action is rotate-then-purge (BFG / git-filter-repo), not just delete.

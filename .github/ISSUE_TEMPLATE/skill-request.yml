@@ -1,0 +1,35 @@
+name: Skill request
+description: Propose a new skill or major change to an existing one.
+labels: ["enhancement"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Proposed skill name
+      placeholder: "/aws-cost"
+    validations: { required: true }
+  - type: textarea
+    id: purpose
+    attributes:
+      label: What should it do
+      placeholder: "Review X before Y. Scaffold Z. Trigger on file glob A."
+    validations: { required: true }
+  - type: textarea
+    id: triggers
+    attributes:
+      label: When should it auto-trigger (paths/globs)
+    validations: { required: false }
+  - type: textarea
+    id: examples
+    attributes:
+      label: Example user prompts
+      placeholder: |
+        - "Find waste in this AWS account"
+        - "Right-size this RDS instance"
+    validations: { required: true }
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options: [nice-to-have, would-actually-use-this, blocking-my-work]
+    validations: { required: true }

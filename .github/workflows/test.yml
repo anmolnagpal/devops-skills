@@ -1,0 +1,53 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install-docker:
+    name: Docker install harness
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build test image and run install harness
+        run: bash _test/test.sh
+
+  generator:
+    name: Adapters in sync with skills/
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.x' }
+      - run: pip install pyyaml
+      - name: Regenerate adapters
+        run: bash scripts/generate.sh
+      - name: Fail if .cursor/rules or AGENTS.md drifted
+        run: |
+          if ! git diff --quiet .cursor/rules AGENTS.md; then
+            echo "::error::Generated adapters are out of sync with skills/. Run 'bash scripts/generate.sh' locally and commit."
+            git --no-pager diff .cursor/rules AGENTS.md
+            exit 1
+          fi
+
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ludeeus/action-shellcheck@master
+        with:
+          severity: warning
+          scandir: ./scripts

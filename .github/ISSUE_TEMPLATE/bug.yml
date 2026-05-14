@@ -1,0 +1,35 @@
+name: Bug report
+description: Something in the installer, a skill, or the generator is broken.
+labels: ["bug"]
+body:
+  - type: input
+    id: tool
+    attributes:
+      label: AI tool
+      description: Which tool were you using when you hit this?
+      placeholder: "Claude Code 2.1.x / Cursor 0.50 / Codex CLI 0.4"
+    validations: { required: true }
+  - type: input
+    id: skill
+    attributes:
+      label: Skill or script
+      description: Which skill or script is involved? (e.g. /tf, scripts/install.sh)
+    validations: { required: true }
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations: { required: true }
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+    validations: { required: true }

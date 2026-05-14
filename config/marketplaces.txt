@@ -1,0 +1,8 @@
+# Additional Claude Code plugin marketplaces.
+# One marketplace per line: github-org/repo
+# Run ./install.sh to add all of these (already-added ones are skipped).
+
+hashicorp/agent-skills
+thedotmack/claude-mem
+mhattingpete/claude-skills-marketplace
+JuliusBrussee/caveman
