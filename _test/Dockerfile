@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:26-slim
 
 RUN apt-get update && apt-get install -y python3 python3-yaml git bash curl ca-certificates unzip && rm -rf /var/lib/apt/lists/*
 
