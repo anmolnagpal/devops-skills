@@ -1,12 +1,36 @@
 #!/usr/bin/env bash
 #
 # devops-skills bootstrap
-# Usage: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/anmolnagpal/devops-skills/main/scripts/bootstrap.sh)"
 #
+# Interactive (TTY) — prompts for install dir, defaults to ~/devops-skills:
+#   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/anmolnagpal/devops-skills/main/scripts/bootstrap.sh)"
+#
+# Non-interactive (CI, ssh without -t) — uses default install dir:
+#   bash -c "$(curl -fsSL https://raw.githubusercontent.com/anmolnagpal/devops-skills/main/scripts/bootstrap.sh)" -- --claude
+#
+# Override install dir explicitly (works in any mode):
+#   ... bootstrap.sh)" -- --install-dir ~/custom --claude
+#
+# Any remaining flags are forwarded to scripts/install.sh.
+
 set -euo pipefail
 
 REPO_URL="https://github.com/anmolnagpal/devops-skills.git"
 INSTALL_DIR="$HOME/devops-skills"
+
+# Pull out --install-dir before forwarding remaining flags to install.sh.
+INSTALL_ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --install-dir)
+      INSTALL_DIR="${2:-}"
+      INSTALL_DIR="${INSTALL_DIR/#\~/$HOME}"
+      shift 2 ;;
+    *)
+      INSTALL_ARGS+=("$1")
+      shift ;;
+  esac
+done
 
 echo ""
 echo "devops-skills bootstrap"
@@ -17,11 +41,20 @@ if [ -d "$INSTALL_DIR/.git" ]; then
   echo "Already installed at $INSTALL_DIR — pulling latest..."
   git -C "$INSTALL_DIR" pull --ff-only
 else
-  # Allow custom install directory
-  printf "Install to [$INSTALL_DIR]: "
-  read -r custom_dir </dev/tty
-  if [ -n "$custom_dir" ]; then
-    INSTALL_DIR="${custom_dir/#\~/$HOME}"
+  # Prompt for install dir only when a controlling TTY is available.
+  if [ -t 0 ] || [ -r /dev/tty ]; then
+    printf "Install to [%s]: " "$INSTALL_DIR"
+    if [ -t 0 ]; then
+      read -r custom_dir || custom_dir=""
+    else
+      read -r custom_dir </dev/tty || custom_dir=""
+    fi
+    if [ -n "$custom_dir" ]; then
+      INSTALL_DIR="${custom_dir/#\~/$HOME}"
+    fi
+  else
+    echo "No TTY detected — using default install dir: $INSTALL_DIR"
+    echo "(Pass --install-dir <path> before --claude/--cursor/--codex to override.)"
   fi
 
   echo "Cloning into $INSTALL_DIR..."
@@ -30,5 +63,4 @@ fi
 
 # ── Run install ───────────────────────────────────────────────────────────────
 echo ""
-# Forward any flags passed via `bash -s -- --claude --cursor ...`
-bash "$INSTALL_DIR/scripts/install.sh" "$@"
+bash "$INSTALL_DIR/scripts/install.sh" "${INSTALL_ARGS[@]}"
