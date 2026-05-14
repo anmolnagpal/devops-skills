@@ -57,7 +57,7 @@ if [[ $NO_PLUGINS -eq 0 ]]; then
       Darwin)
         if command -v brew >/dev/null 2>&1; then
           echo "  installing bun via brew ..."
-          brew install bun
+          brew install oven-sh/bun/bun
         else
           echo "  installing bun via curl ..."
           curl -fsSL https://bun.sh/install | bash
