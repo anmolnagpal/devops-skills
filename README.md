@@ -10,8 +10,8 @@
 
 ## What you get
 
-- **9 skills** that auto-trigger on file globs and answer with structured review output
-  (`/tf`, `/k8s`, `/ci`, `/github-actions`, `/github`, `/docker`, `/finops`, `/owasp-security`, `/skill-creator`)
+- **10 skills** that auto-trigger on file globs and answer with structured review output
+  (`/tf`, `/k8s`, `/ci`, `/github-actions`, `/github`, `/docker`, `/finops`, `/owasp-security`, `/clouddrove-tf`, `/skill-creator`)
 - **Single source** in `skills/*.md` — a generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
 - **One installer** with flags — `--claude` / `--cursor` / `--codex` / `--all`, global or per-project scope
 - **Curated Claude plugin set** — Terraform code/module generation (HashiCorp), claude-mem, superpowers, caveman, engineering-workflow-skills
@@ -86,9 +86,10 @@ Single source: `skills/*.md`. Adapters generated per tool by `scripts/generate.s
 | `skills/docker.md` | `/docker` | `docker.mdc` | `**/Dockerfile`, `**/docker-compose*.yml` |
 | `skills/finops.md` | `/finops` | `finops.mdc` | manual |
 | `skills/owasp.md` | `/owasp-security` | `owasp.mdc` | manual |
+| `skills/clouddrove-tf.md` | `/clouddrove-tf` | `clouddrove-tf.mdc` | `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` |
 | `skills/skill-creator.md` | `/skill-creator` | `skill-creator.mdc` | manual |
 
-All 9 are also injected into `AGENTS.md` for Codex.
+All 10 are also injected into `AGENTS.md` for Codex.
 
 Backlog specs (drafts, not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security. Promote to active by adding frontmatter and moving up to `skills/`.
 
@@ -100,7 +101,7 @@ In Claude Code: invoke with `/skill-name`. In Cursor: rules auto-attach via `glo
 
 | Skill | Purpose |
 |-------|---------|
-| `/tf` | Terraform: pre-MR review, AWS resource scaffolding, provider upgrade guidance |
+| `/tf` | Terraform (generic / `terraform-aws-modules` ecosystem): pre-MR review, AWS resource scaffolding, provider upgrade guidance |
 | `/k8s` | Kubernetes/Helm: pre-deploy review, production-ready values scaffolding |
 | `/ci` | GitLab CI/CD: pipeline review, Terraform/Helm pipeline scaffolds |
 | `/github-actions` | GitHub Actions: workflow review, security hardening (OIDC, pinning), scaffolds |
@@ -108,6 +109,7 @@ In Claude Code: invoke with `/skill-name`. In Cursor: rules auto-attach via `glo
 | `/docker` | Dockerfile review, image optimization, Compose, registry workflows |
 | `/finops` | AWS cost: waste detection, right-sizing, Savings Plans/RIs, EKS cost |
 | `/owasp-security` | Security review against OWASP Top 10:2025, ASVS 5.0, Agentic AI risks |
+| `/clouddrove-tf` | Team standard for AWS Terraform repos on the CloudDrove wrapper pattern: scaffold `_modules/<name>/`, generate Terraform GitHub Actions CI, review against the wrapper pattern, map to SOC2/GDPR controls. Supersedes `/tf` on these repos. |
 | `/skill-creator` | Build, test, and iterate new skills |
 
 ---
