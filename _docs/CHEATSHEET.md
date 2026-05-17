@@ -6,10 +6,20 @@ Real example prompts for every skill, plugin, and MCP server in this repo.
 
 ## Tips
 
-**Auto-trigger** — `/tf`, `/k8s`, and `/ci` activate automatically when you open relevant files. You don't need to type the skill name:
-- Open any `*.tf` or `*.tfvars` file → `/tf` is active
-- Open `values.yaml`, `Chart.yaml`, or Helm templates → `/k8s` is active
-- Open `.gitlab-ci.yml` → `/ci` is active
+**Auto-trigger** — skills activate automatically when you open relevant files. You don't need to type the skill name:
+- `*.tf` / `*.tfvars` → `/tf` (or `/clouddrove-tf` if the repo has an `_modules/` directory)
+- `values.yaml`, `Chart.yaml`, Helm templates → `/k8s`
+- `.gitlab-ci.yml` → `/ci`
+- `.github/workflows/*.yml` → `/github-actions`
+- `CODEOWNERS`, `.github/dependabot.yml`, PR/issue templates → `/github`
+- `Dockerfile`, `docker-compose*.yml` → `/docker`
+- `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` → `/clouddrove-tf`
+
+**Which Terraform skill?** Two skills cover Terraform — pick one per repo:
+- `/tf` — generic Terraform / `terraform-aws-modules` ecosystem
+- `/clouddrove-tf` — repo wraps `clouddrove/*/aws` modules under `_modules/` (team standard)
+
+Don't mix them in the same repo — they give conflicting recommendations.
 
 **CLAUDE.md** — copy `templates/CLAUDE.md` into your project repo and fill in the placeholders. Claude will have permanent context about your AWS setup, Terraform backend, and EKS clusters without you needing to explain it every session.
 
@@ -59,6 +69,29 @@ Real example prompts for every skill, plugin, and MCP server in this repo.
 
 ---
 
+### `/clouddrove-tf` — Team Standard for CloudDrove Wrapper Repos
+
+Use on any repo where `_modules/<name>/` wraps `clouddrove/<name>/aws`. Supersedes `/tf` on these repos.
+
+```
+/clouddrove-tf new monitoring       # Scaffold _modules/monitoring/ with module "labels" + standard vars
+/clouddrove-tf new vpc              # Scaffold _modules/vpc/
+/clouddrove-tf ci                   # Generate .github/workflows/terraform.yml + drift.yml
+/clouddrove-tf review               # Pre-PR check: wrapper pattern, naming, CloudDrove gotchas, security baseline
+/clouddrove-tf controls             # SOC2 CC6/CC7/C1/A1 + GDPR Art.5/25/32/33 coverage table
+```
+
+**Example conversations:**
+```
+"Scaffold a new _modules/secrets module following our wrapper pattern"
+"Generate the Terraform GitHub Actions CI for this repo — three sequential apply jobs"
+"Review my PR for wrapper-pattern violations and CloudDrove gotchas (waf_scop, label_order, ACM/DNS ordering)"
+"Produce the SOC2 control coverage table for the audit"
+"Patch the .terraform/modules vpc/waf/karpenter .region bug after terraform init"
+```
+
+---
+
 ### `/ci` — GitLab CI/CD
 
 ```
@@ -73,6 +106,80 @@ Real example prompts for every skill, plugin, and MCP server in this repo.
 "Scaffold a GitLab CI pipeline for a Terraform repo with staging and prod environments"
 "Scaffold a Helm deploy pipeline for the payments-api service"
 "Does my pipeline have a manual gate on production? Is the image pinned?"
+```
+
+---
+
+### `/github-actions` — GitHub Actions Workflows
+
+```
+/github-actions review              # Review .github/workflows/*.yml for security and best practices
+/github-actions new terraform       # Scaffold a Terraform workflow with OIDC and PR gates
+/github-actions new docker          # Scaffold a Docker build/push workflow
+```
+
+**Example conversations:**
+```
+"Review my GitHub Actions workflow — are actions pinned, is OIDC used, are permissions minimal?"
+"Migrate this workflow from long-lived AWS keys to OIDC"
+"Scaffold a workflow that runs tflint, checkov, and posts plan output as a PR comment"
+"Why is this workflow leaking secrets in the logs?"
+```
+
+---
+
+### `/github` — Repo Hygiene
+
+```
+/github audit                       # Audit repo settings: branch protection, CODEOWNERS, dependabot, releases
+/github new codeowners              # Scaffold a CODEOWNERS file
+/github new dependabot              # Scaffold .github/dependabot.yml
+```
+
+**Example conversations:**
+```
+"Audit this repo's GitHub settings against our team baseline"
+"Set up branch protection on main with required reviews and status checks"
+"Add CODEOWNERS so the platform team owns _modules/ and CI workflows"
+"Configure dependabot for terraform, github-actions, and docker"
+```
+
+---
+
+### `/docker` — Dockerfile / Compose
+
+```
+/docker review                      # Review Dockerfile for size, security, layering issues
+/docker new node                    # Scaffold a multi-stage Node Dockerfile
+/docker new python                  # Scaffold a Python Dockerfile with a slim base
+/docker new go                      # Scaffold a distroless Go Dockerfile
+```
+
+**Example conversations:**
+```
+"Review my Dockerfile — is it minimal, multi-stage, and running as non-root?"
+"Shrink this image — it's 1.2GB and should be under 200MB"
+"Pin all base images by digest, not tag"
+"Review docker-compose.yml for production-readiness"
+```
+
+---
+
+### `/finops` — AWS Cost Optimization
+
+```
+/finops review                      # Identify cost waste in the current account
+/finops eks                         # EKS-specific cost analysis (right-sizing, Karpenter, Spot)
+/finops savings                     # Savings Plans + Reserved Instance recommendations
+```
+
+**Example conversations:**
+```
+"Find our top 5 cost-waste sources this month"
+"Right-size EC2 and RDS based on Compute Optimizer recommendations"
+"Should we buy a Savings Plan? Show the break-even"
+"Where is data transfer cost coming from?"
+"Audit unattached EBS volumes, old snapshots, and idle load balancers"
 ```
 
 ---
