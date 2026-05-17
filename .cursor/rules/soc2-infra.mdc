@@ -7,6 +7,8 @@ alwaysApply: false
 
 Review, scaffold, and audit production-grade AWS infrastructure built on the CloudDrove wrapper-module pattern — enforcing SOC2 CC6/CC7/C1/A1 and GDPR Art.5/25/32/33 controls at the code level.
 
+> **This skill supersedes `/tf` for CloudDrove wrapper repos.** Do not run both — `/tf` recommends `terraform-aws-modules` which conflicts with the CloudDrove pattern. On repos that follow `_modules/` + CloudDrove, use `/soc2-infra` exclusively.
+
 ## Keywords
 
 soc2, gdpr, compliance, clouddrove, wrapper, module, aws, terraform, security, kms, guardduty, securityhub, waf, eks, aurora, elasticache, alb, acm, route53, vpc, irsa, cloudtrail, inspector, iam, github actions, ci/cd, drift
