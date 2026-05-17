@@ -179,8 +179,12 @@ devops-skills/
   .cursor/rules/             ← Generated Cursor rules (.mdc) — from scripts/generate.sh
   AGENTS.md                  ← Generated Codex skill doc — from scripts/generate.sh
   agents/                    ← Reserved for Claude Code agents
+  hooks/
+    session-banner.sh        ← SessionStart: prints repo/branch/AWS/kube context
+    bash-guard.sh            ← PreToolUse(Bash): blocks destructive patterns
   templates/
     CLAUDE.md                ← Copy into project repos for always-on team context
+    settings.json            ← Global ~/.claude/settings.json defaults (perm allow/deny)
   scripts/
     bootstrap.sh             ← One-liner installer
     install.sh               ← Flag dispatcher (--claude / --cursor / --codex / --all)
@@ -197,6 +201,14 @@ devops-skills/
     CHEATSHEET.md            ← Example prompts per skill and MCP server
   README.md
 ```
+
+---
+
+## Global settings.json
+
+`install.sh --claude` seeds `~/.claude/settings.json` from `templates/settings.json` on first run. On subsequent runs it **merges missing permission entries only** — never clobbers existing keys (`enabledPlugins`, `mcpServers`, `hooks`, etc.).
+
+Template ships with a safe DevOps allow-list (read-only kubectl/terraform/aws/git) and deny-list (`kubectl delete`, `terraform apply`, `terraform destroy`, `rm -rf`, `aws s3 rm`, `aws ec2 terminate-instances`). Edit `templates/settings.json` to change team defaults, commit, teammates re-run `./scripts/install.sh --claude`.
 
 ---
 

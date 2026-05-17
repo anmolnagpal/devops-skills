@@ -1,0 +1,107 @@
+{
+  "enabledPlugins": {
+    "terraform-code-generation@hashicorp": true,
+    "terraform-module-generation@hashicorp": true,
+    "claude-mem@thedotmack": true,
+    "engineering-workflow-skills@mhattingpete-claude-skills": true,
+    "superpowers@claude-plugins-official": true,
+    "caveman@caveman": true
+  },
+  "extraKnownMarketplaces": {
+    "hashicorp": {
+      "source": {
+        "source": "github",
+        "repo": "hashicorp/agent-skills"
+      }
+    },
+    "thedotmack": {
+      "source": {
+        "source": "github",
+        "repo": "thedotmack/claude-mem"
+      }
+    },
+    "mhattingpete-claude-skills": {
+      "source": {
+        "source": "github",
+        "repo": "mhattingpete/claude-skills-marketplace"
+      }
+    },
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    }
+  },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Bash(git status)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git push*)",
+      "Bash(git pull*)",
+      "Bash(git fetch*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(gh pr*)",
+      "Bash(gh issue*)",
+      "Bash(gh run*)",
+      "Bash(kubectl get*)",
+      "Bash(kubectl describe*)",
+      "Bash(kubectl logs*)",
+      "Bash(kubectl top*)",
+      "Bash(helm list*)",
+      "Bash(helm template*)",
+      "Bash(helm lint*)",
+      "Bash(terraform plan*)",
+      "Bash(terraform validate*)",
+      "Bash(terraform fmt*)",
+      "Bash(terraform init*)",
+      "Bash(docker ps*)",
+      "Bash(docker images*)",
+      "Bash(docker build*)",
+      "Bash(docker logs*)",
+      "Bash(aws sts get-caller-identity)",
+      "Bash(aws s3 ls*)",
+      "Bash(aws ec2 describe-*)"
+    ],
+    "deny": [
+      "Bash(kubectl delete*)",
+      "Bash(kubectl exec*)",
+      "Bash(kubectl drain*)",
+      "Bash(terraform apply*)",
+      "Bash(terraform destroy*)",
+      "Bash(rm -rf*)",
+      "Bash(aws s3 rm*)",
+      "Bash(aws ec2 terminate-instances*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/devops-skills/session-banner.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$HOME/.claude/hooks/devops-skills/bash-guard.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
