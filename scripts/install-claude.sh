@@ -23,6 +23,87 @@ INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
 
 echo "[claude]"
 
+# ── Hook scripts ──────────────────────────────────────────────────────────────
+HOOKS_DEST="$HOME/.claude/hooks/devops-skills"
+mkdir -p "$HOOKS_DEST"
+if [ -d "$REPO/hooks" ]; then
+  for f in "$REPO/hooks/"*.sh; do
+    [ -f "$f" ] || continue
+    ln -sf "$f" "$HOOKS_DEST/$(basename "$f")"
+  done
+  echo "  hooks: linked → $HOOKS_DEST"
+fi
+
+# ── Global settings.json ──────────────────────────────────────────────────────
+SETTINGS_FILE="$HOME/.claude/settings.json"
+TEMPLATE_SETTINGS="$REPO/templates/settings.json"
+mkdir -p "$HOME/.claude"
+if [ -f "$TEMPLATE_SETTINGS" ]; then
+  if [ ! -f "$SETTINGS_FILE" ]; then
+    cp "$TEMPLATE_SETTINGS" "$SETTINGS_FILE"
+    echo "  settings: seeded $SETTINGS_FILE from template"
+  else
+    python3 - "$SETTINGS_FILE" "$TEMPLATE_SETTINGS" <<'PY'
+import json, sys
+target, template = sys.argv[1], sys.argv[2]
+with open(target) as f: cur = json.load(f)
+with open(template) as f: tpl = json.load(f)
+changed = False
+
+# Merge enabledPlugins + extraKnownMarketplaces (additive, don't overwrite user values).
+for top_key in ("enabledPlugins", "extraKnownMarketplaces"):
+    tpl_block = tpl.get(top_key) or {}
+    if not tpl_block: continue
+    cur_block = cur.setdefault(top_key, {})
+    for k, v in tpl_block.items():
+        if k not in cur_block:
+            cur_block[k] = v
+            changed = True
+
+# Merge permission allow/deny (additive, dedup).
+perms = cur.setdefault("permissions", {})
+tpl_perms = tpl.get("permissions", {})
+for key in ("allow", "deny"):
+    existing = perms.setdefault(key, [])
+    seen = set(existing)
+    for item in tpl_perms.get(key, []):
+        if item not in seen:
+            existing.append(item)
+            seen.add(item)
+            changed = True
+
+# Merge hooks: append our hook commands without clobbering existing user hooks.
+# A hook command is identified by its `command` string; skip if already present.
+def hook_commands(group_list):
+    cmds = set()
+    for group in group_list or []:
+        for h in group.get("hooks", []) or []:
+            c = h.get("command")
+            if c: cmds.add(c)
+    return cmds
+
+cur_hooks = cur.setdefault("hooks", {})
+for event, tpl_groups in (tpl.get("hooks") or {}).items():
+    cur_groups = cur_hooks.setdefault(event, [])
+    existing_cmds = hook_commands(cur_groups)
+    for tpl_group in tpl_groups:
+        new_hooks = [h for h in tpl_group.get("hooks", []) if h.get("command") not in existing_cmds]
+        if new_hooks:
+            merged_group = {k: v for k, v in tpl_group.items() if k != "hooks"}
+            merged_group["hooks"] = new_hooks
+            cur_groups.append(merged_group)
+            changed = True
+
+if changed:
+    with open(target, "w") as f:
+        json.dump(cur, f, indent=2)
+    print("  settings: merged template entries into", target)
+else:
+    print("  settings: already up-to-date")
+PY
+  fi
+fi
+
 # ── Skills ────────────────────────────────────────────────────────────────────
 mkdir -p "$SKILLS_DIR"
 count=0
