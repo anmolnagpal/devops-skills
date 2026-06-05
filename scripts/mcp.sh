@@ -126,3 +126,20 @@ elif _ask "Install mcp-atlassian? (Jira + Confluence — search, create, update 
 else
   echo "  mcp-atlassian — skipped"
 fi
+
+# ── Outline (docs / wiki) ─────────────────────────────────────────────────────
+if _mcp_installed "outline"; then
+  echo "  outline — already installed, skipping"
+elif _ask "Install outline? (Outline docs/wiki — search, read, create documents)"; then
+  printf "  Outline MCP URL [https://clouddrove.getoutline.com/mcp]: "
+  read -r outline_url </dev/tty
+  outline_url="${outline_url:-https://clouddrove.getoutline.com/mcp}"
+
+  # Remote HTTP transport; auth is handled via browser OAuth on first use.
+  claude mcp add outline "$outline_url" --transport http -s user
+
+  echo "  outline installed (HTTP, url: $outline_url)"
+  echo "  Tip: first call opens a browser to authorize; then search/read/create docs"
+else
+  echo "  outline — skipped"
+fi
