@@ -26,9 +26,9 @@ RUN CI=true bash scripts/install.sh --claude
 # ── Verify skills ──────────────────────────────────────────────────────────────
 RUN echo "" && echo "── Skills ──" && \
     for skill in tf k8s ci owasp skill-creator docker finops github github-actions; do \
-      [ -L "/root/.claude/skills/$skill.md" ] \
-        && echo "  ✓ $skill.md" \
-        || (echo "  ✗ $skill.md MISSING" && exit 1); \
+      [ -L "/root/.claude/skills/$skill/SKILL.md" ] \
+        && echo "  ✓ $skill/SKILL.md" \
+        || (echo "  ✗ $skill/SKILL.md MISSING" && exit 1); \
     done
 
 # ── Verify install.sh called claude with the right arguments ───────────────────
