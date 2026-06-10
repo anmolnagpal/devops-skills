@@ -15,7 +15,7 @@
 - **Single source** in `skills/*.md` — a generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
 - **One installer** with flags — `--claude` / `--cursor` / `--codex` / `--all`, global or per-project scope
 - **Curated Claude plugin set** — Terraform code/module generation (HashiCorp), claude-mem, superpowers, caveman, engineering-workflow-skills
-- **MCP servers** wired in: Kubernetes live access, EKS ops, AWS Cost Explorer, Atlassian (Jira + Confluence)
+- **MCP servers** wired in: Kubernetes live access, EKS ops, AWS Cost Explorer, Atlassian (Jira + Confluence), Outline docs/wiki
 
 > **New here?** Skip to **[CHEATSHEET.md](_docs/CHEATSHEET.md)** for one-line prompts per skill.
 
@@ -149,6 +149,7 @@ Configured interactively during `install.sh`. Each server prompts you to install
 | `eks-mcp-server` | AWS-native EKS ops — cluster diagnostics, CloudWatch, IAM/OIDC, resource management |
 | `billing-mcp-server` | Cost Explorer, budget tracking, savings plan analysis, Compute Optimizer |
 | `mcp-atlassian` | Jira + Confluence — JQL search, create/update issues, add comments, transition tickets |
+| `outline` | Outline docs/wiki — search, read, create/update documents (remote HTTP, browser OAuth) |
 
 ### Switching AWS profile
 
@@ -284,6 +285,8 @@ The test builds `_test/Dockerfile`, which runs `install.sh` in a clean container
 
 ## Adding a New MCP Server
 
-1. Add a new block to `scripts/mcp.sh` following the existing pattern (check if installed → prompt → `claude mcp add-json`)
+1. Add a new block to `scripts/mcp.sh` following the existing pattern (check if installed → prompt → register the server):
+   - **Local/stdio** servers — `claude mcp add-json <name> '{"command":...,"args":...}' -s user`
+   - **Remote/HTTP** servers (e.g. `outline`) — `claude mcp add <name> <url> --transport http -s user` (auth via browser OAuth on first use)
 2. If the server uses AWS credentials, add it to the `AWS_MCP_SERVERS` list in `scripts/set-aws-profile.sh`
 3. Commit and push — teammates pick it up on next `./scripts/install.sh`
