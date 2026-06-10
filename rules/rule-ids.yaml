@@ -1,0 +1,188 @@
+# Canonical rule-ID registry — shared vocabulary for ClouDrove DevOps tooling.
+#
+# This is the single source of truth for the rule IDs that review skills emit.
+# Both this repo (the `clouddrove` Claude Code plugin) and the auditkit audit
+# engine reference these IDs so findings line up and never drift.
+#
+# Format: <DOMAIN>-<CATEGORY>-<NNN>. Each entry is `id: one-line meaning`.
+# CI (`scripts/check-rule-ids.sh`) asserts every ID used in any
+# skills/<name>/SKILL.md Rule Catalog exists here.
+#
+# Scope: this public registry covers the shared review vocabulary. auditkit may
+# define additional private-only domains; it checks its overlapping IDs against
+# this file.
+
+version: 1
+
+# ── Terraform (generic) ───────────────────────────────────────────────────────
+TF:
+  TF-STATE-001: 'no remote backend'
+  TF-STATE-002: 'no state locking'
+  TF-STATE-003: 'state file committed'
+  TF-PROV-001: 'providers not version-pinned'
+  TF-PROV-002: 'no required_providers / terraform version block'
+  TF-MOD-001: 'no module reuse'
+  TF-MOD-002: 'modules not versioned'
+  TF-VAR-001: 'hardcoded secret'
+  TF-VAR-002: 'sensitive var not marked sensitive'
+  TF-VAR-003: 'variable missing description/type'
+  TF-VAR-004: 'hardcoded env-specific value (region/account/ARN/env/CIDR) outside backend'
+  TF-OUT-001: 'output missing description'
+  TF-OUT-002: 'sensitive output not marked sensitive'
+  TF-RES-001: 'missing required tags'
+  TF-RES-002: 'missing lifecycle rules on stateful resources'
+  TF-QUAL-001: 'repetition (no locals)'
+  TF-QUAL-002: 'no README'
+
+# ── Security ──────────────────────────────────────────────────────────────────
+SEC:
+  SEC-NET-001: '0.0.0.0/0 ingress on non-80/443'
+  SEC-NET-002: 'DB in public subnet'
+  SEC-NET-003: 'no VPC segmentation'
+  SEC-ENC-001: 'encryption at rest disabled'
+  SEC-ENC-002: 'TLS < 1.2'
+  SEC-ENC-003: 'no WAF on public endpoint'
+  SEC-IAM-001: 'wildcard action/resource'
+  SEC-IAM-002: 'long-lived IAM keys'
+  SEC-IAM-003: 'MFA not enforced'
+  SEC-PUB-001: 'bucket public'
+  SEC-LOG-001: 'CloudTrail/Audit Logs disabled'
+  SEC-LOG-002: 'VPC flow logs disabled'
+  SEC-SEC-001: 'secret in current files'
+  SEC-SEC-002: 'secret in git history'
+  SEC-SEC-003: '.env committed'
+  SEC-SEC-004: 'private key in repo'
+  SEC-SEC-005: 'no pre-commit secret scanning'
+  SEC-DEP-001: 'vulnerable dependency'
+  SEC-APP-001: 'missing security headers'
+  SEC-APP-002: 'CORS wildcard'
+  SEC-K8S-001: 'pod securityContext missing/incomplete (runAsNonRoot, no privilege escalation, read-only rootfs)'
+
+# ── CI/CD ─────────────────────────────────────────────────────────────────────
+CICD:
+  CICD-PIN-001: 'action not SHA-pinned'
+  CICD-PERM-001: 'GITHUB_TOKEN over-privileged'
+  CICD-PERM-002: 'no contents:read baseline'
+  CICD-SEC-001: 'secret hardcoded in workflow'
+  CICD-SEC-002: 'pull_request_target checks out PR head'
+  CICD-SEC-003: 'script injection via ${{ github.event.* }}'
+  CICD-SEC-004: 'self-hosted runner unrestricted on public repo'
+  CICD-SEC-005: 'secret printed to job logs'
+  CICD-DOCK-001: '":latest" base image'
+  CICD-DOCK-002: 'container runs as root'
+  CICD-DOCK-003: 'no multi-stage build'
+  CICD-DOCK-004: 'ADD remote URL'
+  CICD-DOCK-005: 'no --no-install-recommends'
+  CICD-DOCK-006: 'shell-form CMD/ENTRYPOINT'
+  CICD-DOCK-007: 'ADD where COPY suffices'
+  CICD-DOCK-008: 'unpinned OS packages'
+  CICD-DOCK-009: 'layer order busts cache'
+  CICD-DOCK-010: 'heavy base image'
+  CICD-DOCK-011: 'package cache not cleaned in same RUN'
+  CICD-DOCK-012: 'no HEALTHCHECK'
+  CICD-DOCK-013: 'no .dockerignore'
+  CICD-DOCK-014: 'compose privileged/host network'
+  CICD-DOCK-015: 'compose no restart policy'
+  CICD-DOCK-016: 'depends_on without service_healthy'
+  CICD-FLOW-001: 'tests not gating deploy'
+  CICD-FLOW-002: 'no prod approval gate'
+  CICD-FLOW-003: 'staging/prod not separate jobs'
+  CICD-FLOW-004: 'deploy job missing environment tracking'
+  CICD-HELM-001: 'no helm lint before deploy'
+  CICD-HELM-002: 'helm upgrade without --atomic'
+  CICD-HELM-003: 'helm without explicit --namespace'
+  CICD-HELM-004: 'helm image tag hardcoded (not a variable)'
+  CICD-OPS-001: 'no concurrency group'
+  CICD-OPS-002: 'no timeout-minutes'
+  CICD-OPS-003: 'no tool caching'
+  CICD-OPS-004: 'matrix without fail-fast:false'
+  CICD-OPS-005: 'workflow logic not reused (workflow_call)'
+  CICD-SCAN-001: 'no SAST/DAST'
+  CICD-SCAN-002: 'no dependency scanning'
+  CICD-SCAN-003: 'no image scanning'
+
+# ── Cost (static) ─────────────────────────────────────────────────────────────
+COST:
+  COST-COMP-001: 'oversized instance'
+  COST-COMP-002: 'no autoscaling'
+  COST-COMP-003: 'non-prod 24/7'
+  COST-COMP-004: 'non-Graviton where ARM supported'
+  COST-STOR-001: 'no S3 lifecycle'
+  COST-STOR-002: 'orphaned EBS/snapshots'
+  COST-STOR-003: 'gp2 not migrated to gp3'
+  COST-DB-001: 'Multi-AZ in non-prod'
+  COST-DB-002: 'Aurora not I/O-Optimized when I/O-heavy'
+  COST-NET-001: 'per-AZ NAT gateways'
+  COST-NET-002: 'idle EIPs'
+  COST-K8S-001: 'no requests/limits'
+  COST-K8S-002: 'no spot nodes'
+  COST-K8S-003: 'memory limit below request'
+  COST-TAG-001: 'no cost-allocation tags'
+
+# ── Cost (live — from real billing/optimizer data) ────────────────────────────
+COST-LIVE:
+  COST-LIVE-RESERVE-001: 'RI/Savings-Plan coverage gap (live)'
+  COST-LIVE-RIGHTSIZE-001: 'optimizer-confirmed over-provisioned compute'
+  COST-LIVE-IDLE-001: 'idle/orphaned resource with live spend'
+  COST-LIVE-ANOMALY-001: 'cost spike/anomaly'
+  COST-LIVE-VISIBILITY-001: 'optimizer/billing feature disabled (LOW)'
+
+# ── Architecture ──────────────────────────────────────────────────────────────
+ARCH:
+  ARCH-HA-001: 'single AZ'
+  ARCH-HA-002: 'no auto-scaling'
+  ARCH-HA-003: 'no readiness/liveness probes'
+  ARCH-DR-001: 'no backup policy'
+  ARCH-DR-002: 'no DR/RTO/RPO'
+  ARCH-SPOF-001: 'single-instance DB'
+  ARCH-SPOF-002: '< 2 replicas for staging/prod'
+  ARCH-SCAL-001: 'vertical-only scaling'
+
+# ── Observability ─────────────────────────────────────────────────────────────
+OBS:
+  OBS-LOG-001: 'no centralized logging'
+  OBS-LOG-002: 'no log retention'
+  OBS-MON-001: 'no metrics'
+  OBS-MON-002: 'no alerting'
+  OBS-TRC-001: 'no tracing'
+  OBS-DASH-001: 'no dashboards'
+  OBS-SLO-001: 'no SLO/SLI'
+
+# ── Repo hygiene ──────────────────────────────────────────────────────────────
+REPO:
+  REPO-BP-001: 'no branch protection'
+  REPO-BP-002: 'force-push allowed'
+  REPO-BP-003: 'branch deletion allowed on default'
+  REPO-BP-004: 'delete_branch_on_merge off'
+  REPO-PR-001: 'no required reviews'
+  REPO-PR-002: 'no required status checks'
+  REPO-PR-003: 'fork PRs run workflows without approval'
+  REPO-PR-004: 'squash-merge not enforced'
+  REPO-DOC-001: 'no README'
+  REPO-DOC-002: 'no CONTRIBUTING/runbook'
+  REPO-DOC-003: 'no PR/issue templates'
+  REPO-TEST-001: 'no test coverage'
+  REPO-CODE-001: 'no CODEOWNERS'
+  REPO-DEP-001: 'Dependabot security updates disabled'
+  REPO-DEP-002: 'no Dependabot version-update config'
+
+# ── Skill-local: CloudDrove wrapper Terraform (wrapper-tf only) ────────────────
+# These are specific to the /clouddrove:wrapper-tf skill and not part of the
+# generic shared audit vocabulary.
+CDTF:
+  CDTF-WRAP-001: 'module not wrapping a clouddrove/*/aws source'
+  CDTF-WRAP-002: 'wrapper missing the standard module "labels" block'
+  CDTF-WRAP-003: 'wrapper bypasses labels for naming/tags'
+  CDTF-MOD-001: '_modules/<name>/ missing required file (main/variables/outputs)'
+  CDTF-MOD-002: 'wrapped module source not version-pinned'
+  CDTF-MOD-003: 'variable not threaded through to the wrapped module'
+  CDTF-MOD-004: 'output not re-exported from the wrapped module'
+  CDTF-MOD-005: 'hardcoded value that should derive from labels/vars'
+  CDTF-MOD-006: 'missing description/type on wrapper variable'
+  CDTF-NAME-001: 'resource name not derived from module.labels'
+  CDTF-NAME-002: 'environment/name not parameterized'
+  CDTF-STATE-001: 'environment state not isolated per the wrapper convention'
+
+# ── Skill-local: meta / suppression ───────────────────────────────────────────
+META:
+  META-SUP-001: 'suppression comment missing a "-- reason"'

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Canonical rule-ID registry** (`rules/rule-ids.yaml`) — single source of truth for the 141-ID shared vocabulary the review skills emit, so this repo and the auditkit audit engine never drift on what a rule ID means. New `Rule IDs` CI job (`scripts/check-rule-ids.sh`) asserts every rule ID used in any skill's catalog exists in the registry (framework/control IDs like `SOC2-*`, `CIS-*` are allowed without entries).
+
 ## [1.0.1] — 2026-06-10
 
 ### Changed
