@@ -109,8 +109,12 @@ mkdir -p "$SKILLS_DIR"
 count=0
 for f in "$REPO/skills/"*.md; do
   [ -f "$f" ] || continue
-  ln -sf "$f" "$SKILLS_DIR/$(basename "$f")"
-  echo "  skill: /$(basename "$f" .md)"
+  name="$(basename "$f" .md)"
+  # Claude Code discovers skills as <name>/SKILL.md directories, not flat files.
+  rm -f "$SKILLS_DIR/$name.md"        # remove legacy flat-file symlink if present
+  mkdir -p "$SKILLS_DIR/$name"
+  ln -sf "$f" "$SKILLS_DIR/$name/SKILL.md"
+  echo "  skill: /$name"
   count=$((count + 1))
 done
 echo "  $count skill(s) linked → $SKILLS_DIR"
