@@ -2731,6 +2731,55 @@ terraform, tf, hcl, aws, infrastructure, iac, module, provider, variables, outpu
 
 ---
 
+## Principles
+
+When an input is novel and no specific rule below matches, fall back to these:
+
+1. **Nothing environment-specific in code** — regions, account IDs, ARNs, env names, CIDRs live in variables, never literals. (Exception: `backend` blocks, which cannot interpolate variables.)
+2. **State is shared and locked** — remote backend, always; with state locking.
+3. **Pin everything** — `required_version`, providers, and module sources all pinned with `~>`; never a bare `>=`, git ref, or branch.
+4. **Secrets are sensitive** — never hardcoded; variables and outputs that carry them set `sensitive = true`.
+5. **Every resource is tagged and self-describing** — required tags via a `locals` block; every variable and output has a `description`.
+
+---
+
+## Rule Catalog
+
+IDs come from auditkit's canonical registry (`.claude/rules/rule-ids.md` in
+clouddrove-ci/auditkit) so this inline skill and auditkit's `terraform-auditor`
+share one findings vocabulary — a finding here carries the same ID auditkit reports,
+and a baseline/waiver written once applies in both. IDs are an API: never renumber a
+shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under the table.
+
+| ID | Severity | Check |
+|----|----------|-------|
+| **TF-VAR-001** | BLOCKING | Hardcoded secret/password/token/key in a default or resource |
+| **TF-VAR-002** | BLOCKING | Variable holding a secret not marked `sensitive = true` |
+| **TF-VAR-003** | BLOCKING | `variable` block missing `description` or explicit `type` |
+| **TF-VAR-004** | BLOCKING | Hardcoded env-specific value (region, account ID, ARN, env name, CIDR/IP) outside a `backend` block |
+| **TF-OUT-001** | BLOCKING | `output` block missing `description` |
+| **TF-OUT-002** | BLOCKING | Output exposing a secret not marked `sensitive = true` |
+| **TF-PROV-001** | BLOCKING | Provider version unpinned or `>=` (use `~>`) |
+| **TF-PROV-002** | BLOCKING | No `terraform{}` block / `required_version` / `required_providers` |
+| **TF-STATE-001** | BLOCKING | No remote backend (local state in a shared repo) |
+| **TF-STATE-002** | ADVISORY | Remote backend without state locking (`dynamodb_table`) |
+| **TF-RES-001** | BLOCKING | Missing required tags (`Name`, `Environment`, `Team`, `ManagedBy`) |
+| **TF-MOD-001** | ADVISORY | Raw AWS resource where a `terraform-aws-modules` module fits |
+| **TF-MOD-002** | BLOCKING | Module `source` without a pinned `version` (git ref/branch/omitted) |
+| **TF-QUAL-001** | ADVISORY | Repetition: no `locals` block for common tags/values |
+| **META-SUP-001** | ADVISORY | `tf-skill:ignore` suppression missing a `-- reason` |
+
+**Reused from auditkit:** `TF-VAR-001`, `TF-VAR-002`, `TF-PROV-001/002`, `TF-STATE-001/002`, `TF-RES-001`, `TF-MOD-001/002`, `TF-QUAL-001`, `META-SUP-001`.
+**New to the registry** (pending a follow-up auditkit PR): `TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`.
+
+**Output:** every finding carries its rule ID, in the format below. **Suppression:**
+accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
+honor it (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only
+findings you are >80% sure are real; consolidate repeats; severity is the rule's,
+don't invent. Evals: [`evals/`](./tf/evals/).
+
+---
+
 ## Step 1 — Determine the action
 
 Read the arguments provided:
@@ -2828,12 +2877,12 @@ Always pin module versions with `version = "~> X.Y"` — never use a git ref, br
 ```
 BLOCKING — Must fix before MR
 ------------------------------
-[main.tf:12] Hardcoded value: region "eu-west-1" is hardcoded → move to a variable
-[outputs.tf:5] Missing description on output "db_endpoint"
+[main.tf:12] TF-VAR-004 Hardcoded region "eu-west-1" → move to a variable
+[outputs.tf:5] TF-OUT-001 Output "db_endpoint" missing description → add description
 
 ADVISORY — Should fix
 ----------------------
-[main.tf:8] Raw aws_s3_bucket used → consider terraform-aws-modules/s3-bucket/aws
+[main.tf:8] TF-MOD-001 Raw aws_s3_bucket used → consider terraform-aws-modules/s3-bucket/aws
 
 Summary: 2 blocking issue(s), 1 advisory issue(s). Fix blocking issues before raising MR.
 ```
