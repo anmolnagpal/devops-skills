@@ -1,0 +1,17 @@
+# Fixture: insecure GitLab pipeline. Not a real pipeline.
+stages:
+  - deploy
+
+default:
+  image: alpine/helm:latest
+
+deploy-production:
+  stage: deploy
+  variables:
+    AWS_SECRET_ACCESS_KEY: "PLACEHOLDER_FAKE_NOT_A_SECRET"
+  before_script:
+    - echo "$DB_PASSWORD"
+  script:
+    - helm upgrade --install app ./helm/app --set image.tag=v1.2.3
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
