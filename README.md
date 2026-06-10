@@ -3,14 +3,24 @@
 > **One source of DevOps expertise, three AI coding tools.** Reusable skills for **Claude Code**, **Cursor**, and **Codex** that review and scaffold Terraform, Kubernetes/Helm, Docker, CI/CD (GitHub Actions + GitLab), AWS FinOps, GitHub repo hygiene, and OWASP security — without you copy-pasting the same prompt into every project.
 
 [![test](https://github.com/anmolnagpal/devops-skills/actions/workflows/test.yml/badge.svg)](https://github.com/anmolnagpal/devops-skills/actions/workflows/test.yml)
+[![release](https://img.shields.io/github/v/release/anmolnagpal/devops-skills?label=release)](https://github.com/anmolnagpal/devops-skills/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Claude Code](https://img.shields.io/badge/Claude_Code-skills_%2B_plugins_%2B_MCP-orange)
+![Claude Code](https://img.shields.io/badge/Claude_Code-plugin-orange)
 ![Cursor](https://img.shields.io/badge/Cursor-rules-blue)
 ![Codex](https://img.shields.io/badge/Codex-AGENTS.md-green)
 
+### Install in Claude Code (10 seconds, no clone)
+
+```text
+/plugin marketplace add anmolnagpal/devops-skills
+/plugin install clouddrove@devops-skills
+```
+
+Skills land as `/clouddrove:tf`, `/clouddrove:finops`, … with a native `(clouddrove)` label. For Cursor/Codex/MCP, use the [installer](#quick-start).
+
 ## What you get
 
-- **10 skills** that auto-trigger on file globs and answer with structured review output
+- **12 skills** that auto-trigger on file globs and answer with structured, rule-ID-tagged review output
   (`/clouddrove:tf`, `/clouddrove:k8s`, `/clouddrove:ci`, `/clouddrove:github-actions`, `/clouddrove:github`, `/clouddrove:docker`, `/clouddrove:finops`, `/clouddrove:owasp`, `/clouddrove:wrapper-tf`, `/clouddrove:deploy`, `/clouddrove:adr`, `/clouddrove:skill-creator`)
 - **Packaged as the `clouddrove` plugin** — installed from this repo's own marketplace, so skills are namespaced `(clouddrove)` in Claude Code natively
 - **Single source** in `skills/<name>/SKILL.md` — a generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
@@ -113,17 +123,18 @@ In Claude Code: invoke with `/clouddrove:<skill>` (namespaced by the plugin). In
 
 | Skill | Purpose |
 |-------|---------|
-| `/tf` | Terraform (generic / `terraform-aws-modules` ecosystem): pre-MR review, AWS resource scaffolding, provider upgrade guidance |
-| `/k8s` | Kubernetes/Helm: pre-deploy review, production-ready values scaffolding |
-| `/ci` | GitLab CI/CD: pipeline review, Terraform/Helm pipeline scaffolds |
-| `/github-actions` | GitHub Actions: workflow review, security hardening (OIDC, pinning), scaffolds |
-| `/github` | GitHub repo hygiene: settings audit, CODEOWNERS, branch protection, releases |
-| `/docker` | Dockerfile review, image optimization, Compose, registry workflows |
-| `/finops` | AWS cost: waste detection, right-sizing, Savings Plans/RIs, EKS cost |
-| `/owasp-security` | Security review against OWASP Top 10:2025, ASVS 5.0, Agentic AI risks |
-| `/clouddrove:wrapper-tf` | Team standard for AWS Terraform repos on the CloudDrove wrapper pattern: scaffold `_modules/<name>/`, generate Terraform GitHub Actions CI, review against the wrapper pattern, map to SOC2/GDPR controls. Supersedes `/tf` on these repos. |
-| `/deploy` | Deployment strategy (rolling/blue-green/canary), production-readiness gate (reuses existing rule IDs), and rollback playbook for AWS/EKS |
-| `/adr` | Capture architectural decisions as structured ADRs under `docs/adr/` |
+| `/clouddrove:tf` | Terraform (generic / `terraform-aws-modules` ecosystem): pre-MR review, AWS resource scaffolding, provider upgrade guidance |
+| `/clouddrove:k8s` | Kubernetes/Helm: pre-deploy review, production-ready values scaffolding |
+| `/clouddrove:ci` | GitLab CI/CD: pipeline review, Terraform/Helm pipeline scaffolds |
+| `/clouddrove:github-actions` | GitHub Actions: workflow review, security hardening (OIDC, pinning), scaffolds |
+| `/clouddrove:github` | GitHub repo hygiene: settings audit, CODEOWNERS, branch protection, releases |
+| `/clouddrove:docker` | Dockerfile review, image optimization, Compose, registry workflows |
+| `/clouddrove:finops` | AWS cost: waste detection, right-sizing, Savings Plans/RIs, EKS cost |
+| `/clouddrove:owasp` | Security review against OWASP Top 10:2025, ASVS 5.0, Agentic AI risks |
+| `/clouddrove:wrapper-tf` | Team standard for AWS Terraform repos on the CloudDrove wrapper pattern: scaffold `_modules/<name>/`, generate Terraform GitHub Actions CI, review against the wrapper pattern, map to SOC2/GDPR controls. Supersedes `/clouddrove:tf` on these repos. |
+| `/clouddrove:deploy` | Deployment strategy (rolling/blue-green/canary), production-readiness gate (reuses existing rule IDs), and rollback playbook for AWS/EKS |
+| `/clouddrove:adr` | Capture architectural decisions as structured ADRs under `docs/adr/` |
+| `/clouddrove:skill-creator` | Author, eval, and refine new skills in this repo |
 | `/skill-creator` | Build, test, and iterate new skills |
 
 ---
@@ -187,7 +198,7 @@ Restart Claude Code after switching.
 devops-skills/
   skills/                    ← Canonical skill sources (edit here)
     tf.md  k8s.md  ci.md  owasp.md  docker.md  finops.md  skill-creator.md
-    owasp/                   ← Reference docs loaded on-demand by /owasp-security
+    owasp/                   ← Reference docs loaded on-demand by /clouddrove:owasp
     docker/                  ← Reference docs + scripts for /docker
     finops/                  ← Reference docs + scripts for /finops
     specs/                   ← Backlog spec docs (not active skills)
