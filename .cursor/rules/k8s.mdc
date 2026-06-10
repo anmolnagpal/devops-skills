@@ -1,21 +1,8 @@
 ---
-name: k8s
-description: "Kubernetes and Helm review and scaffolding for EKS workloads. Use when user says 'review my helm values', 'before I deploy', 'scaffold a new service', 'check values.yaml', or when working in values.yaml, Chart.yaml, or Helm template files."
-metadata:
-  version: 1.2.0
-  author: Anmol Nagpal
-  category: devops
-  updated: 2026-06-09
-paths:
-  - "**/values*.yaml"
-  - "**/Chart.yaml"
-  - "**/templates/*.yaml"
-  - "**/templates/*.yml"
-allowed-tools:
-  - Glob
-  - Read
+description: Kubernetes and Helm review and scaffolding for EKS workloads. Use when user says 'review my helm values', 'before I deploy', 'scaffold a new service', 'check values.yaml', or when working in values.yaml, Chart.yaml, or Helm template files.
+globs: **/values*.yaml, **/Chart.yaml, **/templates/*.yaml, **/templates/*.yml
+alwaysApply: false
 ---
-
 # Kubernetes / EKS Skill
 
 Review Helm values before EKS deployments or scaffold production-ready values for a new service — enforcing team standards for security, HA, and resource management.

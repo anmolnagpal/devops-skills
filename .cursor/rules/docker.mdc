@@ -1,27 +1,8 @@
 ---
-name: docker
-description: "Docker operations, Dockerfile best practices, Compose, image optimization, and registry workflows. Use when user says 'review my Dockerfile', 'optimize my image', 'reduce image size', 'container won't start', 'set up compose', 'multi-stage build', or when working in Dockerfile, docker-compose*.yml, or .dockerignore files."
-metadata:
-  version: 0.2.0
-  author: Anmol Nagpal
-  category: devops
-  updated: 2026-06-09
-  upstream: clouddrove/claude-skills (docker-skills)
-paths:
-  - "**/Dockerfile"
-  - "**/Dockerfile.*"
-  - "**/docker-compose*.yml"
-  - "**/docker-compose*.yaml"
-  - "**/compose*.yml"
-  - "**/compose*.yaml"
-  - "**/.dockerignore"
-allowed-tools:
-  - Glob
-  - Read
-  - Bash
+description: Docker operations, Dockerfile best practices, Compose, image optimization, and registry workflows. Use when user says 'review my Dockerfile', 'optimize my image', 'reduce image size', 'container won't start', 'set up compose', 'multi-stage build', or when working in Dockerfile, docker-compose*.yml, or .dockerignore files.
+globs: **/Dockerfile, **/Dockerfile.*, **/docker-compose*.yml, **/docker-compose*.yaml, **/compose*.yml, **/compose*.yaml, **/.dockerignore
+alwaysApply: false
 ---
-
-
 # Docker Operations & Best Practices
 
 This skill covers Docker operations (building, running, debugging containers), Dockerfile best practices, Docker Compose workflows, image optimization, and registry management.

@@ -10,6 +10,9 @@
 
 set -euo pipefail
 
+CHECK=0
+[ "${1:-}" = "--check" ] && CHECK=1
+
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SRC_DIR="$REPO/skills"
 CURSOR_DIR="$REPO/.cursor/rules"
@@ -80,5 +83,15 @@ open(AGENTS, "w").write("\n".join(agents_parts))
 print(f"  codex:  {AGENTS}")
 print(f"  total:  {count} skill(s)")
 PY
+
+if [ "$CHECK" -eq 1 ]; then
+  # Fail if committed adapters are stale relative to skills/*.md sources.
+  if ! git -C "$REPO" diff --quiet -- .cursor/rules AGENTS.md; then
+    echo "ERROR: generated adapters are out of date. Run scripts/generate.sh and commit:" >&2
+    git -C "$REPO" --no-pager diff --stat -- .cursor/rules AGENTS.md >&2
+    exit 1
+  fi
+  echo "check: adapters up to date."
+fi
 
 echo "done."

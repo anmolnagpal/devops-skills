@@ -628,6 +628,101 @@ This skill covers Docker operations (building, running, debugging containers), D
 
 ---
 
+## Principles
+
+Every review and recommendation in this skill derives from these. When an input
+is novel and no specific rule below matches, fall back to these principles:
+
+1. **Non-root by default** — a container that can run unprivileged, must. Root in
+   the runtime image is a blast-radius multiplier.
+2. **Reproducible, not floating** — pin base images by digest or exact version and
+   pin OS packages. `:latest` is a future incident.
+3. **Minimal surface** — multi-stage builds; ship only the artifact. Build tools,
+   dev deps, and shells you don't need are attack surface and size.
+4. **No secrets in layers** — image layers are forever and world-readable to anyone
+   who pulls. Secrets belong in BuildKit `--mount=type=secret` or the runtime env.
+5. **Correct signals & health** — exec-form entrypoints so `SIGTERM` reaches PID 1;
+   `HEALTHCHECK` so orchestrators can see truth.
+6. **Fail the build, not production** — prefer a check that blocks at build/CI time
+   over a runtime surprise.
+
+---
+
+## Review Mode
+
+Trigger: `/docker review [path]`, "review my Dockerfile", or auto-trigger on
+`Dockerfile*` / `compose*.yml` edits.
+
+1. Read the target file(s) — `Dockerfile`, `docker-compose*.yml`, `.dockerignore`.
+2. Walk the **Rule Catalog** below. For each violation, emit one finding.
+3. Output in the repo-standard format, **every finding carrying its rule ID**:
+
+```
+BLOCKING — Must fix before deploy
+[Dockerfile:14] DKR-SEC-002 Container runs as root → add a non-root USER before CMD
+[Dockerfile:3]  DKR-SEC-003 Base image floats on :latest → pin to a digest or exact version
+
+ADVISORY — Should fix
+[Dockerfile:1]  DKR-OPT-001 Single-stage build ships build tooling → use multi-stage
+
+Summary: 2 blocking issue(s), 1 advisory issue(s).
+```
+
+Rules:
+- One finding per violation, deduped. Cite `file:line`. No line → cite the file.
+- **Confidence gate:** only report a finding you are >80% sure is real. Skip
+  stylistic nits not in the catalog. Consolidate repeats (5 unpinned packages →
+  one `DKR-BLD-003`, list the lines).
+- **BLOCKING vs ADVISORY** is the rule's severity in the catalog — do not invent.
+
+### Suppression
+
+A repo may accept a known risk inline; honor it and do not report:
+
+```dockerfile
+# docker-skill:ignore DKR-SEC-002 -- distroless nonroot base sets UID downstream
+USER root
+```
+
+Format: `# docker-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
+suppression without a reason is itself an advisory finding (`DKR-MViolation`-style
+noise) — report it as `DKR-SUP-001 Suppression missing justification`.
+
+---
+
+## Rule Catalog
+
+Stable IDs. Severity drives BLOCKING/ADVISORY. IDs are an API — never renumber a
+shipped rule; deprecate and add. Namespaces: `SEC` security, `BLD` build/correctness,
+`OPT` size/optimization, `OPS` runtime/health, `CMP` compose, `SUP` suppression.
+
+| ID | Severity | Check | Fix |
+|----|----------|-------|-----|
+| **DKR-SEC-001** | BLOCKING | Secret in `ARG`/`ENV` or copied into a layer (keys, tokens, passwords) | Use BuildKit `--mount=type=secret`; inject at runtime via env |
+| **DKR-SEC-002** | BLOCKING | Runtime stage runs as root (no `USER`, or `USER root`) | Create and switch to a non-root user/UID before `CMD` |
+| **DKR-SEC-003** | BLOCKING | Base image uses `:latest` or no tag | Pin to a digest (`@sha256:…`) or exact version |
+| **DKR-SEC-004** | BLOCKING | `ADD` with a remote URL (fetches unverified content) | Use `COPY`, or `curl`+checksum in a `RUN` |
+| **DKR-SEC-005** | ADVISORY | `apt-get`/`apk` without `--no-install-recommends` (extra surface) | Add `--no-install-recommends` |
+| **DKR-BLD-001** | ADVISORY | Shell-form `CMD`/`ENTRYPOINT` (signals don't reach the process) | Use exec form: `CMD ["bin","arg"]` |
+| **DKR-BLD-002** | ADVISORY | `ADD` used where `COPY` suffices | Use `COPY` unless tar-extract/URL is intended |
+| **DKR-BLD-003** | ADVISORY | OS packages installed unpinned | Pin versions (`curl=7.88.1-10`) for reproducibility |
+| **DKR-BLD-004** | ADVISORY | Layer order invalidates cache (code copied before deps installed) | Copy manifest + install deps before `COPY . .` |
+| **DKR-OPT-001** | ADVISORY | Single-stage build ships compilers/dev deps | Use multi-stage; copy only artifacts to runtime |
+| **DKR-OPT-002** | ADVISORY | Heavy base image where slim/alpine/distroless fits | Switch base; verify libc/deps |
+| **DKR-OPT-003** | ADVISORY | Package cache not cleaned in the same `RUN` | `&& rm -rf /var/lib/apt/lists/*` in the same layer |
+| **DKR-OPS-001** | ADVISORY | No `HEALTHCHECK` | Add `HEALTHCHECK` hitting a real readiness path |
+| **DKR-OPS-002** | ADVISORY | No `.dockerignore` (or missing `.git`/`node_modules`/`.env`) | Add `.dockerignore`; exclude VCS, deps, secrets, tests |
+| **DKR-CMP-001** | BLOCKING | Compose service `privileged: true` or host network without cause | Drop `privileged`; scope capabilities; use bridge network |
+| **DKR-CMP-002** | BLOCKING | Hardcoded secret in compose `environment:` | Move to `env_file:`/secrets; never commit values |
+| **DKR-CMP-003** | ADVISORY | Service missing `restart:` policy | Add `restart: unless-stopped` (or per ops policy) |
+| **DKR-CMP-004** | ADVISORY | `depends_on` without `condition: service_healthy` | Gate on healthcheck, not container start |
+| **DKR-SUP-001** | ADVISORY | `docker-skill:ignore` suppression missing a `-- reason` | Add a justification after `--` |
+
+> Evals for this catalog live in [`evals/`](./docker/evals/) — each case is an input
+> fixture plus the exact rule IDs it must surface. See that folder's README to run them.
+
+---
+
 ## Quick Command Reference
 
 | Category | Command | Purpose |
@@ -1177,6 +1272,51 @@ github, actions, workflow, workflows, ci, cd, gha, github-actions, oidc, openid,
 
 ---
 
+## Principles
+
+When an input is novel and no specific rule below matches, fall back to these:
+
+1. **Least privilege by default** — start every workflow at `permissions: contents: read`; escalate per-job to only what's needed.
+2. **Immutable supply chain** — pin actions to a 40-char SHA, never a mutable tag.
+3. **No long-lived cloud keys** — federate to AWS/GCP with OIDC; static keys in secrets are a standing breach.
+4. **Untrusted input is hostile** — never interpolate `github.event.*` into a shell; never check out PR head with elevated permissions.
+5. **Gate what ships** — production deploys go through a protected `environment` with reviewers.
+
+---
+
+## Rule Catalog
+
+Stable IDs. Severity drives BLOCKING/ADVISORY. IDs are an API — never renumber a
+shipped rule; deprecate and add. Namespaces: `SEC` security, `OPS` reliability/ops,
+`SUP` suppression. Detailed remediation for each is in REVIEW below.
+
+| ID | Severity | Check |
+|----|----------|-------|
+| **GHA-SEC-001** | BLOCKING | Action used by mutable tag, not a 40-char SHA pin |
+| **GHA-SEC-002** | BLOCKING | `pull_request_target` checking out PR head (RCE) |
+| **GHA-SEC-003** | BLOCKING | Over-privileged token (`permissions: write-all`) |
+| **GHA-SEC-004** | BLOCKING | Static AWS keys for cloud auth instead of OIDC |
+| **GHA-SEC-005** | BLOCKING | Secret echoed / exposed in a `run:` block |
+| **GHA-SEC-006** | BLOCKING | Production deploy without `environment:` protection |
+| **GHA-SEC-007** | BLOCKING | Script injection: `${{ github.event.* }}` in `run:` |
+| **GHA-SEC-008** | BLOCKING | Self-hosted runner on public repo without fork restriction |
+| **GHA-OPS-001** | ADVISORY | No `concurrency` group (overlapping runs) |
+| **GHA-OPS-002** | ADVISORY | Job missing `timeout-minutes` |
+| **GHA-OPS-003** | ADVISORY | No caching for known tool installs |
+| **GHA-OPS-004** | ADVISORY | Matrix without `fail-fast: false` for independent combos |
+| **GHA-OPS-005** | ADVISORY | No CodeQL / Dependabot / dependency review on an active repo |
+| **GHA-OPS-006** | ADVISORY | Duplicated workflow logic not extracted to `workflow_call` |
+| **GHA-OPS-007** | ADVISORY | No `permissions: contents: read` baseline declared |
+| **GHA-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
+
+**Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
+known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
+it. Reason is mandatory (else `GHA-SUP-001`). **Confidence gate:** report only
+findings you are >80% sure are real; consolidate repeats; severity is the rule's,
+don't invent. Evals: [`evals/`](./github-actions/evals/).
+
+---
+
 ## TRIGGER — Decide what to do
 
 1. If the user message names a mode (`review`, `new`, `harden`) → execute that.
@@ -1205,37 +1345,37 @@ Summary: X blocking issue(s), Y advisory issue(s).
 
 ### Blocking issues
 
-1. **Untrusted action without SHA pin** — `uses: actions/checkout@v4` → pin to immutable SHA: `actions/checkout@<sha40>  # v4.2.2`. Tags are mutable.
-2. **`pull_request_target` with checkout of PR head** — RCE risk. Use `pull_request` or never check out untrusted code with elevated permissions.
-3. **`permissions: write-all`** — over-privileged token. Set least-privilege at job or workflow level.
-4. **Static AWS credentials** — `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` in secrets for cloud auth → switch to OIDC via `aws-actions/configure-aws-credentials` with `role-to-assume`.
-5. **Secret in `run:` block** — `echo $SECRET` or `env:` exposed in logs without masking → use job-level `env:` with `secrets.*`, never `echo`.
-6. **Production deploy without environment protection** — `environment: production` missing or no required reviewers → add environment with required reviewers.
-7. **`run:` script injection** — interpolating `${{ github.event.* }}` directly into shell → use an `env:` mapping then reference `$VAR`.
-8. **Self-hosted runner on public repo without restriction** — fork PRs can run arbitrary code on your infra. Use `default: pull_request_target` controls or ephemeral runners only.
+1. **GHA-SEC-001 Untrusted action without SHA pin** — `uses: actions/checkout@v4` → pin to immutable SHA: `actions/checkout@<sha40>  # v4.2.2`. Tags are mutable.
+2. **GHA-SEC-002 `pull_request_target` with checkout of PR head** — RCE risk. Use `pull_request` or never check out untrusted code with elevated permissions.
+3. **GHA-SEC-003 `permissions: write-all`** — over-privileged token. Set least-privilege at job or workflow level.
+4. **GHA-SEC-004 Static AWS credentials** — `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` in secrets for cloud auth → switch to OIDC via `aws-actions/configure-aws-credentials` with `role-to-assume`.
+5. **GHA-SEC-005 Secret in `run:` block** — `echo $SECRET` or `env:` exposed in logs without masking → use job-level `env:` with `secrets.*`, never `echo`.
+6. **GHA-SEC-006 Production deploy without environment protection** — `environment: production` missing or no required reviewers → add environment with required reviewers.
+7. **GHA-SEC-007 `run:` script injection** — interpolating `${{ github.event.* }}` directly into shell → use an `env:` mapping then reference `$VAR`.
+8. **GHA-SEC-008 Self-hosted runner on public repo without restriction** — fork PRs can run arbitrary code on your infra. Use `pull_request_target` controls or ephemeral runners only.
 
 ### Advisory issues
 
-1. Concurrency missing — `concurrency: { group: ${{ github.workflow }}-${{ github.ref }}, cancel-in-progress: true }` to prevent overlapping runs.
-2. No `timeout-minutes` on jobs → add 10–30 min default.
-3. Caching missing for known tool installs (Terraform, npm, pip, Go modules) → use `actions/cache` or tool-specific cache actions.
-4. Matrix without `fail-fast: false` for independent OS/version combinations.
-5. No CodeQL / Dependabot / dependency review configured for an active repo.
-6. Workflow not reusable — repeated 50+ lines across files → extract to `.github/workflows/_reusable-*.yml` with `workflow_call`.
-7. Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
+1. **GHA-OPS-001** Concurrency missing — `concurrency: { group: ${{ github.workflow }}-${{ github.ref }}, cancel-in-progress: true }` to prevent overlapping runs.
+2. **GHA-OPS-002** No `timeout-minutes` on jobs → add 10–30 min default.
+3. **GHA-OPS-003** Caching missing for known tool installs (Terraform, npm, pip, Go modules) → use `actions/cache` or tool-specific cache actions.
+4. **GHA-OPS-004** Matrix without `fail-fast: false` for independent OS/version combinations.
+5. **GHA-OPS-005** No CodeQL / Dependabot / dependency review configured for an active repo.
+6. **GHA-OPS-006** Workflow not reusable — repeated 50+ lines across files → extract to `.github/workflows/_reusable-*.yml` with `workflow_call`.
+7. **GHA-OPS-007** Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
 
 ### Example output
 
 ```
 BLOCKING — Must fix before merge
-[.github/workflows/deploy.yml:14] Action not pinned: uses actions/checkout@v4 → pin to immutable SHA
-[.github/workflows/deploy.yml:31] Static AWS keys: secrets.AWS_ACCESS_KEY_ID → switch to OIDC via aws-actions/configure-aws-credentials with role-to-assume
-[.github/workflows/deploy.yml:52] Production deploy missing environment protection → add environment: production with required reviewers
-[.github/workflows/deploy.yml:67] Script injection risk: ${{ github.event.head_commit.message }} interpolated directly into run: → move to env: mapping and reference $COMMIT_MSG
+[.github/workflows/deploy.yml:14] GHA-SEC-001 Action not pinned: uses actions/checkout@v4 → pin to immutable SHA
+[.github/workflows/deploy.yml:31] GHA-SEC-004 Static AWS keys: secrets.AWS_ACCESS_KEY_ID → switch to OIDC via aws-actions/configure-aws-credentials with role-to-assume
+[.github/workflows/deploy.yml:52] GHA-SEC-006 Production deploy missing environment protection → add environment: production with required reviewers
+[.github/workflows/deploy.yml:67] GHA-SEC-007 Script injection risk: ${{ github.event.head_commit.message }} interpolated directly into run: → move to env: mapping and reference $COMMIT_MSG
 
 ADVISORY — Should fix
-[.github/workflows/deploy.yml:1] No concurrency group → add concurrency to prevent overlapping runs
-[.github/workflows/deploy.yml:8] permissions: not declared → add `permissions: contents: read` baseline
+[.github/workflows/deploy.yml:1] GHA-OPS-001 No concurrency group → add concurrency to prevent overlapping runs
+[.github/workflows/deploy.yml:8] GHA-OPS-007 permissions: not declared → add `permissions: contents: read` baseline
 
 Summary: 4 blocking issue(s), 2 advisory issue(s).
 ```
@@ -1697,6 +1837,46 @@ kubernetes, k8s, eks, helm, values.yaml, chart, pod, deployment, service, ingres
 
 ---
 
+## Principles
+
+When an input is novel and no specific rule below matches, fall back to these:
+
+1. **Secrets never live in values** — reference a Kubernetes Secret or external-secrets; plaintext in `values.yaml` is committed forever.
+2. **Pin the image, federate the identity** — explicit immutable tag set at deploy; IRSA for AWS, never mounted static keys.
+3. **Bound every workload** — requests *and* limits on every container; probes so the scheduler knows truth; ≥2 replicas for staging/prod.
+4. **Least privilege in the pod** — `runAsNonRoot`, no privilege escalation, read-only root FS.
+5. **Strict for prod, relaxed for dev** — `replicaCount: 1` and missing limits are acceptable only in dev.
+
+---
+
+## Rule Catalog
+
+Stable IDs. Severity drives BLOCKING/ADVISORY. IDs are an API — never renumber a
+shipped rule; deprecate and add. Namespaces: `SEC` security, `REL` reliability/HA,
+`STD` team standards, `SUP` suppression. Severities are the **staging/prod** gate;
+in **dev**, `K8S-REL-002` and `K8S-REL-004` relax to ADVISORY.
+
+| ID | Severity | Check |
+|----|----------|-------|
+| **K8S-SEC-001** | BLOCKING | Plaintext secret/password/token/apiKey inline in values |
+| **K8S-SEC-002** | BLOCKING | Static AWS credentials in env instead of IRSA |
+| **K8S-SEC-003** | ADVISORY | `securityContext` missing/incomplete (`runAsNonRoot`, `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem`) |
+| **K8S-REL-001** | BLOCKING | Image tag is `latest`, empty real value, or unset at deploy |
+| **K8S-REL-002** | BLOCKING | Container missing resource `requests` or `limits` |
+| **K8S-REL-003** | ADVISORY | `readinessProbe` or `livenessProbe` missing |
+| **K8S-REL-004** | BLOCKING | `replicaCount < 2` for staging/prod |
+| **K8S-REL-005** | ADVISORY | Memory limit less than memory request |
+| **K8S-STD-001** | ADVISORY | Required labels missing (`app`, `env`, `team`) |
+| **K8S-SUP-001** | ADVISORY | `k8s-skill:ignore` suppression missing a `-- reason` |
+
+**Output:** every finding carries its rule ID. **Suppression:** accept a known risk
+with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor
+it. Reason mandatory (else `K8S-SUP-001`). **Confidence gate:** report only findings
+you are >80% sure are real; consolidate repeats; severity is the rule's (apply the
+dev relaxation above), don't invent. Evals: [`evals/`](./k8s/evals/).
+
+---
+
 ## Step 1 — Determine the action
 
 Read the arguments provided:
@@ -1813,12 +1993,12 @@ serviceAccount:
 ```
 BLOCKING — Must fix before deploy
 ----------------------------------
-[values.yaml:14] Hardcoded secret: db_password has inline value → use secretKeyRef
-[values.yaml:3]  Image tag: tag is set to "latest" → use a specific version tag
+[values.yaml:14] K8S-SEC-001 Hardcoded secret: db_password has inline value → use secretKeyRef
+[values.yaml:3]  K8S-REL-001 Image tag is set to "latest" → use a specific version tag set at deploy
 
 ADVISORY — Should fix
 ----------------------
-[values.yaml:22] Security context: runAsNonRoot not set → add securityContext.runAsNonRoot: true
+[values.yaml:22] K8S-SEC-003 Security context: runAsNonRoot not set → add securityContext.runAsNonRoot: true
 
 Summary: 2 blocking issue(s), 1 advisory issue(s). Fix blocking issues before deploying.
 ```

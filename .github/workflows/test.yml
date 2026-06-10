@@ -31,15 +31,17 @@ jobs:
       - uses: actions/setup-python@v6
         with: { python-version: '3.x' }
       - run: pip install pyyaml
-      - name: Regenerate adapters
-        run: bash scripts/generate.sh
-      - name: Fail if .cursor/rules or AGENTS.md drifted
-        run: |
-          if ! git diff --quiet .cursor/rules AGENTS.md; then
-            echo "::error::Generated adapters are out of sync with skills/. Run 'bash scripts/generate.sh' locally and commit."
-            git --no-pager diff .cursor/rules AGENTS.md
-            exit 1
-          fi
+      - name: Adapters in sync with skills/ (regenerate + fail on drift)
+        run: bash scripts/generate.sh --check
+
+  evals:
+    name: Skill evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate every skill's eval fixtures against its Rule Catalog
+        run: bash scripts/check-evals.sh
 
   shellcheck:
     name: ShellCheck
