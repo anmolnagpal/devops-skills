@@ -83,6 +83,18 @@ Gate: FAILED — 3 blocking. Recommended strategy: blue-green (stateful, first p
 
 > Outputs above are representative. Findings, rule IDs, and `file:line` are real to your repo when you run the skill.
 
+## Why this, not the alternatives
+
+| Instead of… | You get here |
+|---|---|
+| **Copy-pasting the same prompt** into every repo | One versioned source, auto-triggers on file globs, namespaced `/clouddrove:<skill>` — edit once, everyone pulls the update |
+| **A generic skill pack** | Opinionated DevOps depth — real Terraform/EKS/Helm/FinOps/OWASP review and scaffolding, not vibes |
+| **A static linter** (tfsec, checkov, hadolint) | In-context reasoning *and* scaffolding *and* explanation, in your editor. Linters still win on deterministic pattern checks — run both |
+| **Claude-only skills** | One source emits Cursor `.mdc` and Codex `AGENTS.md` too — same review across all three tools |
+| **Prose findings** | Every finding carries a **stable rule ID** shared with the [auditkit](https://github.com/clouddrove-ci/auditkit) audit engine — an inline review finding and a deep-audit finding are the *same* ID, so baselines and dedup carry across both |
+
+**The honest line:** static linters are faster for pure pattern matching, and a deep audit engine (auditkit) is the executor for whole-repo + live-cloud scans. This plugin is the **IDE-time advisory layer** that speaks the same rule-ID language as that engine — review *before* you commit, with findings that line up when the auditor runs later. It's CI-tested (six gates), not just a prompt dump.
+
 ## Quick Start
 
 Multi-tool: works with **Claude Code**, **Cursor**, and **Codex** (same skills, different injection per tool).
