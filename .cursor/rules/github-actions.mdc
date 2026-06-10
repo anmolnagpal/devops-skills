@@ -1,21 +1,8 @@
 ---
-name: github-actions
-description: "GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files."
-metadata:
-  version: 0.3.0
-  author: Anmol Nagpal
-  category: devops
-  updated: 2026-06-09
-paths:
-  - "**/.github/workflows/*.yml"
-  - "**/.github/workflows/*.yaml"
-  - "**/.github/actions/**/*.yml"
-  - "**/.github/actions/**/*.yaml"
-allowed-tools:
-  - Glob
-  - Read
+description: GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files.
+globs: **/.github/workflows/*.yml, **/.github/workflows/*.yaml, **/.github/actions/**/*.yml, **/.github/actions/**/*.yaml
+alwaysApply: false
 ---
-
 # GitHub Actions Skill
 
 Review GitHub Actions workflows for security and correctness, or scaffold new workflows for Terraform, Helm/EKS, container builds, and release automation — enforcing team standards for least-privilege tokens, OIDC, and production gates.

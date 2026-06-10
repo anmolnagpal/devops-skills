@@ -1,0 +1,12 @@
+# Fixture: compose-level BLOCKING + ADVISORY violations. Not a real stack.
+services:
+  app:
+    build: .
+    privileged: true
+    environment:
+      - DATABASE_PASSWORD=hunter2
+      - STRIPE_SECRET_KEY=PLACEHOLDER_FAKE_NOT_A_SECRET
+    depends_on:
+      - db
+  db:
+    image: postgres:16

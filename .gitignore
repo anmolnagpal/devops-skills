@@ -23,3 +23,10 @@ CLAUDE.local.md
 .vscode/
 .idea/
 *.swp
+
+# Cursor adapters are generated (scripts/generate.sh) and MUST be committed.
+# Re-include them here so a global ~/.gitignore that ignores `.cursor/` cannot
+# drop them. The directory must be re-included before the files within it.
+!.cursor/
+!.cursor/rules/
+!.cursor/rules/*.mdc
