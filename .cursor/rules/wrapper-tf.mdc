@@ -26,10 +26,10 @@ clouddrove, wrapper, _modules, terraform, tf, aws, scaffold, labels, name_prefix
 
 | Request | Output |
 |---------|--------|
-| `/clouddrove-tf new <module>` | `_modules/<name>/` scaffold: `main.tf`, `variables.tf`, `outputs.tf` |
-| `/clouddrove-tf ci` | `.github/workflows/terraform.yml` + `drift.yml` |
-| `/clouddrove-tf review` | Blocking / advisory finding list |
-| `/clouddrove-tf controls` | SOC2 + GDPR control coverage table |
+| `/clouddrove:wrapper-tf new <module>` | `_modules/<name>/` scaffold: `main.tf`, `variables.tf`, `outputs.tf` |
+| `/clouddrove:wrapper-tf ci` | `.github/workflows/terraform.yml` + `drift.yml` |
+| `/clouddrove:wrapper-tf review` | Blocking / advisory finding list |
+| `/clouddrove:wrapper-tf controls` | SOC2 + GDPR control coverage table |
 
 ---
 
@@ -75,13 +75,13 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 | **SEC-NET-002** | BLOCKING | `publicly_accessible = true` on Aurora |
 | **SEC-NET-001** | ADVISORY | EKS public endpoint enabled in prod |
 | **OBS-MON-001** | ADVISORY | Aurora `performance_insights_enabled = false` in prod |
-| **META-SUP-001** | ADVISORY | `clouddrove-tf:ignore` suppression missing a `-- reason` |
+| **META-SUP-001** | ADVISORY | `wrapper-tf:ignore` suppression missing a `-- reason` |
 
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
-risk with `# clouddrove-tf:ignore <RULE-ID> -- <reason>` on the line above; honor it
+risk with `# wrapper-tf:ignore <RULE-ID> -- <reason>` on the line above; honor it
 (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only findings you
 are >80% sure are real; consolidate repeats; severity is the rule's, don't invent.
-Evals: [`evals/`](./clouddrove-tf/evals/).
+Evals: [`evals/`](./clouddrove:wrapper-tf/evals/).
 
 **Reused from auditkit:** `TF-MOD-002`, `TF-VAR-003`, `TF-OUT-001/002`, `TF-STATE-001/002`, `SEC-ENC-001/002/003`, `SEC-NET-001/002`, `OBS-MON-001`, `META-SUP-001`.
 **Skill-local (`CDTF-*`):** the wrapper-pattern and CloudDrove-module-gotcha rules above.

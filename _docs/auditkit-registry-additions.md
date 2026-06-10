@@ -135,7 +135,7 @@ shared registry. No registry debt remaining.
 
 ## CloudDrove wrapper pattern (`CDTF-*`) — intentionally skill-local
 
-The `/clouddrove-tf` skill reuses shared IDs for generic checks (`TF-*`, `SEC-ENC-*`,
+The `/clouddrove:wrapper-tf` skill reuses shared IDs for generic checks (`TF-*`, `SEC-ENC-*`,
 `SEC-NET-*`, `OBS-MON-001`, `META-SUP-001`) but keeps its **wrapper-pattern** rules in
 a skill-local `CDTF-*` namespace: `CDTF-WRAP-001..003`, `CDTF-NAME-001/002`,
 `CDTF-MOD-001..006`, `CDTF-STATE-001`.
