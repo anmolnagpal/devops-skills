@@ -68,6 +68,20 @@ The `/tf` skill reuses auditkit's existing `TF-*` series (`TF-VAR-001/002`,
 - `TF-OUT-001` — `output` block missing `description`
 - `TF-OUT-002` — output exposing a secret not marked `sensitive = true`
 
+## Repo Hygiene (`REPO-*`, `REPO-DEP-*`) — for `/github`
+
+The `/github` AUDIT mode reuses auditkit's `REPO-BP-001/002`, `REPO-PR-001/002`,
+`REPO-CODE-001`, plus `SEC-SEC-005`, `CICD-PERM-001`, `CICD-FLOW-002`, `CICD-SCAN-001`,
+`META-SUP-001`. These checks have no existing entry — add in a follow-up auditkit PR:
+
+- `REPO-BP-003` — branch deletion allowed on default branch
+- `REPO-BP-004` — `delete_branch_on_merge` off (stale branches)
+- `REPO-PR-003` — fork PRs run workflows without approval (outside collaborators)
+- `REPO-PR-004` — squash-merge not enforced (mixed merge strategies)
+- `REPO-DOC-003` — no PR template / issue templates
+- `REPO-DEP-001` — Dependabot security updates disabled
+- `REPO-DEP-002` — no `dependabot.yml` version-update config
+
 ## Mappings to review (debatable taxonomy)
 
 Flag for human review when applying to auditkit — these placements are judgment calls:
