@@ -1,6 +1,6 @@
 ---
 name: docker
-description: "Docker operations, Dockerfile best practices, Compose, image optimization, and registry workflows. Use when user says 'review my Dockerfile', 'optimize my image', 'reduce image size', 'container won't start', 'set up compose', 'multi-stage build', or when working in Dockerfile, docker-compose*.yml, or .dockerignore files."
+description: "(clouddrove) Docker operations, Dockerfile best practices, Compose, image optimization, and registry workflows. Use when user says 'review my Dockerfile', 'optimize my image', 'reduce image size', 'container won't start', 'set up compose', 'multi-stage build', or when working in Dockerfile, docker-compose*.yml, or .dockerignore files."
 metadata:
   version: 0.3.0
   author: Anmol Nagpal

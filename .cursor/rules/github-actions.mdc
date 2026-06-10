@@ -1,5 +1,5 @@
 ---
-description: GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files.
+description: (clouddrove) GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files.
 globs: **/.github/workflows/*.yml, **/.github/workflows/*.yaml, **/.github/actions/**/*.yml, **/.github/actions/**/*.yaml
 alwaysApply: false
 ---

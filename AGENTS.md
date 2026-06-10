@@ -6,7 +6,7 @@ Codex (and other AGENTS-aware tools) read this file for skill guidance.
 
 ## /adr
 
-  - **Use when**: Capture architectural decisions as structured ADRs (Architecture Decision Records). Use when user says 'record this decision', 'ADR this', 'why did we choose X', 'document this trade-off', 'we decided to...', or when a significant choice is made between alternatives (framework, database, pattern, API design, infra approach).
+  - **Use when**: (clouddrove) Capture architectural decisions as structured ADRs (Architecture Decision Records). Use when user says 'record this decision', 'ADR this', 'why did we choose X', 'document this trade-off', 'we decided to...', or when a significant choice is made between alternatives (framework, database, pattern, API design, infra approach).
   - **Auto-load for**: `**/docs/adr/*.md`, `**/docs/adr/**/*.md`
 
 # ADR Skill
@@ -121,7 +121,7 @@ Never delete or rewrite a past ADR's decision — superseding preserves the hist
 
 ## /ci
 
-  - **Use when**: GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', or when working in .gitlab-ci.yml files.
+  - **Use when**: (clouddrove) GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', or when working in .gitlab-ci.yml files.
   - **Auto-load for**: `**/.gitlab-ci.yml`, `**/.gitlab-ci.yaml`, `**/gitlab-ci*.yml`
 
 # GitLab CI/CD Skill
@@ -446,7 +446,7 @@ Next steps:
 
 ## /clouddrove-tf
 
-  - **Use when**: Team standard for AWS Terraform repos built on the CloudDrove wrapper-module pattern. Use when working in a repo with an `_modules/` directory that wraps `clouddrove/*/aws` modules, scaffolding a new wrapper module, generating Terraform GitHub Actions CI, reviewing wrapper-pattern PRs, or mapping the pattern to SOC2/GDPR controls. Supersedes /tf on CloudDrove repos.
+  - **Use when**: (clouddrove) Team standard for AWS Terraform repos built on the CloudDrove wrapper-module pattern. Use when working in a repo with an `_modules/` directory that wraps `clouddrove/*/aws` modules, scaffolding a new wrapper module, generating Terraform GitHub Actions CI, reviewing wrapper-pattern PRs, or mapping the pattern to SOC2/GDPR controls. Supersedes /tf on CloudDrove repos.
   - **Auto-load for**: `_modules/**/*.tf`, `environments/**/*.tf`, `bootstrap/**/*.tf`, `.github/workflows/terraform.yml`, `.github/workflows/drift.yml`
 
 # CloudDrove Terraform Skill
@@ -845,7 +845,7 @@ Mark `❌ MISSING` for any control where the responsible module is absent from `
 
 ## /deploy
 
-  - **Use when**: Deployment strategy, production-readiness gating, and rollback planning for AWS/EKS services. Use when user says 'how should I deploy this', 'blue-green or canary', 'are we ready to ship', 'production readiness', 'plan a rollback', 'pre-deploy check', or before a first production release. Pairs with /k8s, /ci, /github-actions, /tf which own the per-artifact checks.
+  - **Use when**: (clouddrove) Deployment strategy, production-readiness gating, and rollback planning for AWS/EKS services. Use when user says 'how should I deploy this', 'blue-green or canary', 'are we ready to ship', 'production readiness', 'plan a rollback', 'pre-deploy check', or before a first production release. Pairs with /k8s, /ci, /github-actions, /tf which own the per-artifact checks.
 
 # Deployment Skill
 
@@ -968,7 +968,7 @@ explicit sign-off and usually a forward-fix plan, not a rollback.
 
 ## /docker
 
-  - **Use when**: Docker operations, Dockerfile best practices, Compose, image optimization, and registry workflows. Use when user says 'review my Dockerfile', 'optimize my image', 'reduce image size', 'container won't start', 'set up compose', 'multi-stage build', or when working in Dockerfile, docker-compose*.yml, or .dockerignore files.
+  - **Use when**: (clouddrove) Docker operations, Dockerfile best practices, Compose, image optimization, and registry workflows. Use when user says 'review my Dockerfile', 'optimize my image', 'reduce image size', 'container won't start', 'set up compose', 'multi-stage build', or when working in Dockerfile, docker-compose*.yml, or .dockerignore files.
   - **Auto-load for**: `**/Dockerfile`, `**/Dockerfile.*`, `**/docker-compose*.yml`, `**/docker-compose*.yaml`, `**/compose*.yml`, `**/compose*.yaml`, `**/.dockerignore`
 
 # Docker Operations & Best Practices
@@ -1388,7 +1388,7 @@ Load these references as needed based on the task:
 
 ## /finops
 
-  - **Use when**: AWS cost optimization — waste detection, right-sizing, Savings Plans, RIs, EKS cost, multi-account governance. Use when user says 'reduce AWS bill', 'find waste', 'right-size this', 'should I buy SP or RI', 'gp2 vs gp3', 'EKS is expensive', 'NAT gateway cost', or asks about AWS cost optimization.
+  - **Use when**: (clouddrove) AWS cost optimization — waste detection, right-sizing, Savings Plans, RIs, EKS cost, multi-account governance. Use when user says 'reduce AWS bill', 'find waste', 'right-size this', 'should I buy SP or RI', 'gp2 vs gp3', 'EKS is expensive', 'NAT gateway cost', or asks about AWS cost optimization.
 
 # AWS FinOps — Cost Optimization & Reservations
 
@@ -1668,7 +1668,7 @@ Load these as the task requires:
 
 ## /github-actions
 
-  - **Use when**: GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files.
+  - **Use when**: (clouddrove) GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files.
   - **Auto-load for**: `**/.github/workflows/*.yml`, `**/.github/workflows/*.yaml`, `**/.github/actions/**/*.yml`, `**/.github/actions/**/*.yaml`
 
 # GitHub Actions Skill
@@ -2009,7 +2009,7 @@ Output as a unified diff or per-file edit list, never silently rewrite.
 
 ## /github
 
-  - **Use when**: GitHub repository operations — PRs, issues, releases, branch protection, CODEOWNERS, security settings. Use when user says 'review my PR', 'create a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', or asks about GitHub repo configuration.
+  - **Use when**: (clouddrove) GitHub repository operations — PRs, issues, releases, branch protection, CODEOWNERS, security settings. Use when user says 'review my PR', 'create a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', or asks about GitHub repo configuration.
   - **Auto-load for**: `**/.github/CODEOWNERS`, `**/CODEOWNERS`, `**/.github/pull_request_template.md`, `**/.github/ISSUE_TEMPLATE/**`, `**/.github/dependabot.yml`
 
 # GitHub Skill
@@ -2308,7 +2308,7 @@ Confirm with the user before tagging. Releases are visible to anyone with repo a
 
 ## /k8s
 
-  - **Use when**: Kubernetes and Helm review and scaffolding for EKS workloads. Use when user says 'review my helm values', 'before I deploy', 'scaffold a new service', 'check values.yaml', or when working in values.yaml, Chart.yaml, or Helm template files.
+  - **Use when**: (clouddrove) Kubernetes and Helm review and scaffolding for EKS workloads. Use when user says 'review my helm values', 'before I deploy', 'scaffold a new service', 'check values.yaml', or when working in values.yaml, Chart.yaml, or Helm template files.
   - **Auto-load for**: `**/values*.yaml`, `**/Chart.yaml`, `**/templates/*.yaml`, `**/templates/*.yml`
 
 # Kubernetes / EKS Skill
@@ -2631,7 +2631,7 @@ Next steps:
 
 ## /owasp
 
-  - **Use when**: Security review against OWASP Top 10:2025, ASVS 5.0, and Agentic AI risks. Use when user says 'review for security', 'is this secure', 'check for vulnerabilities', 'review auth/authorization', 'check input handling', or when writing cryptography, session management, or AI agent code.
+  - **Use when**: (clouddrove) Security review against OWASP Top 10:2025, ASVS 5.0, and Agentic AI risks. Use when user says 'review for security', 'is this secure', 'check for vulnerabilities', 'review auth/authorization', 'check input handling', or when writing cryptography, session management, or AI agent code.
 
 # OWASP Security Skill
 
@@ -2759,7 +2759,7 @@ For agentic AI security + ASVS → read `owasp/agentic.md`
 
 ## /skill-creator
 
-  - **Use when**: Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
+  - **Use when**: (clouddrove) Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
 
 # Skill Creator
 
@@ -3245,7 +3245,7 @@ Good luck!
 
 ## /tf
 
-  - **Use when**: Generic Terraform review, scaffolding, and version upgrades for AWS infrastructure using the terraform-aws-modules ecosystem. Use when user says 'review my terraform', 'before I raise an MR', 'scaffold a lambda/rds/s3/eks/vpc', 'check my .tf files', 'upgrade provider', or when working in .tf or .tfvars files. NOTE: if the repo has an `_modules/` directory wrapping `clouddrove/*/aws` modules, use /clouddrove-tf instead — the two patterns conflict.
+  - **Use when**: (clouddrove) Generic Terraform review, scaffolding, and version upgrades for AWS infrastructure using the terraform-aws-modules ecosystem. Use when user says 'review my terraform', 'before I raise an MR', 'scaffold a lambda/rds/s3/eks/vpc', 'check my .tf files', 'upgrade provider', or when working in .tf or .tfvars files. NOTE: if the repo has an `_modules/` directory wrapping `clouddrove/*/aws` modules, use /clouddrove-tf instead — the two patterns conflict.
   - **Auto-load for**: `**/*.tf`, `**/*.tfvars`, `**/*.tfvars.example`
 
 # Terraform Skill
