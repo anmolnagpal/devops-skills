@@ -299,6 +299,61 @@ clouddrove, wrapper, _modules, terraform, tf, aws, scaffold, labels, name_prefix
 
 ---
 
+## Rule Catalog
+
+Findings carry stable rule IDs. Two sources:
+
+- **Shared registry** — generic Terraform and security checks reuse auditkit's
+  canonical IDs (`TF-*`, `SEC-*`, `OBS-*`, `META-*`), so a finding here matches what
+  auditkit's `terraform-auditor` reports on the same repo (baselines/waivers/dedup
+  carry across both).
+- **`CDTF-*` — skill-local** — the CloudDrove wrapper-module pattern (labels module,
+  `name_prefix`, `label_order`, upstream-module gotchas) is org-pattern-specific, not
+  a general cloud finding. These IDs live with this skill, **not** in auditkit's
+  registry (they'd never fire on a non-wrapper repo). Documented in
+  `_docs/auditkit-registry-additions.md` as an optional future auditkit domain.
+
+IDs are an API — never renumber a shipped rule; deprecate and add.
+
+| ID | Severity | Check |
+|----|----------|-------|
+| **CDTF-WRAP-001** | BLOCKING | `environments/*` calls `source = "clouddrove/*/aws"` directly, not `../../_modules/<name>` |
+| **CDTF-WRAP-002** | BLOCKING | `_modules/<name>/main.tf` missing the `module "labels"` call |
+| **CDTF-WRAP-003** | BLOCKING | Module computes its own `name_prefix` instead of `module.labels.name_prefix` |
+| **CDTF-NAME-001** | BLOCKING | Resource name not derived from `module.labels.name_prefix` |
+| **CDTF-NAME-002** | BLOCKING | CloudDrove module call missing `label_order = ["name"]` (double-env-suffix bug) |
+| **CDTF-MOD-001** | BLOCKING | `waf_scop` upstream typo (silently no-ops) |
+| **CDTF-MOD-002** | BLOCKING | `web_acl_association = true` inside WAF module (belongs on ALB) |
+| **CDTF-MOD-003** | BLOCKING | `module "acm"` hardcoded `zone_id` instead of `module.dns.zone_id` |
+| **CDTF-MOD-004** | BLOCKING | `subject_alternative_names` on `module "dns"` (SANs belong on `acm`) |
+| **CDTF-MOD-005** | ADVISORY | `allow_default_action = true` on WAF (validate first) |
+| **CDTF-MOD-006** | ADVISORY | `enable_dns_validation = false` not commented (correct, but explain) |
+| **CDTF-STATE-001** | BLOCKING | Same backend `key` across environments (each env needs a unique key) |
+| **TF-MOD-002** | BLOCKING | CloudDrove module call without a pinned `version` (git ref/branch/omitted) |
+| **TF-VAR-003** | BLOCKING | `variable` block missing `description` (or explicit `type` — type-only is advisory) |
+| **TF-OUT-001** | BLOCKING | `output` block missing `description` |
+| **TF-OUT-002** | BLOCKING | Secret in an output not marked `sensitive = true` |
+| **TF-STATE-001** | BLOCKING | No `backend "s3"` (skip for module-only repos) |
+| **TF-STATE-002** | BLOCKING | Backend without `dynamodb_table` state locking |
+| **SEC-ENC-001** | BLOCKING | KMS/encryption-at-rest missing (Aurora, ElastiCache, EKS etcd, S3, Secrets Manager) |
+| **SEC-ENC-002** | BLOCKING | In-transit encryption disabled (ElastiCache transit, ALB TLS / HTTP→HTTPS redirect) |
+| **SEC-ENC-003** | BLOCKING | WAF not associated with the public ALB (`waf_acl_arn` not passed) |
+| **SEC-NET-002** | BLOCKING | `publicly_accessible = true` on Aurora |
+| **SEC-NET-001** | ADVISORY | EKS public endpoint enabled in prod |
+| **OBS-MON-001** | ADVISORY | Aurora `performance_insights_enabled = false` in prod |
+| **META-SUP-001** | ADVISORY | `clouddrove-tf:ignore` suppression missing a `-- reason` |
+
+**Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
+risk with `# clouddrove-tf:ignore <RULE-ID> -- <reason>` on the line above; honor it
+(reason mandatory, else `META-SUP-001`). **Confidence gate:** report only findings you
+are >80% sure are real; consolidate repeats; severity is the rule's, don't invent.
+Evals: [`evals/`](./clouddrove-tf/evals/).
+
+**Reused from auditkit:** `TF-MOD-002`, `TF-VAR-003`, `TF-OUT-001/002`, `TF-STATE-001/002`, `SEC-ENC-001/002/003`, `SEC-NET-001/002`, `OBS-MON-001`, `META-SUP-001`.
+**Skill-local (`CDTF-*`):** the wrapper-pattern and CloudDrove-module-gotcha rules above.
+
+---
+
 ## Step 1 — Determine the action
 
 Read the arguments:
@@ -535,12 +590,12 @@ Issues filed: [terraform-aws-vpc#105](https://github.com/clouddrove/terraform-aw
 ```
 BLOCKING — Must fix before merge
 ---------------------------------
-[_modules/waf/main.tf:45]  WAF not associated with ALB — pass waf_acl_arn to alb module
-[_modules/aurora/main.tf:12]  Missing kms_key_id on Aurora cluster
+[_modules/waf/main.tf:45]  SEC-ENC-003 WAF not associated with ALB — pass waf_acl_arn to alb module
+[_modules/aurora/main.tf:12]  SEC-ENC-001 Missing kms_key_id on Aurora cluster
 
 ADVISORY — Should fix
 ----------------------
-[environments/prod/main.tf:88]  EKS public endpoint enabled in prod
+[environments/prod/main.tf:88]  SEC-NET-001 EKS public endpoint enabled in prod
 
 Summary: 2 blocking, 1 advisory. Fix blocking before raising PR.
 ```
@@ -2731,6 +2786,55 @@ terraform, tf, hcl, aws, infrastructure, iac, module, provider, variables, outpu
 
 ---
 
+## Principles
+
+When an input is novel and no specific rule below matches, fall back to these:
+
+1. **Nothing environment-specific in code** — regions, account IDs, ARNs, env names, CIDRs live in variables, never literals. (Exception: `backend` blocks, which cannot interpolate variables.)
+2. **State is shared and locked** — remote backend, always; with state locking.
+3. **Pin everything** — `required_version`, providers, and module sources all pinned with `~>`; never a bare `>=`, git ref, or branch.
+4. **Secrets are sensitive** — never hardcoded; variables and outputs that carry them set `sensitive = true`.
+5. **Every resource is tagged and self-describing** — required tags via a `locals` block; every variable and output has a `description`.
+
+---
+
+## Rule Catalog
+
+IDs come from auditkit's canonical registry (`.claude/rules/rule-ids.md` in
+clouddrove-ci/auditkit) so this inline skill and auditkit's `terraform-auditor`
+share one findings vocabulary — a finding here carries the same ID auditkit reports,
+and a baseline/waiver written once applies in both. IDs are an API: never renumber a
+shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under the table.
+
+| ID | Severity | Check |
+|----|----------|-------|
+| **TF-VAR-001** | BLOCKING | Hardcoded secret/password/token/key in a default or resource |
+| **TF-VAR-002** | BLOCKING | Variable holding a secret not marked `sensitive = true` |
+| **TF-VAR-003** | BLOCKING | `variable` block missing `description` or explicit `type` |
+| **TF-VAR-004** | BLOCKING | Hardcoded env-specific value (region, account ID, ARN, env name, CIDR/IP) outside a `backend` block |
+| **TF-OUT-001** | BLOCKING | `output` block missing `description` |
+| **TF-OUT-002** | BLOCKING | Output exposing a secret not marked `sensitive = true` |
+| **TF-PROV-001** | BLOCKING | Provider version unpinned or `>=` (use `~>`) |
+| **TF-PROV-002** | BLOCKING | No `terraform{}` block / `required_version` / `required_providers` |
+| **TF-STATE-001** | BLOCKING | No remote backend (local state in a shared repo) |
+| **TF-STATE-002** | ADVISORY | Remote backend without state locking (`dynamodb_table`) |
+| **TF-RES-001** | BLOCKING | Missing required tags (`Name`, `Environment`, `Team`, `ManagedBy`) |
+| **TF-MOD-001** | ADVISORY | Raw AWS resource where a `terraform-aws-modules` module fits |
+| **TF-MOD-002** | BLOCKING | Module `source` without a pinned `version` (git ref/branch/omitted) |
+| **TF-QUAL-001** | ADVISORY | Repetition: no `locals` block for common tags/values |
+| **META-SUP-001** | ADVISORY | `tf-skill:ignore` suppression missing a `-- reason` |
+
+**Reused from auditkit:** `TF-VAR-001`, `TF-VAR-002`, `TF-PROV-001/002`, `TF-STATE-001/002`, `TF-RES-001`, `TF-MOD-001/002`, `TF-QUAL-001`, `META-SUP-001`.
+**New to the registry** (pending a follow-up auditkit PR): `TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`.
+
+**Output:** every finding carries its rule ID, in the format below. **Suppression:**
+accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
+honor it (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only
+findings you are >80% sure are real; consolidate repeats; severity is the rule's,
+don't invent. Evals: [`evals/`](./tf/evals/).
+
+---
+
 ## Step 1 — Determine the action
 
 Read the arguments provided:
@@ -2828,12 +2932,12 @@ Always pin module versions with `version = "~> X.Y"` — never use a git ref, br
 ```
 BLOCKING — Must fix before MR
 ------------------------------
-[main.tf:12] Hardcoded value: region "eu-west-1" is hardcoded → move to a variable
-[outputs.tf:5] Missing description on output "db_endpoint"
+[main.tf:12] TF-VAR-004 Hardcoded region "eu-west-1" → move to a variable
+[outputs.tf:5] TF-OUT-001 Output "db_endpoint" missing description → add description
 
 ADVISORY — Should fix
 ----------------------
-[main.tf:8] Raw aws_s3_bucket used → consider terraform-aws-modules/s3-bucket/aws
+[main.tf:8] TF-MOD-001 Raw aws_s3_bucket used → consider terraform-aws-modules/s3-bucket/aws
 
 Summary: 2 blocking issue(s), 1 advisory issue(s). Fix blocking issues before raising MR.
 ```

@@ -57,6 +57,17 @@ Reused: `SEC-SEC-001`, `SEC-IAM-002`, `CICD-DOCK-001` (mutable image tag),
 
 - `META-SUP-001` — inline suppression (`<skill>:ignore <ID>`) missing a `-- reason`
 
+## Terraform (`TF-*`) — for `/tf`
+
+The `/tf` skill reuses auditkit's existing `TF-*` series (`TF-VAR-001/002`,
+`TF-PROV-001/002`, `TF-STATE-001/002`, `TF-RES-001`, `TF-MOD-001/002`,
+`TF-QUAL-001`). Four checks had no existing entry, added in auditkit#9:
+
+- `TF-VAR-003` — `variable` block missing `description` or explicit `type`
+- `TF-VAR-004` — hardcoded env-specific value (region/account/ARN/env/CIDR) outside a `backend` block
+- `TF-OUT-001` — `output` block missing `description`
+- `TF-OUT-002` — output exposing a secret not marked `sensitive = true`
+
 ## Mappings to review (debatable taxonomy)
 
 Flag for human review when applying to auditkit — these placements are judgment calls:
@@ -67,3 +78,26 @@ Flag for human review when applying to auditkit — these placements are judgmen
   though it's a correctness bug more than a cost issue).
 - GHA "no CodeQL/Dependabot/dep-review" → `CICD-SCAN-001` (SAST); could split into
   `CICD-SCAN-002` (dependency scanning) for the Dependabot half.
+
+## Status
+
+- **Batch 1** (CICD-DOCK/SEC/OPS/PERM, SEC-K8S, ARCH, COST-K8S, META) — merged in
+  clouddrove-ci/auditkit#8.
+- **Batch 2** (`TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`, for `/tf`) —
+  merged in clouddrove-ci/auditkit#9.
+
+All IDs emitted by `/docker`, `/github-actions`, `/k8s`, and `/tf` now exist in the
+shared registry. No registry debt remaining.
+
+## CloudDrove wrapper pattern (`CDTF-*`) — intentionally skill-local
+
+The `/clouddrove-tf` skill reuses shared IDs for generic checks (`TF-*`, `SEC-ENC-*`,
+`SEC-NET-*`, `OBS-MON-001`, `META-SUP-001`) but keeps its **wrapper-pattern** rules in
+a skill-local `CDTF-*` namespace: `CDTF-WRAP-001..003`, `CDTF-NAME-001/002`,
+`CDTF-MOD-001..006`, `CDTF-STATE-001`.
+
+These are **deliberately excluded from auditkit's registry** — they only fire on repos
+using the CloudDrove `_modules/` wrapper pattern (labels module, `name_prefix`,
+`label_order`, upstream-module gotchas), so adding them to the shared registry would
+pollute it with rules that never match a normal repo. If auditkit grows a
+CloudDrove-pattern audit mode, promote `CDTF-*` into a scoped registry domain then.
