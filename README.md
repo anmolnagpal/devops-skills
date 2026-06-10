@@ -11,7 +11,7 @@
 ## What you get
 
 - **10 skills** that auto-trigger on file globs and answer with structured review output
-  (`/tf`, `/k8s`, `/ci`, `/github-actions`, `/github`, `/docker`, `/finops`, `/owasp-security`, `/clouddrove-tf`, `/skill-creator`)
+  (`/tf`, `/k8s`, `/ci`, `/github-actions`, `/github`, `/docker`, `/finops`, `/owasp-security`, `/clouddrove-tf`, `/deploy`, `/adr`, `/skill-creator`)
 - **Single source** in `skills/*.md` — a generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
 - **One installer** with flags — `--claude` / `--cursor` / `--codex` / `--all`, global or per-project scope
 - **Curated Claude plugin set** — Terraform code/module generation (HashiCorp), claude-mem, superpowers, caveman, engineering-workflow-skills
@@ -87,6 +87,8 @@ Single source: `skills/*.md`. Adapters generated per tool by `scripts/generate.s
 | `skills/finops.md` | `/finops` | `finops.mdc` | manual |
 | `skills/owasp.md` | `/owasp-security` | `owasp.mdc` | manual |
 | `skills/clouddrove-tf.md` | `/clouddrove-tf` | `clouddrove-tf.mdc` | `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` |
+| `skills/deploy.md` | `/deploy` | `deploy.mdc` | manual |
+| `skills/adr.md` | `/adr` | `adr.mdc` | `**/docs/adr/*.md` |
 | `skills/skill-creator.md` | `/skill-creator` | `skill-creator.mdc` | manual |
 
 All 10 are also injected into `AGENTS.md` for Codex.
@@ -110,6 +112,8 @@ In Claude Code: invoke with `/skill-name`. In Cursor: rules auto-attach via `glo
 | `/finops` | AWS cost: waste detection, right-sizing, Savings Plans/RIs, EKS cost |
 | `/owasp-security` | Security review against OWASP Top 10:2025, ASVS 5.0, Agentic AI risks |
 | `/clouddrove-tf` | Team standard for AWS Terraform repos on the CloudDrove wrapper pattern: scaffold `_modules/<name>/`, generate Terraform GitHub Actions CI, review against the wrapper pattern, map to SOC2/GDPR controls. Supersedes `/tf` on these repos. |
+| `/deploy` | Deployment strategy (rolling/blue-green/canary), production-readiness gate (reuses existing rule IDs), and rollback playbook for AWS/EKS |
+| `/adr` | Capture architectural decisions as structured ADRs under `docs/adr/` |
 | `/skill-creator` | Build, test, and iterate new skills |
 
 ---
