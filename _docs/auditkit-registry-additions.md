@@ -97,6 +97,21 @@ a follow-up auditkit PR:
 - `CICD-HELM-003` — `helm` command without an explicit `--namespace`
 - `CICD-HELM-004` — Helm deploy image tag hardcoded instead of a variable
 
+## Cost (`COST-*`) — for `/finops`
+
+The `/finops` skill reuses auditkit's rich `COST-*` and `COST-LIVE-*` series. Three
+levers have no existing entry — add in a follow-up auditkit PR:
+
+- `COST-COMP-004` — non-Graviton compute where ARM is supported
+- `COST-STOR-003` — `gp2` EBS not migrated to `gp3`
+- `COST-DB-002` — Aurora not I/O-Optimized when I/O-heavy
+
+## OWASP (`OWASP-*`, `ASVS-*`, `ASI-*`) — for `/owasp-security` — no additions
+
+The `/owasp-security` skill uses framework control IDs **directly** as `rule_id`
+(`OWASP-A01`…`A10`, `ASVS-x.y.z`, `ASI-*`), matching auditkit's compliance convention
+(`SOC2-CC6.1`, `CIS-1.4`). No registry additions needed — the framework is the registry.
+
 ## Mappings to review (debatable taxonomy)
 
 Flag for human review when applying to auditkit — these placements are judgment calls:

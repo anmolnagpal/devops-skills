@@ -1140,6 +1140,43 @@ This skill covers AWS cost optimization: identifying waste, right-sizing workloa
 
 ---
 
+## Rule Catalog
+
+Cost findings carry stable IDs from auditkit's `COST-*` registry so an audit run here
+and auditkit's `cost-analyzer` / `cost-live` agents speak one vocabulary. **Severity is
+the savings magnitude** (HIGH / MED / LOW $-impact), not BLOCKING/ADVISORY — these are
+opportunities, ranked by impact, never merge-blockers. IDs are an API: never renumber.
+
+| ID | Lever |
+|----|-------|
+| **COST-COMP-001** | Oversized / over-provisioned compute (right-size via Compute Optimizer) |
+| **COST-COMP-002** | No autoscaling on variable workloads |
+| **COST-COMP-003** | Non-prod running 24/7 (schedule off-hours; Spot for batch/CI) |
+| **COST-COMP-004** | Non-Graviton where ARM is supported (~20% cheaper) |
+| **COST-STOR-001** | No S3 lifecycle / Intelligent-Tiering on large buckets |
+| **COST-STOR-002** | Orphaned EBS volumes / old snapshots / unattached ENIs |
+| **COST-STOR-003** | `gp2` EBS not migrated to `gp3` (cheaper + faster) |
+| **COST-DB-001** | RDS Multi-AZ in non-prod |
+| **COST-DB-002** | Aurora not I/O-Optimized when I/O > ~25% of cost |
+| **COST-NET-001** | NAT Gateway data-processing fees (use VPC endpoints; collapse per-AZ NAT) |
+| **COST-NET-002** | Idle Elastic IPs |
+| **COST-TAG-001** | Untagged spend (no cost-allocation tags) |
+| **COST-LIVE-RESERVE-001** | Savings Plan / RI / Reserved-Node coverage gap on steady-state |
+| **COST-LIVE-RIGHTSIZE-001** | Optimizer-confirmed over-provisioned compute |
+| **COST-LIVE-IDLE-001** | Idle/orphaned resource with live spend (idle ELB, stopped EC2 paying EBS) |
+| **COST-LIVE-ANOMALY-001** | Cost spike / anomaly |
+| **COST-LIVE-VISIBILITY-001** | Cost tooling disabled (Compute Optimizer / Storage Lens / CUR off) |
+
+**Reused from auditkit:** all `COST-*` and `COST-LIVE-*` above except the three below.
+**New to the registry** (pending a follow-up auditkit PR): `COST-COMP-004` (Graviton),
+`COST-STOR-003` (gp2→gp3), `COST-DB-002` (Aurora I/O-Optimized).
+
+**No `evals/`:** findings come from **live** AWS billing/optimizer data (Cost Explorer,
+CUR, Compute Optimizer), not static files, so the fixture-based eval harness does not
+apply. Tag every recommendation with its rule ID and $-impact.
+
+---
+
 ## Where the Money Usually Goes
 
 In most AWS accounts, the top cost drivers — in order — are:
@@ -2315,6 +2352,42 @@ security, owasp, vulnerability, injection, xss, csrf, auth, authentication, auth
 - `owasp/secure-patterns.md` — Safe vs unsafe code patterns (SQL, command injection, auth, error handling)
 - `owasp/agentic.md` — OWASP Agentic AI Security (ASI 2026) + ASVS 5.0 requirements
 - `owasp/languages.md` — Language-specific security quirks for 20+ languages
+
+---
+
+## Rule Catalog
+
+Findings carry a stable rule ID = the **OWASP Top 10:2025 category code** used
+directly (`OWASP-A01` … `OWASP-A10`). This follows auditkit's compliance convention
+(framework control IDs used verbatim as `rule_id`, like `SOC2-CC6.1` / `CIS-1.4`), so
+a finding here is the same ID auditkit's `security-auditor` reports — no separate
+registry entry is needed (the framework *is* the registry).
+
+**Severity is assessed per finding, not fixed per ID** — security impact depends on
+exploitability and context. Mark **BLOCKING** when exploitable (reachable, no
+mitigating control); **ADVISORY** for hardening/defense-in-depth. Cite `file:line`.
+
+| ID | Category | Review focus |
+|----|----------|--------------|
+| **OWASP-A01** | Broken Access Control | authz on every request, object ownership, deny-by-default |
+| **OWASP-A02** | Security Misconfiguration | hardened configs, no defaults, secrets in vault not code |
+| **OWASP-A03** | Supply Chain Failures | pinned/verified deps, integrity, SRI |
+| **OWASP-A04** | Cryptographic Failures | TLS 1.2+, AES-256-GCM, Argon2/bcrypt; encryption at rest/in transit |
+| **OWASP-A05** | Injection | parameterized queries, server-side validation, safe APIs |
+| **OWASP-A06** | Insecure Design | threat model, rate limiting, designed controls |
+| **OWASP-A07** | Auth Failures | MFA, breached-password check, session entropy/invalidation |
+| **OWASP-A08** | Integrity Failures | signed packages, safe deserialization |
+| **OWASP-A09** | Logging Failures | security-event logging, no PII, alerting |
+| **OWASP-A10** | Exception Handling | fail-closed, no internals leaked, logged with context |
+| **ASVS-*** | ASVS 5.0 control | cite the control ID directly (e.g. `ASVS-2.1.1`) for deep auth/session/crypto review |
+| **ASI-*** | Agentic AI (ASI 2026) | cite the risk ID directly for AI-agent code (see `owasp/agentic.md`) |
+
+The Security Code Review Checklist below maps to these: Input Handling → `OWASP-A05`,
+Auth & Sessions → `OWASP-A07`, Access Control → `OWASP-A01`, Data Protection →
+`OWASP-A04`/`OWASP-A02`, Error Handling → `OWASP-A10`. Output every finding with its ID.
+
+**No `evals/`:** this skill is contextual, judgment-heavy review across 20+ languages
+with per-finding (not per-rule) severity, so the fixture-based eval harness does not fit.
 
 ---
 

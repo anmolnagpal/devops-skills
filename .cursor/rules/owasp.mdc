@@ -25,6 +25,42 @@ security, owasp, vulnerability, injection, xss, csrf, auth, authentication, auth
 
 ---
 
+## Rule Catalog
+
+Findings carry a stable rule ID = the **OWASP Top 10:2025 category code** used
+directly (`OWASP-A01` … `OWASP-A10`). This follows auditkit's compliance convention
+(framework control IDs used verbatim as `rule_id`, like `SOC2-CC6.1` / `CIS-1.4`), so
+a finding here is the same ID auditkit's `security-auditor` reports — no separate
+registry entry is needed (the framework *is* the registry).
+
+**Severity is assessed per finding, not fixed per ID** — security impact depends on
+exploitability and context. Mark **BLOCKING** when exploitable (reachable, no
+mitigating control); **ADVISORY** for hardening/defense-in-depth. Cite `file:line`.
+
+| ID | Category | Review focus |
+|----|----------|--------------|
+| **OWASP-A01** | Broken Access Control | authz on every request, object ownership, deny-by-default |
+| **OWASP-A02** | Security Misconfiguration | hardened configs, no defaults, secrets in vault not code |
+| **OWASP-A03** | Supply Chain Failures | pinned/verified deps, integrity, SRI |
+| **OWASP-A04** | Cryptographic Failures | TLS 1.2+, AES-256-GCM, Argon2/bcrypt; encryption at rest/in transit |
+| **OWASP-A05** | Injection | parameterized queries, server-side validation, safe APIs |
+| **OWASP-A06** | Insecure Design | threat model, rate limiting, designed controls |
+| **OWASP-A07** | Auth Failures | MFA, breached-password check, session entropy/invalidation |
+| **OWASP-A08** | Integrity Failures | signed packages, safe deserialization |
+| **OWASP-A09** | Logging Failures | security-event logging, no PII, alerting |
+| **OWASP-A10** | Exception Handling | fail-closed, no internals leaked, logged with context |
+| **ASVS-*** | ASVS 5.0 control | cite the control ID directly (e.g. `ASVS-2.1.1`) for deep auth/session/crypto review |
+| **ASI-*** | Agentic AI (ASI 2026) | cite the risk ID directly for AI-agent code (see `owasp/agentic.md`) |
+
+The Security Code Review Checklist below maps to these: Input Handling → `OWASP-A05`,
+Auth & Sessions → `OWASP-A07`, Access Control → `OWASP-A01`, Data Protection →
+`OWASP-A04`/`OWASP-A02`, Error Handling → `OWASP-A10`. Output every finding with its ID.
+
+**No `evals/`:** this skill is contextual, judgment-heavy review across 20+ languages
+with per-finding (not per-rule) severity, so the fixture-based eval harness does not fit.
+
+---
+
 ## Quick Reference: OWASP Top 10:2025
 
 | # | Vulnerability | Key Prevention |

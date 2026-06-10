@@ -17,6 +17,43 @@ This skill covers AWS cost optimization: identifying waste, right-sizing workloa
 
 ---
 
+## Rule Catalog
+
+Cost findings carry stable IDs from auditkit's `COST-*` registry so an audit run here
+and auditkit's `cost-analyzer` / `cost-live` agents speak one vocabulary. **Severity is
+the savings magnitude** (HIGH / MED / LOW $-impact), not BLOCKING/ADVISORY — these are
+opportunities, ranked by impact, never merge-blockers. IDs are an API: never renumber.
+
+| ID | Lever |
+|----|-------|
+| **COST-COMP-001** | Oversized / over-provisioned compute (right-size via Compute Optimizer) |
+| **COST-COMP-002** | No autoscaling on variable workloads |
+| **COST-COMP-003** | Non-prod running 24/7 (schedule off-hours; Spot for batch/CI) |
+| **COST-COMP-004** | Non-Graviton where ARM is supported (~20% cheaper) |
+| **COST-STOR-001** | No S3 lifecycle / Intelligent-Tiering on large buckets |
+| **COST-STOR-002** | Orphaned EBS volumes / old snapshots / unattached ENIs |
+| **COST-STOR-003** | `gp2` EBS not migrated to `gp3` (cheaper + faster) |
+| **COST-DB-001** | RDS Multi-AZ in non-prod |
+| **COST-DB-002** | Aurora not I/O-Optimized when I/O > ~25% of cost |
+| **COST-NET-001** | NAT Gateway data-processing fees (use VPC endpoints; collapse per-AZ NAT) |
+| **COST-NET-002** | Idle Elastic IPs |
+| **COST-TAG-001** | Untagged spend (no cost-allocation tags) |
+| **COST-LIVE-RESERVE-001** | Savings Plan / RI / Reserved-Node coverage gap on steady-state |
+| **COST-LIVE-RIGHTSIZE-001** | Optimizer-confirmed over-provisioned compute |
+| **COST-LIVE-IDLE-001** | Idle/orphaned resource with live spend (idle ELB, stopped EC2 paying EBS) |
+| **COST-LIVE-ANOMALY-001** | Cost spike / anomaly |
+| **COST-LIVE-VISIBILITY-001** | Cost tooling disabled (Compute Optimizer / Storage Lens / CUR off) |
+
+**Reused from auditkit:** all `COST-*` and `COST-LIVE-*` above except the three below.
+**New to the registry** (pending a follow-up auditkit PR): `COST-COMP-004` (Graviton),
+`COST-STOR-003` (gp2→gp3), `COST-DB-002` (Aurora I/O-Optimized).
+
+**No `evals/`:** findings come from **live** AWS billing/optimizer data (Cost Explorer,
+CUR, Compute Optimizer), not static files, so the fixture-based eval harness does not
+apply. Tag every recommendation with its rule ID and $-impact.
+
+---
+
 ## Where the Money Usually Goes
 
 In most AWS accounts, the top cost drivers — in order — are:
