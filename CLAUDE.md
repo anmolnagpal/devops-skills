@@ -23,7 +23,7 @@ These rules apply to every push originating from this repo. They override defaul
 
 ## Purpose
 
-This repo distributes reusable Claude Code **skills**, **plugins**, and **MCP servers** to the team. Skills are markdown files that encode DevOps best practices; the install scripts symlink them into `~/.claude/skills/` and set up plugins/MCP servers.
+This repo distributes reusable Claude Code **skills**, **plugins**, and **MCP servers** to the team. Skills are markdown files that encode DevOps best practices; they ship as the **`clouddrove` plugin** (this repo is also its own marketplace), installed via `claude plugin install clouddrove@devops-skills`, alongside the team plugins and MCP servers wired by the install scripts.
 
 ## Installing / Updating
 
@@ -110,7 +110,7 @@ allowed-tools:            # Optional: restrict available tools
 | `/clouddrove:finops` | `skills/finops/SKILL.md` | Manual only |
 | `/clouddrove:deploy` | `skills/deploy/SKILL.md` | Manual only |
 | `/clouddrove:adr` | `skills/adr/SKILL.md` | `**/docs/adr/*.md` |
-| `/clouddrove:wrapper-tf` | `skills/clouddrove:wrapper-tf/SKILL.md` | `_modules/**/*.tf`, `environments/**/*.tf` |
+| `/clouddrove:wrapper-tf` | `skills/wrapper-tf/SKILL.md` | `_modules/**/*.tf`, `environments/**/*.tf` |
 | `/clouddrove:skill-creator` | `skills/skill-creator/SKILL.md` | Manual only |
 
 Backlog spec drafts (not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security.
