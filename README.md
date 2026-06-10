@@ -106,12 +106,16 @@ Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles them al
 | `skills/docker/SKILL.md` | `/clouddrove:docker` | `docker.mdc` | `**/Dockerfile`, `**/docker-compose*.yml` |
 | `skills/finops/SKILL.md` | `/clouddrove:finops` | `finops.mdc` | manual |
 | `skills/owasp/SKILL.md` | `/clouddrove:owasp` | `owasp.mdc` | manual |
-| `skills/clouddrove:wrapper-tf/SKILL.md` | `/clouddrove:wrapper-tf` | `wrapper-tf.mdc` | `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` |
+| `skills/wrapper-tf/SKILL.md` | `/clouddrove:wrapper-tf` | `wrapper-tf.mdc` | `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` |
 | `skills/deploy/SKILL.md` | `/clouddrove:deploy` | `deploy.mdc` | manual |
 | `skills/adr/SKILL.md` | `/clouddrove:adr` | `adr.mdc` | `**/docs/adr/*.md` |
 | `skills/skill-creator/SKILL.md` | `/clouddrove:skill-creator` | `skill-creator.mdc` | manual |
 
 All 12 are also injected into `AGENTS.md` for Codex.
+
+### Shared rule-ID vocabulary
+
+Findings are tagged with stable rule IDs (`TF-STATE-001`, `SEC-NET-001`, `CICD-DOCK-002`, …). The canonical set lives in **[`rules/rule-ids.yaml`](rules/rule-ids.yaml)** (141 IDs) — the single source of truth. CI (`scripts/check-rule-ids.sh`) fails if a skill emits an ID not in the registry. The [auditkit](https://github.com/clouddrove-ci/auditkit) audit engine consumes the same registry and checks against it, so an inline plugin finding and a deep-audit finding share the same ID — and the two can't drift.
 
 Backlog specs (drafts, not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security. Promote to active by adding frontmatter under `skills/<name>/SKILL.md`.
 
@@ -196,12 +200,13 @@ Restart Claude Code after switching.
 
 ```
 devops-skills/
-  skills/                    ← Canonical skill sources (edit here)
-    tf.md  k8s.md  ci.md  owasp.md  docker.md  finops.md  skill-creator.md
-    owasp/                   ← Reference docs loaded on-demand by /clouddrove:owasp
-    docker/                  ← Reference docs + scripts for /docker
-    finops/                  ← Reference docs + scripts for /finops
+  .claude-plugin/            ← plugin.json (clouddrove) + marketplace.json (repo = its own marketplace)
+  skills/                    ← Canonical skill sources, one dir per skill (edit here)
+    <name>/SKILL.md          ← the skill body (tf, k8s, ci, owasp, docker, finops, deploy, adr, wrapper-tf, …)
+    <name>/evals/            ← static eval fixtures + validate.sh (file-input skills)
+    owasp/*.md               ← reference docs loaded on-demand; docker/ finops/ add scripts too
     specs/                   ← Backlog spec docs (not active skills)
+  rules/rule-ids.yaml        ← Canonical shared rule-ID registry (single source of truth)
   .cursor/rules/             ← Generated Cursor rules (.mdc) — from scripts/generate.sh
   AGENTS.md                  ← Generated Codex skill doc — from scripts/generate.sh
   agents/                    ← Reserved for Claude Code agents
@@ -218,7 +223,7 @@ devops-skills/
     install-claude.sh        ← Claude adapter: skills, plugins, MCP
     install-cursor.sh        ← Cursor adapter: links .cursor/rules
     install-codex.sh         ← Codex adapter: links AGENTS.md
-    generate.sh              ← Build Cursor + Codex adapters from skills/*.md
+    generate.sh              ← Build Cursor + Codex adapters from skills/<name>/SKILL.md
     mcp.sh                   ← Interactive MCP server install (Claude only)
     set-aws-profile.sh       ← Switch AWS profile for AWS MCP servers
   config/
@@ -288,16 +293,16 @@ keyword1, keyword2, keyword3
 
 ### Steps to add
 
-1. Create `skills/<name>.md` following the format above
+1. Create `skills/<name>/SKILL.md` following the format above (co-locate `evals/`, references, scripts in the same dir)
 2. Run `bash scripts/generate.sh` to refresh Cursor (`.cursor/rules/<name>.mdc`) + Codex (`AGENTS.md`) adapters
-3. Commit `skills/<name>.md`, the new `.cursor/rules/<name>.mdc`, and updated `AGENTS.md`
-4. Teammates run `git pull && ./scripts/install.sh --all` to pick it up
+3. Commit `skills/<name>/SKILL.md`, the new `.cursor/rules/<name>.mdc`, and updated `AGENTS.md`
+4. Teammates run `git pull && ./scripts/install.sh --all` to pick it up (the plugin auto-discovers any `skills/<name>/SKILL.md`)
 
 ---
 
 ## Testing
 
-The installer is tested in Docker on every push to `main` and every pull request via GitHub Actions (`.github/workflows/test.yml`). The workflow also fails if generated adapters (`.cursor/rules/`, `AGENTS.md`) drift from `skills/*.md` — run `bash scripts/generate.sh` and commit.
+CI runs on every push to `main` and every pull request via GitHub Actions (`.github/workflows/test.yml`), with six gates: Docker install harness, adapter-sync (`.cursor/rules/`, `AGENTS.md` regenerated from `skills/<name>/SKILL.md`), skill-frontmatter lint, rule-ID registry check, eval fixtures, and ShellCheck.
 
 To run the test locally (requires Docker):
 
