@@ -194,7 +194,8 @@ devops-skills/
   .cursor/rules/             ← Generated Cursor rules (.mdc) — from scripts/generate.sh
   AGENTS.md                  ← Generated Codex skill doc — from scripts/generate.sh
   agents/                    ← Reserved for Claude Code agents
-  hooks/
+  hooks/                     ← Shipped with the plugin (registered via hooks.json)
+    hooks.json               ← Plugin hook config (uses ${CLAUDE_PLUGIN_ROOT})
     session-banner.sh        ← SessionStart: prints repo/branch/AWS/kube context
     bash-guard.sh            ← PreToolUse(Bash): blocks destructive patterns
   templates/

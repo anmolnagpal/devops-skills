@@ -80,30 +80,5 @@
       "Bash(aws s3 rm*)",
       "Bash(aws ec2 terminate-instances*)"
     ]
-  },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/devops-skills/session-banner.sh\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"$HOME/.claude/hooks/devops-skills/bash-guard.sh\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
   }
 }

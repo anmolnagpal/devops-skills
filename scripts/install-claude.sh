@@ -23,15 +23,15 @@ INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
 
 echo "[claude]"
 
-# ── Hook scripts ──────────────────────────────────────────────────────────────
-HOOKS_DEST="$HOME/.claude/hooks/devops-skills"
-mkdir -p "$HOOKS_DEST"
-if [ -d "$REPO/hooks" ]; then
-  for f in "$REPO/hooks/"*.sh; do
-    [ -f "$f" ] || continue
-    ln -sf "$f" "$HOOKS_DEST/$(basename "$f")"
-  done
-  echo "  hooks: linked → $HOOKS_DEST"
+# ── Hooks ───────────────────────────────────────────────────────────────────
+# Hooks now ship inside the clouddrove plugin (hooks/hooks.json, resolved via
+# ${CLAUDE_PLUGIN_ROOT}). Migrate older installs: drop the standalone symlink
+# dir and any settings.json hook entries that pointed at it, so hooks don't
+# double-fire alongside the plugin's.
+LEGACY_HOOKS_DIR="$HOME/.claude/hooks/devops-skills"
+if [ -d "$LEGACY_HOOKS_DIR" ]; then
+  rm -rf "$LEGACY_HOOKS_DIR"
+  echo "  hooks: removed legacy symlink dir (now provided by the plugin)"
 fi
 
 # ── Global settings.json ──────────────────────────────────────────────────────
@@ -93,6 +93,23 @@ for event, tpl_groups in (tpl.get("hooks") or {}).items():
             merged_group["hooks"] = new_hooks
             cur_groups.append(merged_group)
             changed = True
+
+# Migrate: strip legacy devops-skills hook entries (now provided by the plugin
+# via ${CLAUDE_PLUGIN_ROOT}) so they don't double-fire.
+LEGACY = "/.claude/hooks/devops-skills/"
+for event in list(cur_hooks.keys()):
+    groups = cur_hooks[event]
+    for group in groups:
+        kept = [h for h in group.get("hooks", []) if LEGACY not in (h.get("command") or "")]
+        if len(kept) != len(group.get("hooks", [])):
+            group["hooks"] = kept
+            changed = True
+    groups = [g for g in groups if g.get("hooks")]
+    if groups:
+        cur_hooks[event] = groups
+    else:
+        del cur_hooks[event]
+        changed = True
 
 if changed:
     with open(target, "w") as f:

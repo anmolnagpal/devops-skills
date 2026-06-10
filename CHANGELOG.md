@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Packaged as a Claude Code plugin.** Skills now ship as the `clouddrove` plugin, served from this repo acting as its own marketplace (`.claude-plugin/marketplace.json` + `.claude-plugin/plugin.json`). Skill sources moved from flat `skills/<name>.md` to `skills/<name>/SKILL.md` directories (evals/references co-located). Claude Code commands are now namespaced `/clouddrove:<skill>` with a native `(clouddrove)` label — replacing the per-skill symlink install.
 - `install-claude.sh` now runs `claude plugin marketplace add <repo>` + `claude plugin install clouddrove@devops-skills` instead of symlinking each skill. `generate.sh` reads `skills/<name>/SKILL.md`. Install without cloning: `/plugin marketplace add anmolnagpal/devops-skills` then `/plugin install clouddrove@devops-skills`.
+- **Hooks ship inside the plugin.** `session-banner` (SessionStart) and `bash-guard` (PreToolUse) are now registered via `hooks/hooks.json` using `${CLAUDE_PLUGIN_ROOT}`, so they travel with the plugin. `install-claude.sh` migrates older installs: removes the standalone `~/.claude/hooks/devops-skills` symlinks and strips their stale `settings.json` entries so hooks don't double-fire. Template `settings.json` no longer wires hooks.
+- **Skill frontmatter lint** (`scripts/check-skills.sh`, new CI job): asserts every `skills/<name>/SKILL.md` has a `name` matching its directory and a non-empty `description`. Fixed `owasp` whose `name` was `owasp-security`.
+- Renamed the `clouddrove-tf` skill to **`wrapper-tf`** → `/clouddrove:wrapper-tf` (no more redundant `/clouddrove:clouddrove-tf`). `CDTF-*` rule IDs unchanged.
 
 ## [0.0.1] — 2026-05-14
 
