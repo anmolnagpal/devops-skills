@@ -10,5 +10,6 @@
   "homepage": "https://github.com/anmolnagpal/devops-skills",
   "repository": "https://github.com/anmolnagpal/devops-skills",
   "license": "MIT",
+  "hooks": "./hooks/hooks.json",
   "keywords": ["devops", "terraform", "kubernetes", "docker", "finops", "security", "ci-cd", "aws"]
 }
