@@ -1,0 +1,14 @@
+{
+  "name": "clouddrove",
+  "displayName": "ClouDrove DevOps Skills",
+  "description": "Team DevOps review and scaffolding skills: Terraform, Kubernetes/Helm, GitLab CI, GitHub Actions, Docker, FinOps, OWASP security, deployment gating, and ADRs. Findings use shared auditkit rule IDs.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Anmol Nagpal",
+    "email": "anmol@clouddrove.com"
+  },
+  "homepage": "https://github.com/anmolnagpal/devops-skills",
+  "repository": "https://github.com/anmolnagpal/devops-skills",
+  "license": "MIT",
+  "keywords": ["devops", "terraform", "kubernetes", "docker", "finops", "security", "ci-cd", "aws"]
+}

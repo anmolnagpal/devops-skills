@@ -104,20 +104,39 @@ PY
   fi
 fi
 
-# ── Skills ────────────────────────────────────────────────────────────────────
-mkdir -p "$SKILLS_DIR"
-count=0
-for f in "$REPO/skills/"*.md; do
-  [ -f "$f" ] || continue
-  name="$(basename "$f" .md)"
-  # Claude Code discovers skills as <name>/SKILL.md directories, not flat files.
-  rm -f "$SKILLS_DIR/$name.md"        # remove legacy flat-file symlink if present
-  mkdir -p "$SKILLS_DIR/$name"
-  ln -sf "$f" "$SKILLS_DIR/$name/SKILL.md"
-  echo "  skill: /$name"
-  count=$((count + 1))
+# ── Skills (ClouDrove plugin) ──────────────────────────────────────────────────
+# Skills ship as the `clouddrove` plugin, served from this repo acting as its own
+# marketplace (.claude-plugin/marketplace.json → plugin clouddrove). Installing as
+# a plugin gives native `(clouddrove)` namespacing and `/clouddrove:<skill>`
+# commands — no per-skill symlinks to maintain.
+echo "ClouDrove skills (clouddrove plugin):"
+
+# Drop legacy per-skill symlinks from pre-plugin installs so skills don't appear
+# twice (once unscoped, once namespaced).
+for name in tf k8s ci github github-actions docker finops owasp deploy adr clouddrove-tf skill-creator; do
+  rm -f "$SKILLS_DIR/$name.md"
+  [ -L "$SKILLS_DIR/$name/SKILL.md" ] && rm -rf "${SKILLS_DIR:?}/$name"
 done
-echo "  $count skill(s) linked → $SKILLS_DIR"
+
+if [ -f "$KNOWN_MARKETPLACES" ] && python3 -c "
+import json, sys
+sys.exit(0 if 'devops-skills' in json.load(open('$KNOWN_MARKETPLACES')) else 1)
+" 2>/dev/null; then
+  echo "  marketplace devops-skills — already added, skipping"
+else
+  echo "  adding marketplace (this repo) ..."
+  claude plugin marketplace add "$REPO"
+fi
+
+if [ -f "$INSTALLED_PLUGINS" ] && python3 -c "
+import json, sys
+sys.exit(0 if 'clouddrove' in json.load(open('$INSTALLED_PLUGINS')).get('plugins', {}) else 1)
+" 2>/dev/null; then
+  echo "  clouddrove plugin — already installed, skipping"
+else
+  echo "  installing clouddrove@devops-skills ..."
+  claude plugin install clouddrove@devops-skills
+fi
 
 # ── Agents ────────────────────────────────────────────────────────────────────
 mkdir -p "$AGENTS_DIR"

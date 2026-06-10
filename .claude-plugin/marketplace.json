@@ -1,0 +1,17 @@
+{
+  "name": "devops-skills",
+  "description": "ClouDrove's marketplace of DevOps skills for Claude Code.",
+  "owner": {
+    "name": "Anmol Nagpal",
+    "email": "anmol@clouddrove.com"
+  },
+  "plugins": [
+    {
+      "name": "clouddrove",
+      "source": "./",
+      "description": "Team DevOps review and scaffolding skills: Terraform, Kubernetes/Helm, GitLab CI, GitHub Actions, Docker, FinOps, OWASP security, deployment gating, and ADRs.",
+      "category": "devops",
+      "tags": ["terraform", "kubernetes", "docker", "finops", "security", "ci-cd", "aws"]
+    }
+  ]
+}

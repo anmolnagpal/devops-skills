@@ -23,17 +23,20 @@ RUN mkdir -p /root/.claude/plugins && \
 # Run the installer for Claude only — CI=true skips interactive MCP prompts.
 RUN CI=true bash scripts/install.sh --claude
 
-# ── Verify skills ──────────────────────────────────────────────────────────────
-RUN echo "" && echo "── Skills ──" && \
-    for skill in tf k8s ci owasp skill-creator docker finops github github-actions; do \
-      [ -L "/root/.claude/skills/$skill/SKILL.md" ] \
-        && echo "  ✓ $skill/SKILL.md" \
-        || (echo "  ✗ $skill/SKILL.md MISSING" && exit 1); \
+# ── Verify ClouDrove plugin manifests + skill bodies ───────────────────────────
+RUN echo "" && echo "── ClouDrove plugin ──" && \
+    python3 -c "import json; m=json.load(open('.claude-plugin/marketplace.json')); assert any(p['name']=='clouddrove' for p in m['plugins']), 'clouddrove not listed in marketplace'; p=json.load(open('.claude-plugin/plugin.json')); assert p['name']=='clouddrove', 'plugin.json name mismatch'; print('  ✓ manifests valid, clouddrove plugin listed')" && \
+    for skill in tf k8s ci owasp skill-creator docker finops github github-actions deploy adr clouddrove-tf; do \
+      [ -f "skills/$skill/SKILL.md" ] \
+        && echo "  ✓ skills/$skill/SKILL.md" \
+        || (echo "  ✗ skills/$skill/SKILL.md MISSING" && exit 1); \
     done
 
 # ── Verify install.sh called claude with the right arguments ───────────────────
 RUN echo "" && echo "── Claude CLI calls ──" && \
     for expected in \
+      "plugin marketplace add /repo" \
+      "plugin install clouddrove@devops-skills" \
       "plugin marketplace add hashicorp/agent-skills" \
       "plugin marketplace add thedotmack/claude-mem" \
       "plugin marketplace add mhattingpete/claude-skills-marketplace" \
