@@ -26,6 +26,53 @@ gitlab, ci, cd, pipeline, gitlab-ci, yaml, stages, jobs, terraform, helm, deploy
 
 ---
 
+## Principles
+
+When an input is novel and no specific rule below matches, fall back to these:
+
+1. **Secrets never live in YAML or logs** — from CI/CD variables or OIDC, never hardcoded, never echoed to job output.
+2. **Pin and parameterize images** — pinned runner images; deploy image tags passed as variables, never hardcoded.
+3. **Environments are separate and gated** — staging and prod are distinct jobs with their own credentials; prod is `when: manual`.
+4. **Federate, don't store** — OIDC/IAM role over static AWS keys; kubeconfig from a CI variable, never committed.
+5. **Safe deploys** — `helm lint` before deploy; `--atomic` and explicit `--namespace` on every Helm command.
+
+---
+
+## Rule Catalog
+
+IDs come from auditkit's canonical registry (`.claude/rules/rule-ids.md` in
+clouddrove-ci/auditkit) so this skill and auditkit's `cicd-reviewer` share one
+findings vocabulary. IDs are an API — never renumber a shipped rule; deprecate and add.
+Reused vs new-to-registry IDs are listed under the table. (`CICD-*` are CI-platform
+generic — the same IDs cover GitHub Actions and GitLab CI.)
+
+| ID | Severity | Check |
+|----|----------|-------|
+| **CICD-SEC-001** | BLOCKING | Secret/password/token/key hardcoded in pipeline YAML (incl. secret `TF_VAR_*`) |
+| **CICD-SEC-005** | BLOCKING | Secret printed to job logs (`echo`/`cat`/`printenv` of a secret variable) |
+| **SEC-IAM-002** | BLOCKING | Static AWS keys for cloud auth instead of OIDC/role federation |
+| **SEC-SEC-001** | BLOCKING | Committed kubeconfig or secret file (must come from a CI variable) |
+| **CICD-FLOW-002** | BLOCKING | Production deploy/apply without a `when: manual` gate (or `-auto-approve` in prod) |
+| **CICD-FLOW-003** | BLOCKING | Staging and production not separate jobs (env switch via variable) |
+| **TF-STATE-001** | BLOCKING | Local Terraform state in the pipeline (no remote backend) |
+| **CICD-HELM-001** | BLOCKING | No `helm lint` before a deploy step |
+| **CICD-HELM-004** | BLOCKING | Helm deploy image tag hardcoded instead of passed as a variable |
+| **CICD-DOCK-001** | ADVISORY | Runner/CI image not pinned (`:latest`) or mismatched `required_version` |
+| **CICD-FLOW-004** | ADVISORY | Deploy job missing `environment:` tracking |
+| **CICD-HELM-002** | ADVISORY | `helm upgrade` without `--atomic` (no auto-rollback) |
+| **CICD-HELM-003** | ADVISORY | `helm` command without an explicit `--namespace` |
+| **META-SUP-001** | ADVISORY | `ci-skill:ignore` suppression missing a `-- reason` |
+
+**Reused from auditkit:** `CICD-SEC-001`, `SEC-IAM-002`, `SEC-SEC-001`, `CICD-FLOW-002`, `TF-STATE-001`, `CICD-DOCK-001`, `META-SUP-001`.
+**New to the registry** (pending a follow-up auditkit PR): `CICD-SEC-005`, `CICD-FLOW-003/004`, `CICD-HELM-001/002/003/004`.
+
+**Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
+risk with `# ci-skill:ignore <RULE-ID> -- <reason>` on the line above (reason mandatory,
+else `META-SUP-001`). **Confidence gate:** report only findings you are >80% sure are
+real; consolidate repeats; severity is the rule's, don't invent. Evals: [`evals/`](./ci/evals/).
+
+---
+
 ## Step 1 — Determine the action
 
 Read the arguments provided:
@@ -110,12 +157,12 @@ A missing manual gate on production is always a blocking issue — no exceptions
 ```
 BLOCKING — Must fix before merging
 ------------------------------------
-[.gitlab-ci.yml:34] Hardcoded secret: AWS_SECRET_ACCESS_KEY is set inline → move to GitLab CI/CD variable
-[.gitlab-ci.yml:61] No manual gate: production apply job has no when: manual → add when: manual
+[.gitlab-ci.yml:34] CICD-SEC-001 Hardcoded secret: AWS_SECRET_ACCESS_KEY is set inline → move to GitLab CI/CD variable
+[.gitlab-ci.yml:61] CICD-FLOW-002 No manual gate: production apply job has no when: manual → add when: manual
 
 ADVISORY — Should fix
 ----------------------
-[.gitlab-ci.yml:12] Image not pinned: uses hashicorp/terraform:latest → pin to a specific version
+[.gitlab-ci.yml:12] CICD-DOCK-001 Image not pinned: uses hashicorp/terraform:latest → pin to a specific version
 
 Summary: 2 blocking issue(s), 1 advisory issue(s). Fix blocking issues before merging.
 ```
@@ -1665,6 +1712,55 @@ github, gh cli, pull request, PR, issue, release, branch protection, ruleset, CO
 
 ---
 
+## Principles
+
+When a setting is novel and no specific rule below matches, fall back to these:
+
+1. **Default branch is sacred** — protected, no force-push, no deletion, linear history.
+2. **Nothing merges unreviewed or unchecked** — required reviews, required *pinned* status checks, code-owner review.
+3. **Least privilege** — workflow token read-only by default; fork PRs gated; fine-grained PATs with short expiry.
+4. **Secrets never land** — secret scanning + push protection on; leaks get rotated-then-purged, not just deleted.
+5. **Dependencies stay current** — Dependabot security *and* version updates enabled.
+
+---
+
+## Rule Catalog
+
+IDs come from auditkit's canonical registry (`.claude/rules/rule-ids.md` in
+clouddrove-ci/auditkit) so this skill and auditkit's `repo-hygiene-reviewer` share one
+findings vocabulary. IDs are an API — never renumber a shipped rule; deprecate and add.
+Reused vs new-to-registry IDs are listed under the table.
+
+| ID | Severity | Check |
+|----|----------|-------|
+| **REPO-BP-001** | BLOCKING | Default branch has no protection / no ruleset |
+| **REPO-BP-002** | BLOCKING | Force pushes allowed on default branch |
+| **REPO-BP-003** | BLOCKING | Branch deletion allowed on default branch |
+| **REPO-BP-004** | ADVISORY | `delete_branch_on_merge` off (stale branches accumulate) |
+| **REPO-PR-001** | BLOCKING | No required PR reviews on default branch |
+| **REPO-PR-002** | BLOCKING | Required status checks missing or not pinned/strict |
+| **REPO-PR-003** | BLOCKING | Fork PRs run workflows without approval for outside collaborators |
+| **REPO-PR-004** | ADVISORY | Squash-merge not enforced (mixed merge strategies) |
+| **REPO-CODE-001** | BLOCKING | CODEOWNERS missing or not required for review |
+| **REPO-DOC-003** | ADVISORY | No PR template / issue templates |
+| **REPO-DEP-001** | BLOCKING | Dependabot security updates disabled |
+| **REPO-DEP-002** | ADVISORY | No `dependabot.yml` version-update config |
+| **SEC-SEC-005** | BLOCKING | Secret scanning / push protection disabled |
+| **CICD-PERM-001** | BLOCKING | Default workflow permissions read/write (not least-privilege) |
+| **CICD-FLOW-002** | ADVISORY | No environment protection on `production`/`prod` |
+| **CICD-SCAN-001** | ADVISORY | CodeQL / code scanning not enabled |
+| **META-SUP-001** | ADVISORY | Accepted-risk waiver recorded without a reason |
+
+**Reused from auditkit:** `REPO-BP-001/002`, `REPO-PR-001/002`, `REPO-CODE-001`, `SEC-SEC-005`, `CICD-PERM-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `META-SUP-001`.
+**New to the registry** (pending a follow-up auditkit PR): `REPO-BP-003/004`, `REPO-PR-003/004`, `REPO-DOC-003`, `REPO-DEP-001/002`.
+
+**Output:** every AUDIT finding carries its rule ID. **No `evals/`:** AUDIT reads
+**live** repo state via the `gh` API, not static files, so the fixture-based eval
+harness used by file-review skills does not apply here. **Confidence gate:** report
+only findings you confirmed from live state; severity is the rule's, don't invent.
+
+---
+
 ## TRIGGER — Decide what to do
 
 1. If user message names a mode (`audit`, `new <thing>`, `release`) → do that.
@@ -1703,24 +1799,24 @@ gh api repos/{owner}/{repo}/environments
 
 ### Blocking findings
 
-1. Default branch has **no protection / no ruleset** → enable required PR reviews + required status checks + linear history.
-2. **CODEOWNERS missing or not required for review** → add file and require code owner review in ruleset.
-3. **Force pushes allowed on default branch** → disable.
-4. **Branch deletion allowed on default branch** → disable.
-5. **Required status checks not pinned** to specific workflows → without this, anyone can rename a workflow and bypass checks.
-6. **Secret scanning + push protection disabled** on public/private-with-secrets repo → enable.
-7. **Dependabot security updates disabled** → enable.
-8. **`Settings → Actions → General`: workflow permissions = read/write by default** → set to read-only, escalate per-workflow.
-9. **Fork PRs run workflows without approval** for first-time contributors → set "Require approval for all outside collaborators".
+1. **REPO-BP-001** Default branch has **no protection / no ruleset** → enable required PR reviews + required status checks + linear history.
+2. **REPO-CODE-001** **CODEOWNERS missing or not required for review** → add file and require code owner review in ruleset.
+3. **REPO-BP-002** **Force pushes allowed on default branch** → disable.
+4. **REPO-BP-003** **Branch deletion allowed on default branch** → disable.
+5. **REPO-PR-002** **Required status checks not pinned** to specific workflows → without this, anyone can rename a workflow and bypass checks. (No required reviews at all = **REPO-PR-001**.)
+6. **SEC-SEC-005** **Secret scanning + push protection disabled** on public/private-with-secrets repo → enable.
+7. **REPO-DEP-001** **Dependabot security updates disabled** → enable.
+8. **CICD-PERM-001** **`Settings → Actions → General`: workflow permissions = read/write by default** → set to read-only, escalate per-workflow.
+9. **REPO-PR-003** **Fork PRs run workflows without approval** for first-time contributors → set "Require approval for all outside collaborators".
 
 ### Advisory findings
 
-1. Squash-merge not enforced (mixed merge strategies create messy history).
-2. `delete_branch_on_merge` off (stale branches accumulate).
-3. No PR template / no issue templates.
-4. No environment protection on `production` / `prod`.
-5. No `dependabot.yml` (only security updates, no version updates).
-6. CodeQL / code scanning not enabled.
+1. **REPO-PR-004** Squash-merge not enforced (mixed merge strategies create messy history).
+2. **REPO-BP-004** `delete_branch_on_merge` off (stale branches accumulate).
+3. **REPO-DOC-003** No PR template / no issue templates.
+4. **CICD-FLOW-002** No environment protection on `production` / `prod`.
+5. **REPO-DEP-002** No `dependabot.yml` version updates (only security updates).
+6. **CICD-SCAN-001** CodeQL / code scanning not enabled.
 
 ---
 

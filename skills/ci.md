@@ -2,10 +2,10 @@
 name: ci
 description: "GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', or when working in .gitlab-ci.yml files."
 metadata:
-  version: 1.1.0
+  version: 1.2.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-04-16
+  updated: 2026-06-10
 paths:
   - "**/.gitlab-ci.yml"
   - "**/.gitlab-ci.yaml"
@@ -29,6 +29,53 @@ gitlab, ci, cd, pipeline, gitlab-ci, yaml, stages, jobs, terraform, helm, deploy
 | `/ci review` | Blocking / advisory issue list with file:line references |
 | `/ci new terraform` | Complete `.gitlab-ci.yml` with validate / plan / apply stages |
 | `/ci new helm` | Complete `.gitlab-ci.yml` with staging and production deploy jobs |
+
+---
+
+## Principles
+
+When an input is novel and no specific rule below matches, fall back to these:
+
+1. **Secrets never live in YAML or logs** — from CI/CD variables or OIDC, never hardcoded, never echoed to job output.
+2. **Pin and parameterize images** — pinned runner images; deploy image tags passed as variables, never hardcoded.
+3. **Environments are separate and gated** — staging and prod are distinct jobs with their own credentials; prod is `when: manual`.
+4. **Federate, don't store** — OIDC/IAM role over static AWS keys; kubeconfig from a CI variable, never committed.
+5. **Safe deploys** — `helm lint` before deploy; `--atomic` and explicit `--namespace` on every Helm command.
+
+---
+
+## Rule Catalog
+
+IDs come from auditkit's canonical registry (`.claude/rules/rule-ids.md` in
+clouddrove-ci/auditkit) so this skill and auditkit's `cicd-reviewer` share one
+findings vocabulary. IDs are an API — never renumber a shipped rule; deprecate and add.
+Reused vs new-to-registry IDs are listed under the table. (`CICD-*` are CI-platform
+generic — the same IDs cover GitHub Actions and GitLab CI.)
+
+| ID | Severity | Check |
+|----|----------|-------|
+| **CICD-SEC-001** | BLOCKING | Secret/password/token/key hardcoded in pipeline YAML (incl. secret `TF_VAR_*`) |
+| **CICD-SEC-005** | BLOCKING | Secret printed to job logs (`echo`/`cat`/`printenv` of a secret variable) |
+| **SEC-IAM-002** | BLOCKING | Static AWS keys for cloud auth instead of OIDC/role federation |
+| **SEC-SEC-001** | BLOCKING | Committed kubeconfig or secret file (must come from a CI variable) |
+| **CICD-FLOW-002** | BLOCKING | Production deploy/apply without a `when: manual` gate (or `-auto-approve` in prod) |
+| **CICD-FLOW-003** | BLOCKING | Staging and production not separate jobs (env switch via variable) |
+| **TF-STATE-001** | BLOCKING | Local Terraform state in the pipeline (no remote backend) |
+| **CICD-HELM-001** | BLOCKING | No `helm lint` before a deploy step |
+| **CICD-HELM-004** | BLOCKING | Helm deploy image tag hardcoded instead of passed as a variable |
+| **CICD-DOCK-001** | ADVISORY | Runner/CI image not pinned (`:latest`) or mismatched `required_version` |
+| **CICD-FLOW-004** | ADVISORY | Deploy job missing `environment:` tracking |
+| **CICD-HELM-002** | ADVISORY | `helm upgrade` without `--atomic` (no auto-rollback) |
+| **CICD-HELM-003** | ADVISORY | `helm` command without an explicit `--namespace` |
+| **META-SUP-001** | ADVISORY | `ci-skill:ignore` suppression missing a `-- reason` |
+
+**Reused from auditkit:** `CICD-SEC-001`, `SEC-IAM-002`, `SEC-SEC-001`, `CICD-FLOW-002`, `TF-STATE-001`, `CICD-DOCK-001`, `META-SUP-001`.
+**New to the registry** (pending a follow-up auditkit PR): `CICD-SEC-005`, `CICD-FLOW-003/004`, `CICD-HELM-001/002/003/004`.
+
+**Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
+risk with `# ci-skill:ignore <RULE-ID> -- <reason>` on the line above (reason mandatory,
+else `META-SUP-001`). **Confidence gate:** report only findings you are >80% sure are
+real; consolidate repeats; severity is the rule's, don't invent. Evals: [`evals/`](./ci/evals/).
 
 ---
 
@@ -116,12 +163,12 @@ A missing manual gate on production is always a blocking issue — no exceptions
 ```
 BLOCKING — Must fix before merging
 ------------------------------------
-[.gitlab-ci.yml:34] Hardcoded secret: AWS_SECRET_ACCESS_KEY is set inline → move to GitLab CI/CD variable
-[.gitlab-ci.yml:61] No manual gate: production apply job has no when: manual → add when: manual
+[.gitlab-ci.yml:34] CICD-SEC-001 Hardcoded secret: AWS_SECRET_ACCESS_KEY is set inline → move to GitLab CI/CD variable
+[.gitlab-ci.yml:61] CICD-FLOW-002 No manual gate: production apply job has no when: manual → add when: manual
 
 ADVISORY — Should fix
 ----------------------
-[.gitlab-ci.yml:12] Image not pinned: uses hashicorp/terraform:latest → pin to a specific version
+[.gitlab-ci.yml:12] CICD-DOCK-001 Image not pinned: uses hashicorp/terraform:latest → pin to a specific version
 
 Summary: 2 blocking issue(s), 1 advisory issue(s). Fix blocking issues before merging.
 ```
