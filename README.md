@@ -30,6 +30,59 @@ Skills land as `/clouddrove:tf`, `/clouddrove:finops`, … with a native `(cloud
 
 > **New here?** Skip to **[CHEATSHEET.md](_docs/CHEATSHEET.md)** for one-line prompts per skill.
 
+## See it in action
+
+Every review answers in the same shape — **BLOCKING** (must fix) and **ADVISORY** (should fix), each finding tagged with a stable rule ID and a `file:line`, then a one-line summary.
+
+**`/clouddrove:tf review`** — pre-MR Terraform check:
+
+```text
+BLOCKING — Must fix before MR
+[main.tf:14] TF-STATE-001 No remote backend — state would live on a laptop
+  → add a `backend "s3"` block with DynamoDB state locking
+[rds.tf:31] TF-VAR-001 Hardcoded DB password in `default` → move to a variable,
+  mark `sensitive = true`, source from AWS Secrets Manager
+[versions.tf:1] TF-PROV-001 Provider not version-pinned → pin `aws ~> 5.0`
+
+ADVISORY — Should fix
+[s3.tf:8] TF-RES-001 Bucket missing required tags (Environment, Team, ManagedBy)
+[variables.tf:5] TF-VAR-003 `instance_type` has no description/type
+
+Summary: 3 blocking issue(s), 2 advisory issue(s).
+```
+
+**`/clouddrove:finops`** — AWS cost review:
+
+```text
+BLOCKING — none
+
+ADVISORY — Should fix
+[ebs] COST-STOR-003 12 gp2 volumes not migrated to gp3 → ~20% cheaper + faster,
+  online conversion, no downtime. Run scripts/ebs-gp2-to-gp3-audit.sh — est. $340/mo
+[vpc] COST-NET-001 Per-AZ NAT gateways in 3 AZs for a non-prod account
+  → consolidate to 1 or use VPC endpoints — est. $190/mo
+
+Summary: 0 blocking, 2 advisory. Estimated saving: ~$530/month.
+```
+
+**`/clouddrove:deploy`** — production-readiness gate before first prod release:
+
+```text
+PRODUCTION READINESS — payments-api → prod
+
+BLOCKING — Must fix before deploy
+[helm/values-prod.yaml:22] ARCH-SPOF-002 replicaCount: 1 — single pod, no HA
+[helm/values-prod.yaml] ARCH-HA-003 No readiness/liveness probes
+[.github/workflows/deploy.yml:40] CICD-FLOW-002 No manual prod approval gate
+
+ADVISORY — Should fix
+[helm/values-prod.yaml] OBS-MON-002 No alerting configured
+
+Gate: FAILED — 3 blocking. Recommended strategy: blue-green (stateful, first prod release).
+```
+
+> Outputs above are representative. Findings, rule IDs, and `file:line` are real to your repo when you run the skill.
+
 ## Quick Start
 
 Multi-tool: works with **Claude Code**, **Cursor**, and **Codex** (same skills, different injection per tool).
