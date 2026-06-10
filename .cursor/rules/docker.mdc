@@ -49,11 +49,11 @@ Trigger: `/docker review [path]`, "review my Dockerfile", or auto-trigger on
 
 ```
 BLOCKING — Must fix before deploy
-[Dockerfile:14] DKR-SEC-002 Container runs as root → add a non-root USER before CMD
-[Dockerfile:3]  DKR-SEC-003 Base image floats on :latest → pin to a digest or exact version
+[Dockerfile:14] CICD-DOCK-002 Container runs as root → add a non-root USER before CMD
+[Dockerfile:3]  CICD-DOCK-001 Base image floats on :latest → pin to a digest or exact version
 
 ADVISORY — Should fix
-[Dockerfile:1]  DKR-OPT-001 Single-stage build ships build tooling → use multi-stage
+[Dockerfile:1]  CICD-DOCK-003 Single-stage build ships build tooling → use multi-stage
 
 Summary: 2 blocking issue(s), 1 advisory issue(s).
 ```
@@ -62,7 +62,7 @@ Rules:
 - One finding per violation, deduped. Cite `file:line`. No line → cite the file.
 - **Confidence gate:** only report a finding you are >80% sure is real. Skip
   stylistic nits not in the catalog. Consolidate repeats (5 unpinned packages →
-  one `DKR-BLD-003`, list the lines).
+  one `CICD-DOCK-008`, list the lines).
 - **BLOCKING vs ADVISORY** is the rule's severity in the catalog — do not invent.
 
 ### Suppression
@@ -70,43 +70,48 @@ Rules:
 A repo may accept a known risk inline; honor it and do not report:
 
 ```dockerfile
-# docker-skill:ignore DKR-SEC-002 -- distroless nonroot base sets UID downstream
+# docker-skill:ignore CICD-DOCK-002 -- distroless nonroot base sets UID downstream
 USER root
 ```
 
 Format: `# docker-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
-suppression without a reason is itself an advisory finding (`DKR-MViolation`-style
-noise) — report it as `DKR-SUP-001 Suppression missing justification`.
+suppression without a reason is itself an advisory finding — report it as
+`META-SUP-001 Suppression missing justification`.
 
 ---
 
 ## Rule Catalog
 
-Stable IDs. Severity drives BLOCKING/ADVISORY. IDs are an API — never renumber a
-shipped rule; deprecate and add. Namespaces: `SEC` security, `BLD` build/correctness,
-`OPT` size/optimization, `OPS` runtime/health, `CMP` compose, `SUP` suppression.
+IDs come from auditkit's canonical registry (`.claude/rules/rule-ids.md` in
+clouddrove-ci/auditkit) so this inline skill and auditkit's deep audit share one
+findings vocabulary — a finding flagged here carries the same ID auditkit reports,
+and a baseline/waiver written once applies in both. IDs are an API: never renumber a
+shipped rule; deprecate and add. Reused-from-auditkit vs new-to-registry IDs are
+listed under the table.
 
 | ID | Severity | Check | Fix |
 |----|----------|-------|-----|
-| **DKR-SEC-001** | BLOCKING | Secret in `ARG`/`ENV` or copied into a layer (keys, tokens, passwords) | Use BuildKit `--mount=type=secret`; inject at runtime via env |
-| **DKR-SEC-002** | BLOCKING | Runtime stage runs as root (no `USER`, or `USER root`) | Create and switch to a non-root user/UID before `CMD` |
-| **DKR-SEC-003** | BLOCKING | Base image uses `:latest` or no tag | Pin to a digest (`@sha256:…`) or exact version |
-| **DKR-SEC-004** | BLOCKING | `ADD` with a remote URL (fetches unverified content) | Use `COPY`, or `curl`+checksum in a `RUN` |
-| **DKR-SEC-005** | ADVISORY | `apt-get`/`apk` without `--no-install-recommends` (extra surface) | Add `--no-install-recommends` |
-| **DKR-BLD-001** | ADVISORY | Shell-form `CMD`/`ENTRYPOINT` (signals don't reach the process) | Use exec form: `CMD ["bin","arg"]` |
-| **DKR-BLD-002** | ADVISORY | `ADD` used where `COPY` suffices | Use `COPY` unless tar-extract/URL is intended |
-| **DKR-BLD-003** | ADVISORY | OS packages installed unpinned | Pin versions (`curl=7.88.1-10`) for reproducibility |
-| **DKR-BLD-004** | ADVISORY | Layer order invalidates cache (code copied before deps installed) | Copy manifest + install deps before `COPY . .` |
-| **DKR-OPT-001** | ADVISORY | Single-stage build ships compilers/dev deps | Use multi-stage; copy only artifacts to runtime |
-| **DKR-OPT-002** | ADVISORY | Heavy base image where slim/alpine/distroless fits | Switch base; verify libc/deps |
-| **DKR-OPT-003** | ADVISORY | Package cache not cleaned in the same `RUN` | `&& rm -rf /var/lib/apt/lists/*` in the same layer |
-| **DKR-OPS-001** | ADVISORY | No `HEALTHCHECK` | Add `HEALTHCHECK` hitting a real readiness path |
-| **DKR-OPS-002** | ADVISORY | No `.dockerignore` (or missing `.git`/`node_modules`/`.env`) | Add `.dockerignore`; exclude VCS, deps, secrets, tests |
-| **DKR-CMP-001** | BLOCKING | Compose service `privileged: true` or host network without cause | Drop `privileged`; scope capabilities; use bridge network |
-| **DKR-CMP-002** | BLOCKING | Hardcoded secret in compose `environment:` | Move to `env_file:`/secrets; never commit values |
-| **DKR-CMP-003** | ADVISORY | Service missing `restart:` policy | Add `restart: unless-stopped` (or per ops policy) |
-| **DKR-CMP-004** | ADVISORY | `depends_on` without `condition: service_healthy` | Gate on healthcheck, not container start |
-| **DKR-SUP-001** | ADVISORY | `docker-skill:ignore` suppression missing a `-- reason` | Add a justification after `--` |
+| **SEC-SEC-001** | BLOCKING | Secret in an image layer (`ARG`/`ENV`/copied) or compose `environment:` | Use BuildKit `--mount=type=secret`; runtime env / `env_file:`; never commit |
+| **CICD-DOCK-002** | BLOCKING | Runtime stage runs as root (no `USER`, or `USER root`) | Create and switch to a non-root user/UID before `CMD` |
+| **CICD-DOCK-001** | BLOCKING | Base image uses `:latest` or no tag | Pin to a digest (`@sha256:…`) or exact version |
+| **CICD-DOCK-004** | BLOCKING | `ADD` with a remote URL (fetches unverified content) | Use `COPY`, or `curl`+checksum in a `RUN` |
+| **CICD-DOCK-005** | ADVISORY | `apt-get`/`apk` without `--no-install-recommends` (extra surface) | Add `--no-install-recommends` |
+| **CICD-DOCK-006** | ADVISORY | Shell-form `CMD`/`ENTRYPOINT` (signals don't reach the process) | Use exec form: `CMD ["bin","arg"]` |
+| **CICD-DOCK-007** | ADVISORY | `ADD` used where `COPY` suffices | Use `COPY` unless tar-extract/URL is intended |
+| **CICD-DOCK-008** | ADVISORY | OS packages installed unpinned | Pin versions (`curl=7.88.1-10`) for reproducibility |
+| **CICD-DOCK-009** | ADVISORY | Layer order invalidates cache (code copied before deps installed) | Copy manifest + install deps before `COPY . .` |
+| **CICD-DOCK-003** | ADVISORY | Single-stage build ships compilers/dev deps | Use multi-stage; copy only artifacts to runtime |
+| **CICD-DOCK-010** | ADVISORY | Heavy base image where slim/alpine/distroless fits | Switch base; verify libc/deps |
+| **CICD-DOCK-011** | ADVISORY | Package cache not cleaned in the same `RUN` | `&& rm -rf /var/lib/apt/lists/*` in the same layer |
+| **CICD-DOCK-012** | ADVISORY | No `HEALTHCHECK` | Add `HEALTHCHECK` hitting a real readiness path |
+| **CICD-DOCK-013** | ADVISORY | No `.dockerignore` (or missing `.git`/`node_modules`/`.env`) | Add `.dockerignore`; exclude VCS, deps, secrets, tests |
+| **CICD-DOCK-014** | BLOCKING | Compose service `privileged: true` or host network without cause | Drop `privileged`; scope capabilities; use bridge network |
+| **CICD-DOCK-015** | ADVISORY | Service missing `restart:` policy | Add `restart: unless-stopped` (or per ops policy) |
+| **CICD-DOCK-016** | ADVISORY | `depends_on` without `condition: service_healthy` | Gate on healthcheck, not container start |
+| **META-SUP-001** | ADVISORY | `docker-skill:ignore` suppression missing a `-- reason` | Add a justification after `--` |
+
+**Reused from auditkit:** `SEC-SEC-001`, `CICD-DOCK-001`, `CICD-DOCK-002`, `CICD-DOCK-003`.
+**New to the registry** (add to auditkit `rule-ids.md`): `CICD-DOCK-004`–`016`, `META-SUP-001`.
 
 > Evals for this catalog live in [`evals/`](./docker/evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.

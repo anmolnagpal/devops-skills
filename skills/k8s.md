@@ -2,7 +2,7 @@
 name: k8s
 description: "Kubernetes and Helm review and scaffolding for EKS workloads. Use when user says 'review my helm values', 'before I deploy', 'scaffold a new service', 'check values.yaml', or when working in values.yaml, Chart.yaml, or Helm template files."
 metadata:
-  version: 1.2.0
+  version: 1.3.0
   author: Anmol Nagpal
   category: devops
   updated: 2026-06-09
@@ -46,27 +46,31 @@ When an input is novel and no specific rule below matches, fall back to these:
 
 ## Rule Catalog
 
-Stable IDs. Severity drives BLOCKING/ADVISORY. IDs are an API — never renumber a
-shipped rule; deprecate and add. Namespaces: `SEC` security, `REL` reliability/HA,
-`STD` team standards, `SUP` suppression. Severities are the **staging/prod** gate;
-in **dev**, `K8S-REL-002` and `K8S-REL-004` relax to ADVISORY.
+IDs come from auditkit's canonical registry (`.claude/rules/rule-ids.md` in
+clouddrove-ci/auditkit) so this inline skill and auditkit's deep audit share one
+findings vocabulary. IDs are an API — never renumber a shipped rule; deprecate and
+add. Reused vs new-to-registry IDs are listed under the table. Severities are the
+**staging/prod** gate; in **dev**, `COST-K8S-001` and `ARCH-SPOF-002` relax to ADVISORY.
 
 | ID | Severity | Check |
 |----|----------|-------|
-| **K8S-SEC-001** | BLOCKING | Plaintext secret/password/token/apiKey inline in values |
-| **K8S-SEC-002** | BLOCKING | Static AWS credentials in env instead of IRSA |
-| **K8S-SEC-003** | ADVISORY | `securityContext` missing/incomplete (`runAsNonRoot`, `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem`) |
-| **K8S-REL-001** | BLOCKING | Image tag is `latest`, empty real value, or unset at deploy |
-| **K8S-REL-002** | BLOCKING | Container missing resource `requests` or `limits` |
-| **K8S-REL-003** | ADVISORY | `readinessProbe` or `livenessProbe` missing |
-| **K8S-REL-004** | BLOCKING | `replicaCount < 2` for staging/prod |
-| **K8S-REL-005** | ADVISORY | Memory limit less than memory request |
-| **K8S-STD-001** | ADVISORY | Required labels missing (`app`, `env`, `team`) |
-| **K8S-SUP-001** | ADVISORY | `k8s-skill:ignore` suppression missing a `-- reason` |
+| **SEC-SEC-001** | BLOCKING | Plaintext secret/password/token/apiKey inline in values |
+| **SEC-IAM-002** | BLOCKING | Static AWS credentials in env instead of IRSA |
+| **SEC-K8S-001** | ADVISORY | `securityContext` missing/incomplete (`runAsNonRoot`, `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem`) |
+| **CICD-DOCK-001** | BLOCKING | Image tag is `latest`, empty real value, or unset at deploy |
+| **COST-K8S-001** | BLOCKING | Container missing resource `requests` or `limits` |
+| **ARCH-HA-003** | ADVISORY | `readinessProbe` or `livenessProbe` missing |
+| **ARCH-SPOF-002** | BLOCKING | `replicaCount < 2` for staging/prod |
+| **COST-K8S-003** | ADVISORY | Memory limit less than memory request |
+| **COST-TAG-001** | ADVISORY | Required labels missing (`app`, `env`, `team`) |
+| **META-SUP-001** | ADVISORY | `k8s-skill:ignore` suppression missing a `-- reason` |
+
+**Reused from auditkit:** `SEC-SEC-001`, `SEC-IAM-002`, `CICD-DOCK-001`, `COST-K8S-001`, `COST-TAG-001`.
+**New to the registry** (add to auditkit `rule-ids.md`): `SEC-K8S-001`, `ARCH-HA-003`, `ARCH-SPOF-002`, `COST-K8S-003`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** accept a known risk
 with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor
-it. Reason mandatory (else `K8S-SUP-001`). **Confidence gate:** report only findings
+it. Reason mandatory (else `META-SUP-001`). **Confidence gate:** report only findings
 you are >80% sure are real; consolidate repeats; severity is the rule's (apply the
 dev relaxation above), don't invent. Evals: [`evals/`](./k8s/evals/).
 
@@ -188,12 +192,12 @@ serviceAccount:
 ```
 BLOCKING — Must fix before deploy
 ----------------------------------
-[values.yaml:14] K8S-SEC-001 Hardcoded secret: db_password has inline value → use secretKeyRef
-[values.yaml:3]  K8S-REL-001 Image tag is set to "latest" → use a specific version tag set at deploy
+[values.yaml:14] SEC-SEC-001 Hardcoded secret: db_password has inline value → use secretKeyRef
+[values.yaml:3]  CICD-DOCK-001 Image tag is set to "latest" → use a specific version tag set at deploy
 
 ADVISORY — Should fix
 ----------------------
-[values.yaml:22] K8S-SEC-003 Security context: runAsNonRoot not set → add securityContext.runAsNonRoot: true
+[values.yaml:22] SEC-K8S-001 Security context: runAsNonRoot not set → add securityContext.runAsNonRoot: true
 
 Summary: 2 blocking issue(s), 1 advisory issue(s). Fix blocking issues before deploying.
 ```

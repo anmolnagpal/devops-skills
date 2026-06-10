@@ -16,7 +16,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 skill="$(basename "$(dirname "$here")")"        # skills/<skill>/evals → <skill>
 skill_md="$here/../../$skill.md"
 cases_dir="$here/cases"
-id_re='[A-Z][A-Z0-9]{1,4}-[A-Z]+-[0-9]+'        # DKR-SEC-001, GHA-OPS-002, K8S-REL-003
+id_re='[A-Z][A-Z0-9]{1,4}-[A-Z0-9]+-[0-9]+'     # SEC-SEC-001, CICD-DOCK-004, COST-K8S-003
 
 [ -f "$skill_md" ] || { echo "FAIL: cannot find skill at $skill_md"; exit 1; }
 [ -d "$cases_dir" ] || { echo "FAIL: no cases dir at $cases_dir"; exit 1; }

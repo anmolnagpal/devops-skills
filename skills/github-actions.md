@@ -2,7 +2,7 @@
 name: github-actions
 description: "GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files."
 metadata:
-  version: 0.2.0
+  version: 0.3.0
   author: Anmol Nagpal
   category: devops
   updated: 2026-06-09
@@ -49,32 +49,37 @@ When an input is novel and no specific rule below matches, fall back to these:
 
 ## Rule Catalog
 
-Stable IDs. Severity drives BLOCKING/ADVISORY. IDs are an API — never renumber a
-shipped rule; deprecate and add. Namespaces: `SEC` security, `OPS` reliability/ops,
-`SUP` suppression. Detailed remediation for each is in REVIEW below.
+IDs come from auditkit's canonical registry (`.claude/rules/rule-ids.md` in
+clouddrove-ci/auditkit) so this inline skill and auditkit's deep audit share one
+findings vocabulary. IDs are an API — never renumber a shipped rule; deprecate and
+add. Reused vs new-to-registry IDs are listed under the table. Detailed remediation
+for each is in REVIEW below.
 
 | ID | Severity | Check |
 |----|----------|-------|
-| **GHA-SEC-001** | BLOCKING | Action used by mutable tag, not a 40-char SHA pin |
-| **GHA-SEC-002** | BLOCKING | `pull_request_target` checking out PR head (RCE) |
-| **GHA-SEC-003** | BLOCKING | Over-privileged token (`permissions: write-all`) |
-| **GHA-SEC-004** | BLOCKING | Static AWS keys for cloud auth instead of OIDC |
-| **GHA-SEC-005** | BLOCKING | Secret echoed / exposed in a `run:` block |
-| **GHA-SEC-006** | BLOCKING | Production deploy without `environment:` protection |
-| **GHA-SEC-007** | BLOCKING | Script injection: `${{ github.event.* }}` in `run:` |
-| **GHA-SEC-008** | BLOCKING | Self-hosted runner on public repo without fork restriction |
-| **GHA-OPS-001** | ADVISORY | No `concurrency` group (overlapping runs) |
-| **GHA-OPS-002** | ADVISORY | Job missing `timeout-minutes` |
-| **GHA-OPS-003** | ADVISORY | No caching for known tool installs |
-| **GHA-OPS-004** | ADVISORY | Matrix without `fail-fast: false` for independent combos |
-| **GHA-OPS-005** | ADVISORY | No CodeQL / Dependabot / dependency review on an active repo |
-| **GHA-OPS-006** | ADVISORY | Duplicated workflow logic not extracted to `workflow_call` |
-| **GHA-OPS-007** | ADVISORY | No `permissions: contents: read` baseline declared |
-| **GHA-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
+| **CICD-PIN-001** | BLOCKING | Action used by mutable tag, not a 40-char SHA pin |
+| **CICD-SEC-002** | BLOCKING | `pull_request_target` checking out PR head (RCE) |
+| **CICD-PERM-001** | BLOCKING | Over-privileged token (`permissions: write-all`) |
+| **SEC-IAM-002** | BLOCKING | Static AWS keys for cloud auth instead of OIDC |
+| **CICD-SEC-001** | BLOCKING | Secret echoed / exposed in a `run:` block |
+| **CICD-FLOW-002** | BLOCKING | Production deploy without `environment:` protection |
+| **CICD-SEC-003** | BLOCKING | Script injection: `${{ github.event.* }}` in `run:` |
+| **CICD-SEC-004** | BLOCKING | Self-hosted runner on public repo without fork restriction |
+| **CICD-OPS-001** | ADVISORY | No `concurrency` group (overlapping runs) |
+| **CICD-OPS-002** | ADVISORY | Job missing `timeout-minutes` |
+| **CICD-OPS-003** | ADVISORY | No caching for known tool installs |
+| **CICD-OPS-004** | ADVISORY | Matrix without `fail-fast: false` for independent combos |
+| **CICD-SCAN-001** | ADVISORY | No CodeQL / Dependabot / dependency review on an active repo |
+| **CICD-OPS-005** | ADVISORY | Duplicated workflow logic not extracted to `workflow_call` |
+| **CICD-PERM-002** | ADVISORY | No `permissions: contents: read` baseline declared |
+| **META-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
+
+**Reused from auditkit:** `CICD-PIN-001`, `CICD-PERM-001`, `CICD-SEC-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `SEC-IAM-002`.
+**New to the registry** (add to auditkit `rule-ids.md`): `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
-it. Reason is mandatory (else `GHA-SUP-001`). **Confidence gate:** report only
+it. Reason is mandatory (else `META-SUP-001`). **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
 don't invent. Evals: [`evals/`](./github-actions/evals/).
 
@@ -108,37 +113,37 @@ Summary: X blocking issue(s), Y advisory issue(s).
 
 ### Blocking issues
 
-1. **GHA-SEC-001 Untrusted action without SHA pin** — `uses: actions/checkout@v4` → pin to immutable SHA: `actions/checkout@<sha40>  # v4.2.2`. Tags are mutable.
-2. **GHA-SEC-002 `pull_request_target` with checkout of PR head** — RCE risk. Use `pull_request` or never check out untrusted code with elevated permissions.
-3. **GHA-SEC-003 `permissions: write-all`** — over-privileged token. Set least-privilege at job or workflow level.
-4. **GHA-SEC-004 Static AWS credentials** — `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` in secrets for cloud auth → switch to OIDC via `aws-actions/configure-aws-credentials` with `role-to-assume`.
-5. **GHA-SEC-005 Secret in `run:` block** — `echo $SECRET` or `env:` exposed in logs without masking → use job-level `env:` with `secrets.*`, never `echo`.
-6. **GHA-SEC-006 Production deploy without environment protection** — `environment: production` missing or no required reviewers → add environment with required reviewers.
-7. **GHA-SEC-007 `run:` script injection** — interpolating `${{ github.event.* }}` directly into shell → use an `env:` mapping then reference `$VAR`.
-8. **GHA-SEC-008 Self-hosted runner on public repo without restriction** — fork PRs can run arbitrary code on your infra. Use `pull_request_target` controls or ephemeral runners only.
+1. **CICD-PIN-001 Untrusted action without SHA pin** — `uses: actions/checkout@v4` → pin to immutable SHA: `actions/checkout@<sha40>  # v4.2.2`. Tags are mutable.
+2. **CICD-SEC-002 `pull_request_target` with checkout of PR head** — RCE risk. Use `pull_request` or never check out untrusted code with elevated permissions.
+3. **CICD-PERM-001 `permissions: write-all`** — over-privileged token. Set least-privilege at job or workflow level.
+4. **SEC-IAM-002 Static AWS credentials** — `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` in secrets for cloud auth → switch to OIDC via `aws-actions/configure-aws-credentials` with `role-to-assume`.
+5. **CICD-SEC-001 Secret in `run:` block** — `echo $SECRET` or `env:` exposed in logs without masking → use job-level `env:` with `secrets.*`, never `echo`.
+6. **CICD-FLOW-002 Production deploy without environment protection** — `environment: production` missing or no required reviewers → add environment with required reviewers.
+7. **CICD-SEC-003 `run:` script injection** — interpolating `${{ github.event.* }}` directly into shell → use an `env:` mapping then reference `$VAR`.
+8. **CICD-SEC-004 Self-hosted runner on public repo without restriction** — fork PRs can run arbitrary code on your infra. Use `pull_request_target` controls or ephemeral runners only.
 
 ### Advisory issues
 
-1. **GHA-OPS-001** Concurrency missing — `concurrency: { group: ${{ github.workflow }}-${{ github.ref }}, cancel-in-progress: true }` to prevent overlapping runs.
-2. **GHA-OPS-002** No `timeout-minutes` on jobs → add 10–30 min default.
-3. **GHA-OPS-003** Caching missing for known tool installs (Terraform, npm, pip, Go modules) → use `actions/cache` or tool-specific cache actions.
-4. **GHA-OPS-004** Matrix without `fail-fast: false` for independent OS/version combinations.
-5. **GHA-OPS-005** No CodeQL / Dependabot / dependency review configured for an active repo.
-6. **GHA-OPS-006** Workflow not reusable — repeated 50+ lines across files → extract to `.github/workflows/_reusable-*.yml` with `workflow_call`.
-7. **GHA-OPS-007** Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
+1. **CICD-OPS-001** Concurrency missing — `concurrency: { group: ${{ github.workflow }}-${{ github.ref }}, cancel-in-progress: true }` to prevent overlapping runs.
+2. **CICD-OPS-002** No `timeout-minutes` on jobs → add 10–30 min default.
+3. **CICD-OPS-003** Caching missing for known tool installs (Terraform, npm, pip, Go modules) → use `actions/cache` or tool-specific cache actions.
+4. **CICD-OPS-004** Matrix without `fail-fast: false` for independent OS/version combinations.
+5. **CICD-SCAN-001** No CodeQL / Dependabot / dependency review configured for an active repo.
+6. **CICD-OPS-005** Workflow not reusable — repeated 50+ lines across files → extract to `.github/workflows/_reusable-*.yml` with `workflow_call`.
+7. **CICD-PERM-002** Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
 
 ### Example output
 
 ```
 BLOCKING — Must fix before merge
-[.github/workflows/deploy.yml:14] GHA-SEC-001 Action not pinned: uses actions/checkout@v4 → pin to immutable SHA
-[.github/workflows/deploy.yml:31] GHA-SEC-004 Static AWS keys: secrets.AWS_ACCESS_KEY_ID → switch to OIDC via aws-actions/configure-aws-credentials with role-to-assume
-[.github/workflows/deploy.yml:52] GHA-SEC-006 Production deploy missing environment protection → add environment: production with required reviewers
-[.github/workflows/deploy.yml:67] GHA-SEC-007 Script injection risk: ${{ github.event.head_commit.message }} interpolated directly into run: → move to env: mapping and reference $COMMIT_MSG
+[.github/workflows/deploy.yml:14] CICD-PIN-001 Action not pinned: uses actions/checkout@v4 → pin to immutable SHA
+[.github/workflows/deploy.yml:31] SEC-IAM-002 Static AWS keys: secrets.AWS_ACCESS_KEY_ID → switch to OIDC via aws-actions/configure-aws-credentials with role-to-assume
+[.github/workflows/deploy.yml:52] CICD-FLOW-002 Production deploy missing environment protection → add environment: production with required reviewers
+[.github/workflows/deploy.yml:67] CICD-SEC-003 Script injection risk: ${{ github.event.head_commit.message }} interpolated directly into run: → move to env: mapping and reference $COMMIT_MSG
 
 ADVISORY — Should fix
-[.github/workflows/deploy.yml:1] GHA-OPS-001 No concurrency group → add concurrency to prevent overlapping runs
-[.github/workflows/deploy.yml:8] GHA-OPS-007 permissions: not declared → add `permissions: contents: read` baseline
+[.github/workflows/deploy.yml:1] CICD-OPS-001 No concurrency group → add concurrency to prevent overlapping runs
+[.github/workflows/deploy.yml:8] CICD-PERM-002 permissions: not declared → add `permissions: contents: read` baseline
 
 Summary: 4 blocking issue(s), 2 advisory issue(s).
 ```
