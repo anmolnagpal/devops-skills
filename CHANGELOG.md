@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Packaged as a Claude Code plugin.** Skills now ship as the `clouddrove` plugin, served from this repo acting as its own marketplace (`.claude-plugin/marketplace.json` + `.claude-plugin/plugin.json`). Skill sources moved from flat `skills/<name>.md` to `skills/<name>/SKILL.md` directories (evals/references co-located). Claude Code commands are now namespaced `/clouddrove:<skill>` with a native `(clouddrove)` label — replacing the per-skill symlink install.
+- `install-claude.sh` now runs `claude plugin marketplace add <repo>` + `claude plugin install clouddrove@devops-skills` instead of symlinking each skill. `generate.sh` reads `skills/<name>/SKILL.md`. Install without cloning: `/plugin marketplace add anmolnagpal/devops-skills` then `/plugin install clouddrove@devops-skills`.
+
 ## [0.0.1] — 2026-05-14
 
 First public release.

@@ -5,7 +5,7 @@
 #
 # Asserts:
 #   1. Every rule ID in any expected.txt exists in the skill's Rule Catalog
-#      (skills/<name>.md). Catches typos and catalog drift.
+#      (skills/<name>/SKILL.md). Catches typos and catalog drift.
 #   2. Every `clean-*` case has an empty expected.txt.
 #   3. Every case directory has an expected.txt.
 #
@@ -14,7 +14,7 @@ set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 skill="$(basename "$(dirname "$here")")"        # skills/<skill>/evals → <skill>
-skill_md="$here/../../$skill.md"
+skill_md="$here/../SKILL.md"
 cases_dir="$here/cases"
 id_re='[A-Z][A-Z0-9]{1,4}-[A-Z0-9]+-[0-9]+'     # SEC-SEC-001, CICD-DOCK-004, COST-K8S-003
 

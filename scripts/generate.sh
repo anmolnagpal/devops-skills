@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Generate per-tool adapter artifacts from canonical skills/*.md sources.
+# Generate per-tool adapter artifacts from canonical skills/<name>/SKILL.md sources.
 #
-#   skills/<name>.md  →
+#   skills/<name>/SKILL.md  →
 #     .cursor/rules/<name>.mdc     (Cursor)
 #     AGENTS.md                    (Codex — single concatenated file)
 #
@@ -62,13 +62,13 @@ def agents_section(name, fm, body):
 
 agents_parts = [
     "# AGENTS.md\n",
-    "Generated from skills/*.md by scripts/generate.sh. Edit sources, not this file.\n",
+    "Generated from skills/<name>/SKILL.md by scripts/generate.sh. Edit sources, not this file.\n",
     "Codex (and other AGENTS-aware tools) read this file for skill guidance.\n",
 ]
 
 count = 0
-for path in sorted(glob.glob(f"{SRC}/*.md")):
-    name = os.path.splitext(os.path.basename(path))[0]
+for path in sorted(glob.glob(f"{SRC}/*/SKILL.md")):
+    name = os.path.basename(os.path.dirname(path))
     fm, body = parse(path)
     if fm is None:
         print(f"  skip: {name} (no frontmatter)")

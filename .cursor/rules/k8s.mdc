@@ -68,7 +68,7 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor
 it. Reason mandatory (else `META-SUP-001`). **Confidence gate:** report only findings
 you are >80% sure are real; consolidate repeats; severity is the rule's (apply the
-dev relaxation above), don't invent. Evals: [`evals/`](./k8s/evals/).
+dev relaxation above), don't invent. Evals: [`evals/`](./evals/).
 
 ---
 

@@ -4,12 +4,12 @@ Thanks for your interest. This repo is a community-friendly collection of DevOps
 
 ## Add or improve a skill
 
-1. Skills live in `skills/<name>.md` (single canonical source).
+1. Skills live in `skills/<name>/SKILL.md` (single canonical source; one directory per skill, with `evals/` and references co-located). They ship as the `clouddrove` plugin.
 2. Frontmatter must include `name`, `description`, `metadata`, and `paths` (when the skill should auto-trigger on file globs).
 3. Body should follow the structure: a short purpose paragraph, a Keywords section, an Output Artifacts table, then sections per mode (REVIEW / NEW / etc.).
-4. Use `/skill-creator` (this repo) to iterate on the skill and run evals.
+4. Use `/clouddrove:skill-creator` (this repo) to iterate on the skill and run evals.
 5. Run `bash scripts/generate.sh` — this rebuilds `.cursor/rules/<name>.mdc` and `AGENTS.md` from your source.
-6. Commit `skills/<name>.md`, the new `.cursor/rules/<name>.mdc`, and the updated `AGENTS.md`.
+6. Commit `skills/<name>/SKILL.md`, the new `.cursor/rules/<name>.mdc`, and the updated `AGENTS.md`.
 7. Update the skill table in `README.md`.
 
 ## Open a pull request
@@ -23,7 +23,7 @@ Thanks for your interest. This repo is a community-friendly collection of DevOps
 `skills/specs/` contains spec drafts that have not been authored as runnable skills yet. To promote one:
 
 1. Pick a spec (e.g. `skills/specs/aws-cost.md`).
-2. Create `skills/aws-cost.md` with proper frontmatter.
+2. Create `skills/aws-cost/SKILL.md` with proper frontmatter.
 3. Distill the spec into actionable instructions following the structure above.
 4. Delete the spec file once superseded.
 

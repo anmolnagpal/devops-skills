@@ -6,6 +6,8 @@ Real example prompts for every skill, plugin, and MCP server in this repo.
 
 ## Tips
 
+> **Command namespacing** — these skills ship as the `clouddrove` plugin, so in Claude Code the slash commands are namespaced: `/clouddrove:tf`, `/clouddrove:k8s`, etc. Examples below use the short `/tf` form for brevity — prefix with `clouddrove:` when typing them.
+
 **Auto-trigger** — skills activate automatically when you open relevant files. You don't need to type the skill name:
 - `*.tf` / `*.tfvars` → `/tf` (or `/clouddrove-tf` if the repo has an `_modules/` directory)
 - `values.yaml`, `Chart.yaml`, Helm templates → `/k8s`

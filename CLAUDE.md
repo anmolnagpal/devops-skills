@@ -42,25 +42,29 @@ This repo distributes reusable Claude Code **skills**, **plugins**, and **MCP se
 ```
 
 `install.sh` is idempotent — already-installed plugins, MCP servers, and symlinks are reused.
-Edit `skills/*.md` → run `bash scripts/generate.sh` → commit `.cursor/rules/` + `AGENTS.md`.
+Edit `skills/<name>/SKILL.md` → run `bash scripts/generate.sh` → commit `.cursor/rules/` + `AGENTS.md`.
 
 ## Repository Structure
 
 ```
-skills/          ← Canonical skill sources (edit here)
-  owasp/         ← Reference docs loaded on-demand by /owasp-security
-  docker/        ← References + scripts for /docker
-  finops/        ← References + scripts for /finops
-  specs/         ← Backlog spec drafts (not active)
+.claude-plugin/  ← plugin.json (clouddrove plugin) + marketplace.json (this repo = its own marketplace)
+skills/          ← Canonical skill sources, one dir per skill (edit here)
+  <name>/SKILL.md   ← the skill body
+  <name>/evals/     ← static eval fixtures + validate.sh (review skills)
+  owasp/*.md        ← reference docs loaded on-demand by the owasp skill
+  docker/, finops/  ← references + scripts, co-located with the skill
+  specs/         ← Backlog spec drafts (not active; no SKILL.md, not generated)
 .cursor/rules/   ← Generated Cursor .mdc rules (do not hand-edit)
 AGENTS.md        ← Generated Codex skill doc (do not hand-edit)
 agents/          ← Reserved for Claude agents (currently empty)
 scripts/         ← bootstrap, install (dispatcher), install-{claude,cursor,codex}, generate, mcp, set-aws-profile
-config/          ← plugins.txt, marketplaces.txt
+config/          ← plugins.txt, marketplaces.txt (external team plugins, not clouddrove)
 templates/       ← CLAUDE.md template to copy into project repos
 _docs/           ← CHEATSHEET.md with example prompts
 _test/           ← Dockerfile + test.sh for Docker-based install testing
 ```
+
+Skills install as the **`clouddrove` plugin** served from this repo's own marketplace (`.claude-plugin/marketplace.json`). `install-claude.sh` runs `claude plugin marketplace add <repo>` + `claude plugin install clouddrove@devops-skills`, so skills are namespaced `/clouddrove:<skill>` natively — no per-skill symlinks.
 
 ## Skill Architecture
 
@@ -94,23 +98,26 @@ allowed-tools:            # Optional: restrict available tools
 
 ### Current Skills
 
-| Skill | File | Auto-triggers on |
+| Skill (Claude slash) | Source | Auto-triggers on |
 |-------|------|-----------------|
-| `/tf` | `skills/tf.md` | `**/*.tf`, `**/*.tfvars` |
-| `/k8s` | `skills/k8s.md` | `**/values*.yaml`, `**/Chart.yaml`, Helm templates |
-| `/ci` | `skills/ci.md` | `**/.gitlab-ci.yml` |
-| `/github-actions` | `skills/github-actions.md` | `**/.github/workflows/*.yml` |
-| `/github` | `skills/github.md` | `**/CODEOWNERS`, `**/.github/dependabot.yml` |
-| `/owasp-security` | `skills/owasp.md` | Manual only |
-| `/docker` | `skills/docker.md` | `**/Dockerfile`, `**/docker-compose*.yml` |
-| `/finops` | `skills/finops.md` | Manual only |
-| `/skill-creator` | `skills/skill-creator.md` | Manual only |
+| `/clouddrove:tf` | `skills/tf/SKILL.md` | `**/*.tf`, `**/*.tfvars` |
+| `/clouddrove:k8s` | `skills/k8s/SKILL.md` | `**/values*.yaml`, `**/Chart.yaml`, Helm templates |
+| `/clouddrove:ci` | `skills/ci/SKILL.md` | `**/.gitlab-ci.yml` |
+| `/clouddrove:github-actions` | `skills/github-actions/SKILL.md` | `**/.github/workflows/*.yml` |
+| `/clouddrove:github` | `skills/github/SKILL.md` | `**/CODEOWNERS`, `**/.github/dependabot.yml` |
+| `/clouddrove:owasp` | `skills/owasp/SKILL.md` | Manual only |
+| `/clouddrove:docker` | `skills/docker/SKILL.md` | `**/Dockerfile`, `**/docker-compose*.yml` |
+| `/clouddrove:finops` | `skills/finops/SKILL.md` | Manual only |
+| `/clouddrove:deploy` | `skills/deploy/SKILL.md` | Manual only |
+| `/clouddrove:adr` | `skills/adr/SKILL.md` | `**/docs/adr/*.md` |
+| `/clouddrove:clouddrove-tf` | `skills/clouddrove-tf/SKILL.md` | `_modules/**/*.tf`, `environments/**/*.tf` |
+| `/clouddrove:skill-creator` | `skills/skill-creator/SKILL.md` | Manual only |
 
 Backlog spec drafts (not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security.
 
 ### Multi-tool adapters
 
-Sources in `skills/*.md` generate per-tool artifacts via `scripts/generate.sh`:
+Sources in `skills/<name>/SKILL.md` generate per-tool artifacts via `scripts/generate.sh`:
 
 - `.cursor/rules/<name>.mdc` — Cursor (`globs:` derived from `paths:`, auto-attach)
 - `AGENTS.md` — Codex (one file, all skills concatenated)
@@ -133,10 +140,10 @@ Summary: X blocking issue(s), Y advisory issue(s).
 
 ## Adding a New Skill
 
-1. Create `skills/<name>.md` following the frontmatter format above
-2. Use `/skill-creator` to iteratively develop and eval the skill
+1. Create `skills/<name>/SKILL.md` following the frontmatter format above (one directory per skill; co-locate `evals/`, references, scripts)
+2. Use `/clouddrove:skill-creator` to iteratively develop and eval the skill
 3. Run `bash scripts/generate.sh` to refresh `.cursor/rules/<name>.mdc` + `AGENTS.md`
-4. Add an entry to the skill table in `README.md`
+4. Add an entry to the skill table in `README.md` (the plugin auto-discovers any `skills/<name>/SKILL.md`)
 5. Commit `skills/`, `.cursor/rules/`, `AGENTS.md` — teammates pull and re-run `./scripts/install.sh --all`
 
 ## Adding a New MCP Server

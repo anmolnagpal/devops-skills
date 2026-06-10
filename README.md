@@ -11,8 +11,9 @@
 ## What you get
 
 - **10 skills** that auto-trigger on file globs and answer with structured review output
-  (`/tf`, `/k8s`, `/ci`, `/github-actions`, `/github`, `/docker`, `/finops`, `/owasp-security`, `/clouddrove-tf`, `/deploy`, `/adr`, `/skill-creator`)
-- **Single source** in `skills/*.md` — a generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
+  (`/clouddrove:tf`, `/clouddrove:k8s`, `/clouddrove:ci`, `/clouddrove:github-actions`, `/clouddrove:github`, `/clouddrove:docker`, `/clouddrove:finops`, `/clouddrove:owasp`, `/clouddrove:clouddrove-tf`, `/clouddrove:deploy`, `/clouddrove:adr`, `/clouddrove:skill-creator`)
+- **Packaged as the `clouddrove` plugin** — installed from this repo's own marketplace, so skills are namespaced `(clouddrove)` in Claude Code natively
+- **Single source** in `skills/<name>/SKILL.md` — a generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
 - **One installer** with flags — `--claude` / `--cursor` / `--codex` / `--all`, global or per-project scope
 - **Curated Claude plugin set** — Terraform code/module generation (HashiCorp), claude-mem, superpowers, caveman, engineering-workflow-skills
 - **MCP servers** wired in: Kubernetes live access, EKS ops, AWS Cost Explorer, Atlassian (Jira + Confluence), Outline docs/wiki
@@ -23,8 +24,17 @@
 
 Multi-tool: works with **Claude Code**, **Cursor**, and **Codex** (same skills, different injection per tool).
 
+**Claude Code — install as a plugin** (no clone needed):
+
+```text
+/plugin marketplace add anmolnagpal/devops-skills
+/plugin install clouddrove@devops-skills
+```
+
+Skills then appear as `/clouddrove:tf`, `/clouddrove:deploy`, … with a native `(clouddrove)` label. The install script below does the same automatically (plus Cursor/Codex and MCP).
+
 ```bash
-# Claude Code only (legacy behavior)
+# Claude Code only
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/anmolnagpal/devops-skills/main/scripts/bootstrap.sh)" -- --claude
 
 # All three tools
@@ -38,7 +48,7 @@ What each flag does:
 
 | Flag | What it installs |
 |------|------------------|
-| `--claude` | Skills into `~/.claude/skills/`, plugins from `config/plugins.txt`, MCP servers |
+| `--claude` | `clouddrove` skills plugin (from this repo's marketplace), team plugins from `config/plugins.txt`, MCP servers |
 | `--cursor` | `.cursor/rules/*.mdc` into `~/.cursor/rules/` (or `--project <path>`) |
 | `--codex`  | `AGENTS.md` into `~/.codex/AGENTS.md` (or `--project <path>`) |
 | `--all`    | All three |
@@ -74,30 +84,30 @@ git clone git@github.com:anmolnagpal/devops-skills.git ~/devops-skills
 
 ## Skills
 
-Single source: `skills/*.md`. Adapters generated per tool by `scripts/generate.sh`:
+Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles them all; the generator emits per-tool adapters via `scripts/generate.sh`:
 
 | Source | Claude slash | Cursor rule | Auto-trigger |
 |--------|--------------|-------------|--------------|
-| `skills/tf.md` | `/tf` | `tf.mdc` | `**/*.tf`, `**/*.tfvars` |
-| `skills/k8s.md` | `/k8s` | `k8s.mdc` | `**/values*.yaml`, `**/Chart.yaml`, `**/templates/*.yaml` |
-| `skills/ci.md` | `/ci` | `ci.mdc` | `**/.gitlab-ci.yml` |
-| `skills/github-actions.md` | `/github-actions` | `github-actions.mdc` | `**/.github/workflows/*.yml` |
-| `skills/github.md` | `/github` | `github.mdc` | `**/CODEOWNERS`, `**/.github/dependabot.yml`, PR/issue templates |
-| `skills/docker.md` | `/docker` | `docker.mdc` | `**/Dockerfile`, `**/docker-compose*.yml` |
-| `skills/finops.md` | `/finops` | `finops.mdc` | manual |
-| `skills/owasp.md` | `/owasp-security` | `owasp.mdc` | manual |
-| `skills/clouddrove-tf.md` | `/clouddrove-tf` | `clouddrove-tf.mdc` | `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` |
-| `skills/deploy.md` | `/deploy` | `deploy.mdc` | manual |
-| `skills/adr.md` | `/adr` | `adr.mdc` | `**/docs/adr/*.md` |
-| `skills/skill-creator.md` | `/skill-creator` | `skill-creator.mdc` | manual |
+| `skills/tf/SKILL.md` | `/clouddrove:tf` | `tf.mdc` | `**/*.tf`, `**/*.tfvars` |
+| `skills/k8s/SKILL.md` | `/clouddrove:k8s` | `k8s.mdc` | `**/values*.yaml`, `**/Chart.yaml`, `**/templates/*.yaml` |
+| `skills/ci/SKILL.md` | `/clouddrove:ci` | `ci.mdc` | `**/.gitlab-ci.yml` |
+| `skills/github-actions/SKILL.md` | `/clouddrove:github-actions` | `github-actions.mdc` | `**/.github/workflows/*.yml` |
+| `skills/github/SKILL.md` | `/clouddrove:github` | `github.mdc` | `**/CODEOWNERS`, `**/.github/dependabot.yml`, PR/issue templates |
+| `skills/docker/SKILL.md` | `/clouddrove:docker` | `docker.mdc` | `**/Dockerfile`, `**/docker-compose*.yml` |
+| `skills/finops/SKILL.md` | `/clouddrove:finops` | `finops.mdc` | manual |
+| `skills/owasp/SKILL.md` | `/clouddrove:owasp` | `owasp.mdc` | manual |
+| `skills/clouddrove-tf/SKILL.md` | `/clouddrove:clouddrove-tf` | `clouddrove-tf.mdc` | `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` |
+| `skills/deploy/SKILL.md` | `/clouddrove:deploy` | `deploy.mdc` | manual |
+| `skills/adr/SKILL.md` | `/clouddrove:adr` | `adr.mdc` | `**/docs/adr/*.md` |
+| `skills/skill-creator/SKILL.md` | `/clouddrove:skill-creator` | `skill-creator.mdc` | manual |
 
-All 10 are also injected into `AGENTS.md` for Codex.
+All 12 are also injected into `AGENTS.md` for Codex.
 
-Backlog specs (drafts, not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security. Promote to active by adding frontmatter and moving up to `skills/`.
+Backlog specs (drafts, not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security. Promote to active by adding frontmatter under `skills/<name>/SKILL.md`.
 
-Edit `skills/<name>.md`, run `bash scripts/generate.sh`, commit. Re-run `./scripts/install.sh --all` to push to local installs.
+Edit `skills/<name>/SKILL.md`, run `bash scripts/generate.sh`, commit. Re-run `./scripts/install.sh --all` to push to local installs.
 
-In Claude Code: invoke with `/skill-name`. In Cursor: rules auto-attach via `globs:`. In Codex: `AGENTS.md` loaded by default.
+In Claude Code: invoke with `/clouddrove:<skill>` (namespaced by the plugin). In Cursor: rules auto-attach via `globs:`. In Codex: `AGENTS.md` loaded by default.
 
 ### What each skill does
 

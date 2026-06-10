@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Generated from skills/*.md by scripts/generate.sh. Edit sources, not this file.
+Generated from skills/<name>/SKILL.md by scripts/generate.sh. Edit sources, not this file.
 
 Codex (and other AGENTS-aware tools) read this file for skill guidance.
 
@@ -1090,7 +1090,7 @@ listed under the table.
 **Reused from auditkit:** `SEC-SEC-001`, `CICD-DOCK-001`, `CICD-DOCK-002`, `CICD-DOCK-003`.
 **New to the registry** (add to auditkit `rule-ids.md`): `CICD-DOCK-004`–`016`, `META-SUP-001`.
 
-> Evals for this catalog live in [`evals/`](./docker/evals/) — each case is an input
+> Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
 
 ---
@@ -2376,7 +2376,7 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor
 it. Reason mandatory (else `META-SUP-001`). **Confidence gate:** report only findings
 you are >80% sure are real; consolidate repeats; severity is the rule's (apply the
-dev relaxation above), don't invent. Evals: [`evals/`](./k8s/evals/).
+dev relaxation above), don't invent. Evals: [`evals/`](./evals/).
 
 ---
 
@@ -2659,9 +2659,9 @@ security, owasp, vulnerability, injection, xss, csrf, auth, authentication, auth
 
 ## Reference Files
 
-- `owasp/secure-patterns.md` — Safe vs unsafe code patterns (SQL, command injection, auth, error handling)
-- `owasp/agentic.md` — OWASP Agentic AI Security (ASI 2026) + ASVS 5.0 requirements
-- `owasp/languages.md` — Language-specific security quirks for 20+ languages
+- `secure-patterns.md` — Safe vs unsafe code patterns (SQL, command injection, auth, error handling)
+- `agentic.md` — OWASP Agentic AI Security (ASI 2026) + ASVS 5.0 requirements
+- `languages.md` — Language-specific security quirks for 20+ languages
 
 ---
 
@@ -2690,7 +2690,7 @@ mitigating control); **ADVISORY** for hardening/defense-in-depth. Cite `file:lin
 | **OWASP-A09** | Logging Failures | security-event logging, no PII, alerting |
 | **OWASP-A10** | Exception Handling | fail-closed, no internals leaked, logged with context |
 | **ASVS-*** | ASVS 5.0 control | cite the control ID directly (e.g. `ASVS-2.1.1`) for deep auth/session/crypto review |
-| **ASI-*** | Agentic AI (ASI 2026) | cite the risk ID directly for AI-agent code (see `owasp/agentic.md`) |
+| **ASI-*** | Agentic AI (ASI 2026) | cite the risk ID directly for AI-agent code (see `agentic.md`) |
 
 The Security Code Review Checklist below maps to these: Input Handling → `OWASP-A05`,
 Auth & Sessions → `OWASP-A07`, Access Control → `OWASP-A01`, Data Protection →
@@ -2752,9 +2752,9 @@ with per-finding (not per-rule) severity, so the fixture-based eval harness does
 
 ---
 
-For secure code patterns → read `owasp/secure-patterns.md`
-For language-specific quirks → read `owasp/languages.md`
-For agentic AI security + ASVS → read `owasp/agentic.md`
+For secure code patterns → read `secure-patterns.md`
+For language-specific quirks → read `languages.md`
+For agentic AI security + ASVS → read `agentic.md`
 
 
 ## /skill-creator
@@ -3319,7 +3319,7 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
 honor it (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
-don't invent. Evals: [`evals/`](./tf/evals/).
+don't invent. Evals: [`evals/`](./evals/).
 
 ---
 

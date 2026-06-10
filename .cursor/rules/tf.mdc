@@ -74,7 +74,7 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
 honor it (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
-don't invent. Evals: [`evals/`](./tf/evals/).
+don't invent. Evals: [`evals/`](./evals/).
 
 ---
 
