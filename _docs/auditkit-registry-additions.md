@@ -57,6 +57,20 @@ Reused: `SEC-SEC-001`, `SEC-IAM-002`, `CICD-DOCK-001` (mutable image tag),
 
 - `META-SUP-001` — inline suppression (`<skill>:ignore <ID>`) missing a `-- reason`
 
+## Terraform (`TF-*`) — second batch (pending)
+
+The `/tf` skill reuses auditkit's existing `TF-*` series (`TF-VAR-001/002`,
+`TF-PROV-001/002`, `TF-STATE-001/002`, `TF-RES-001`, `TF-MOD-001/002`,
+`TF-QUAL-001`). Four checks have no existing entry — add in a follow-up auditkit PR:
+
+- `TF-VAR-003` — `variable` block missing `description` or explicit `type`
+- `TF-VAR-004` — hardcoded env-specific value (region/account/ARN/env/CIDR) outside a `backend` block
+- `TF-OUT-001` — `output` block missing `description`
+- `TF-OUT-002` — output exposing a secret not marked `sensitive = true`
+
+> The first batch (CICD-DOCK/SEC/OPS/PERM, SEC-K8S, ARCH, COST-K8S, META) merged
+> in clouddrove-ci/auditkit#8. These four are the only registry debt remaining.
+
 ## Mappings to review (debatable taxonomy)
 
 Flag for human review when applying to auditkit — these placements are judgment calls:
