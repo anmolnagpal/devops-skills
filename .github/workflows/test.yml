@@ -46,6 +46,18 @@ jobs:
       - name: Lint every skill's frontmatter (name matches dir, description present)
         run: bash scripts/check-skills.sh
 
+  rule-ids:
+    name: Rule IDs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.x' }
+      - run: pip install pyyaml
+      - name: Every skill rule ID exists in the canonical registry
+        run: bash scripts/check-rule-ids.sh
+
   evals:
     name: Skill evals
     runs-on: ubuntu-latest
