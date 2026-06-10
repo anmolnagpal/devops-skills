@@ -34,6 +34,18 @@ jobs:
       - name: Adapters in sync with skills/ (regenerate + fail on drift)
         run: bash scripts/generate.sh --check
 
+  skills-lint:
+    name: Skill frontmatter
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with: { python-version: '3.x' }
+      - run: pip install pyyaml
+      - name: Lint every skill's frontmatter (name matches dir, description present)
+        run: bash scripts/check-skills.sh
+
   evals:
     name: Skill evals
     runs-on: ubuntu-latest
