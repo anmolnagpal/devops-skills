@@ -113,7 +113,7 @@ echo "ClouDrove skills (clouddrove plugin):"
 
 # Drop legacy per-skill symlinks from pre-plugin installs so skills don't appear
 # twice (once unscoped, once namespaced).
-for name in tf k8s ci github github-actions docker finops owasp deploy adr clouddrove-tf skill-creator; do
+for name in tf k8s ci github github-actions docker finops owasp deploy adr wrapper-tf skill-creator; do
   rm -f "$SKILLS_DIR/$name.md"
   [ -L "$SKILLS_DIR/$name/SKILL.md" ] && rm -rf "${SKILLS_DIR:?}/$name"
 done

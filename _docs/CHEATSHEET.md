@@ -9,17 +9,17 @@ Real example prompts for every skill, plugin, and MCP server in this repo.
 > **Command namespacing** — these skills ship as the `clouddrove` plugin, so in Claude Code the slash commands are namespaced: `/clouddrove:tf`, `/clouddrove:k8s`, etc. Examples below use the short `/tf` form for brevity — prefix with `clouddrove:` when typing them.
 
 **Auto-trigger** — skills activate automatically when you open relevant files. You don't need to type the skill name:
-- `*.tf` / `*.tfvars` → `/tf` (or `/clouddrove-tf` if the repo has an `_modules/` directory)
+- `*.tf` / `*.tfvars` → `/tf` (or `/clouddrove:wrapper-tf` if the repo has an `_modules/` directory)
 - `values.yaml`, `Chart.yaml`, Helm templates → `/k8s`
 - `.gitlab-ci.yml` → `/ci`
 - `.github/workflows/*.yml` → `/github-actions`
 - `CODEOWNERS`, `.github/dependabot.yml`, PR/issue templates → `/github`
 - `Dockerfile`, `docker-compose*.yml` → `/docker`
-- `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` → `/clouddrove-tf`
+- `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` → `/clouddrove:wrapper-tf`
 
 **Which Terraform skill?** Two skills cover Terraform — pick one per repo:
 - `/tf` — generic Terraform / `terraform-aws-modules` ecosystem
-- `/clouddrove-tf` — repo wraps `clouddrove/*/aws` modules under `_modules/` (team standard)
+- `/clouddrove:wrapper-tf` — repo wraps `clouddrove/*/aws` modules under `_modules/` (team standard)
 
 Don't mix them in the same repo — they give conflicting recommendations.
 
@@ -71,16 +71,16 @@ Don't mix them in the same repo — they give conflicting recommendations.
 
 ---
 
-### `/clouddrove-tf` — Team Standard for CloudDrove Wrapper Repos
+### `/clouddrove:wrapper-tf` — Team Standard for CloudDrove Wrapper Repos
 
 Use on any repo where `_modules/<name>/` wraps `clouddrove/<name>/aws`. Supersedes `/tf` on these repos.
 
 ```
-/clouddrove-tf new monitoring       # Scaffold _modules/monitoring/ with module "labels" + standard vars
-/clouddrove-tf new vpc              # Scaffold _modules/vpc/
-/clouddrove-tf ci                   # Generate .github/workflows/terraform.yml + drift.yml
-/clouddrove-tf review               # Pre-PR check: wrapper pattern, naming, CloudDrove gotchas, security baseline
-/clouddrove-tf controls             # SOC2 CC6/CC7/C1/A1 + GDPR Art.5/25/32/33 coverage table
+/clouddrove:wrapper-tf new monitoring       # Scaffold _modules/monitoring/ with module "labels" + standard vars
+/clouddrove:wrapper-tf new vpc              # Scaffold _modules/vpc/
+/clouddrove:wrapper-tf ci                   # Generate .github/workflows/terraform.yml + drift.yml
+/clouddrove:wrapper-tf review               # Pre-PR check: wrapper pattern, naming, CloudDrove gotchas, security baseline
+/clouddrove:wrapper-tf controls             # SOC2 CC6/CC7/C1/A1 + GDPR Art.5/25/32/33 coverage table
 ```
 
 **Example conversations:**

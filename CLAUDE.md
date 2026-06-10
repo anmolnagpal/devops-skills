@@ -110,7 +110,7 @@ allowed-tools:            # Optional: restrict available tools
 | `/clouddrove:finops` | `skills/finops/SKILL.md` | Manual only |
 | `/clouddrove:deploy` | `skills/deploy/SKILL.md` | Manual only |
 | `/clouddrove:adr` | `skills/adr/SKILL.md` | `**/docs/adr/*.md` |
-| `/clouddrove:clouddrove-tf` | `skills/clouddrove-tf/SKILL.md` | `_modules/**/*.tf`, `environments/**/*.tf` |
+| `/clouddrove:wrapper-tf` | `skills/clouddrove:wrapper-tf/SKILL.md` | `_modules/**/*.tf`, `environments/**/*.tf` |
 | `/clouddrove:skill-creator` | `skills/skill-creator/SKILL.md` | Manual only |
 
 Backlog spec drafts (not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security.

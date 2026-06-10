@@ -1,6 +1,6 @@
 # CloudDrove Terraform skill evals
 
-Eval-driven development for the `/clouddrove-tf` review mode. Each case is an **input
+Eval-driven development for the `/clouddrove:wrapper-tf` review mode. Each case is an **input
 fixture** plus the **exact rule IDs** the skill must surface on it. This makes
 "the skill catches X" provable and regression-gated, not claimed.
 
@@ -25,7 +25,7 @@ evals/
    case expects nothing. Catches typos, renamed/deleted rules, and drift between
    the catalog and the evals. No model invocation.
 
-2. **Model grading (manual / harness).** Run the `/clouddrove-tf review` skill against
+2. **Model grading (manual / harness).** Run the `/clouddrove:wrapper-tf review` skill against
    each `cases/<name>/` input and compare reported rule IDs to `expected.txt`:
    - **Recall (the pass/fail gate):** every ID in `expected.txt` MUST be reported.
      A missing one = false negative = case fails. `expected.txt` is the
@@ -41,7 +41,7 @@ evals/
 ## Run static validation
 
 ```bash
-bash skills/clouddrove-tf/evals/validate.sh
+bash skills/clouddrove:wrapper-tf/evals/validate.sh
 ```
 
 Exit non-zero on any unknown rule ID or a non-empty `expected.txt` in a `clean-*`
