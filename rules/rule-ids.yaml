@@ -57,6 +57,12 @@ SEC:
   SEC-APP-001: 'missing security headers'
   SEC-APP-002: 'CORS wildcard'
   SEC-K8S-001: 'pod securityContext missing/incomplete (runAsNonRoot, no privilege escalation, read-only rootfs)'
+  SEC-K8S-002: 'privileged container / hostPath / host PID·IPC·Network namespace'
+  SEC-K8S-003: 'RBAC over-grant (wildcard verb/resource, cluster-admin binding to SA/user)'
+  SEC-K8S-004: 'no NetworkPolicy / namespace not network-segmented'
+  SEC-K8S-005: 'missing CPU/memory limits or requests on workload'
+  SEC-K8S-006: 'exposed/insecure service (NodePort to internet, kubernetes-dashboard, anonymous API)'
+  SEC-K8S-007: 'automountServiceAccountToken enabled / secret exposed via env or unmounted'
 
 # ── CI/CD ─────────────────────────────────────────────────────────────────────
 CICD:
