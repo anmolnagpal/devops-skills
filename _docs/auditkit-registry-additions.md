@@ -130,8 +130,9 @@ Flag for human review when applying to auditkit — these placements are judgmen
 - **Batch 2** (`TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`, for `/tf`) —
   merged in clouddrove-ci/auditkit#9.
 
-All IDs emitted by `/docker`, `/github-actions`, `/k8s`, and `/tf` now exist in the
-shared registry. No registry debt remaining.
+All IDs emitted by clouddrove skills now exist in the shared registry (`rules/rule-ids.yaml`).
+No registry debt remaining. When adding new skills, use this document as a template
+for the auditkit sync PR.
 
 ## CloudDrove wrapper pattern (`CDTF-*`) — intentionally skill-local
 

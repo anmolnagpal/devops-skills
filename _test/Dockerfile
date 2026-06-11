@@ -54,7 +54,7 @@ RUN echo "" && echo "── Claude CLI calls ──" && \
     done
 
 # ── Verify generator + adapters in sync ────────────────────────────────────────
-RUN pip3 install --break-system-packages pyyaml 2>/dev/null || apt-get update && apt-get install -y python3-yaml
+RUN pip3 install --break-system-packages pyyaml 2>/dev/null || { apt-get update && apt-get install -y python3-yaml; }
 RUN bash scripts/generate.sh && \
     git config --global --add safe.directory /repo && \
     if [ -d .git ]; then \

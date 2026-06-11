@@ -79,12 +79,12 @@ generic — the same IDs cover GitHub Actions and GitLab CI.)
 | **META-SUP-001** | ADVISORY | `ci-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `CICD-SEC-001`, `SEC-IAM-002`, `SEC-SEC-001`, `CICD-FLOW-002`, `TF-STATE-001`, `CICD-DOCK-001`, `META-SUP-001`.
-**New to the registry** (pending a follow-up auditkit PR): `CICD-SEC-005`, `CICD-FLOW-003/004`, `CICD-HELM-001/002/003/004`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-005`, `CICD-FLOW-003/004`, `CICD-HELM-001/002/003/004`.
 
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# ci-skill:ignore <RULE-ID> -- <reason>` on the line above (reason mandatory,
 else `META-SUP-001`). **Confidence gate:** report only findings you are >80% sure are
-real; consolidate repeats; severity is the rule's, don't invent. Evals: [`evals/`](./ci/evals/).
+real; consolidate repeats; severity is the rule's, don't invent. Evals: [`evals/`](./evals/).
 
 ---
 

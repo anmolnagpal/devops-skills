@@ -66,8 +66,7 @@ opportunities, ranked by impact, never merge-blockers. IDs are an API: never ren
 | **COST-LIVE-VISIBILITY-001** | Cost tooling disabled (Compute Optimizer / Storage Lens / CUR off) |
 
 **Reused from auditkit:** all `COST-*` and `COST-LIVE-*` above except the three below.
-**New to the registry** (pending a follow-up auditkit PR): `COST-COMP-004` (Graviton),
-`COST-STOR-003` (gp2→gp3), `COST-DB-002` (Aurora I/O-Optimized).
+**Registered in `rules/rule-ids.yaml`:** `COST-COMP-004` (Graviton), `COST-STOR-003` (gp2→gp3), `COST-DB-002` (Aurora I/O-Optimized).
 
 **No `evals/`:** findings come from **live** AWS billing/optimizer data (Cost Explorer,
 CUR, Compute Optimizer), not static files, so the fixture-based eval harness does not

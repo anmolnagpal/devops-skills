@@ -188,12 +188,12 @@ generic — the same IDs cover GitHub Actions and GitLab CI.)
 | **META-SUP-001** | ADVISORY | `ci-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `CICD-SEC-001`, `SEC-IAM-002`, `SEC-SEC-001`, `CICD-FLOW-002`, `TF-STATE-001`, `CICD-DOCK-001`, `META-SUP-001`.
-**New to the registry** (pending a follow-up auditkit PR): `CICD-SEC-005`, `CICD-FLOW-003/004`, `CICD-HELM-001/002/003/004`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-005`, `CICD-FLOW-003/004`, `CICD-HELM-001/002/003/004`.
 
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# ci-skill:ignore <RULE-ID> -- <reason>` on the line above (reason mandatory,
 else `META-SUP-001`). **Confidence gate:** report only findings you are >80% sure are
-real; consolidate repeats; severity is the rule's, don't invent. Evals: [`evals/`](./ci/evals/).
+real; consolidate repeats; severity is the rule's, don't invent. Evals: [`evals/`](./evals/).
 
 ---
 
@@ -689,7 +689,7 @@ listed under the table.
 | **META-SUP-001** | ADVISORY | `docker-skill:ignore` suppression missing a `-- reason` | Add a justification after `--` |
 
 **Reused from auditkit:** `SEC-SEC-001`, `CICD-DOCK-001`, `CICD-DOCK-002`, `CICD-DOCK-003`.
-**New to the registry** (add to auditkit `rule-ids.md`): `CICD-DOCK-004`–`016`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-DOCK-004`–`016`, `META-SUP-001`.
 
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
@@ -1043,8 +1043,7 @@ opportunities, ranked by impact, never merge-blockers. IDs are an API: never ren
 | **COST-LIVE-VISIBILITY-001** | Cost tooling disabled (Compute Optimizer / Storage Lens / CUR off) |
 
 **Reused from auditkit:** all `COST-*` and `COST-LIVE-*` above except the three below.
-**New to the registry** (pending a follow-up auditkit PR): `COST-COMP-004` (Graviton),
-`COST-STOR-003` (gp2→gp3), `COST-DB-002` (Aurora I/O-Optimized).
+**Registered in `rules/rule-ids.yaml`:** `COST-COMP-004` (Graviton), `COST-STOR-003` (gp2→gp3), `COST-DB-002` (Aurora I/O-Optimized).
 
 **No `evals/`:** findings come from **live** AWS billing/optimizer data (Cost Explorer,
 CUR, Compute Optimizer), not static files, so the fixture-based eval harness does not
@@ -1340,13 +1339,13 @@ for each is in REVIEW below.
 | **META-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `CICD-PIN-001`, `CICD-PERM-001`, `CICD-SEC-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `SEC-IAM-002`.
-**New to the registry** (add to auditkit `rule-ids.md`): `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
 it. Reason is mandatory (else `META-SUP-001`). **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
-don't invent. Evals: [`evals/`](./github-actions/evals/).
+don't invent. Evals: [`evals/`](./evals/).
 
 ---
 
@@ -1682,7 +1681,7 @@ Reused vs new-to-registry IDs are listed under the table.
 | **META-SUP-001** | ADVISORY | Accepted-risk waiver recorded without a reason |
 
 **Reused from auditkit:** `REPO-BP-001/002`, `REPO-PR-001/002`, `REPO-CODE-001`, `SEC-SEC-005`, `CICD-PERM-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `META-SUP-001`.
-**New to the registry** (pending a follow-up auditkit PR): `REPO-BP-003/004`, `REPO-PR-003/004`, `REPO-DOC-003`, `REPO-DEP-001/002`.
+**Registered in `rules/rule-ids.yaml`:** `REPO-BP-003/004`, `REPO-PR-003/004`, `REPO-DOC-003`, `REPO-DEP-001/002`.
 
 **Output:** every AUDIT finding carries its rule ID. **No `evals/`:** AUDIT reads
 **live** repo state via the `gh` API, not static files, so the fixture-based eval
@@ -1971,7 +1970,7 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 | **META-SUP-001** | ADVISORY | `k8s-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `SEC-SEC-001`, `SEC-IAM-002`, `CICD-DOCK-001`, `COST-K8S-001`, `COST-TAG-001`.
-**New to the registry** (add to auditkit `rule-ids.md`): `SEC-K8S-001`, `ARCH-HA-003`, `ARCH-SPOF-002`, `COST-K8S-003`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `SEC-K8S-001`, `ARCH-HA-003`, `ARCH-SPOF-002`, `COST-K8S-003`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** accept a known risk
 with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor
@@ -2365,6 +2364,15 @@ For agentic AI security + ASVS → read `agentic.md`
 # Skill Creator
 
 A skill for creating new skills and iteratively improving them.
+
+> **Standalone vs. full install:** The core workflow — Capture Intent, Write SKILL.md,
+> draft Test Cases, and iterate — works fully in this repo. The eval runner, benchmarking,
+> and description-optimization loop require supporting files (`eval-viewer/`, `scripts/`,
+> `agents/`, `assets/`, `references/`) that ship with the
+> [claude-mem](https://github.com/thedotmack/claude-mem) plugin's skill-creator. If
+> `claude-mem` is installed, those sections work automatically. If it is not, skip the
+> sections marked with script invocations and use the manual inline-review approach
+> described in the Claude.ai-specific instructions below.
 
 At a high level, the process of creating a skill goes like this:
 
@@ -2914,7 +2922,7 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 | **META-SUP-001** | ADVISORY | `tf-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `TF-VAR-001`, `TF-VAR-002`, `TF-PROV-001/002`, `TF-STATE-001/002`, `TF-RES-001`, `TF-MOD-001/002`, `TF-QUAL-001`, `META-SUP-001`.
-**New to the registry** (pending a follow-up auditkit PR): `TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`.
+**Registered in `rules/rule-ids.yaml`:** `TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`.
 
 **Output:** every finding carries its rule ID, in the format below. **Suppression:**
 accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
@@ -3239,7 +3247,7 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 risk with `# wrapper-tf:ignore <RULE-ID> -- <reason>` on the line above; honor it
 (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only findings you
 are >80% sure are real; consolidate repeats; severity is the rule's, don't invent.
-Evals: [`evals/`](./clouddrove:wrapper-tf/evals/).
+Evals: [`evals/`](./evals/).
 
 **Reused from auditkit:** `TF-MOD-002`, `TF-VAR-003`, `TF-OUT-001/002`, `TF-STATE-001/002`, `SEC-ENC-001/002/003`, `SEC-NET-001/002`, `OBS-MON-001`, `META-SUP-001`.
 **Skill-local (`CDTF-*`):** the wrapper-pattern and CloudDrove-module-gotcha rules above.

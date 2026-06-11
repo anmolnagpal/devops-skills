@@ -80,7 +80,7 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 | **META-SUP-001** | ADVISORY | `tf-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `TF-VAR-001`, `TF-VAR-002`, `TF-PROV-001/002`, `TF-STATE-001/002`, `TF-RES-001`, `TF-MOD-001/002`, `TF-QUAL-001`, `META-SUP-001`.
-**New to the registry** (pending a follow-up auditkit PR): `TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`.
+**Registered in `rules/rule-ids.yaml`:** `TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`.
 
 **Output:** every finding carries its rule ID, in the format below. **Suppression:**
 accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
