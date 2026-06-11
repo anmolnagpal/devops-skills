@@ -84,13 +84,13 @@ for each is in REVIEW below.
 | **META-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `CICD-PIN-001`, `CICD-PERM-001`, `CICD-SEC-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `SEC-IAM-002`.
-**New to the registry** (add to auditkit `rule-ids.md`): `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
 it. Reason is mandatory (else `META-SUP-001`). **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
-don't invent. Evals: [`evals/`](./github-actions/evals/).
+don't invent. Evals: [`evals/`](./evals/).
 
 ---
 

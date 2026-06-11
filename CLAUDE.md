@@ -25,6 +25,21 @@ These rules apply to every push originating from this repo. They override defaul
 
 This repo distributes reusable Claude Code **skills**, **plugins**, and **MCP servers** to the team. Skills are markdown files that encode DevOps best practices; they ship as the **`clouddrove` plugin** (this repo is also its own marketplace), installed via `claude plugin install clouddrove@devops-skills`, alongside the team plugins and MCP servers wired by the install scripts.
 
+## Validation commands
+
+Run these locally before pushing — they are the same checks CI runs:
+
+```bash
+pip3 install --break-system-packages pyyaml   # one-time dep; --break-system-packages required on macOS Homebrew Python
+
+bash scripts/check-skills.sh             # lint: name/description frontmatter
+bash scripts/check-rule-ids.sh           # every rule ID in skills/ exists in rules/rule-ids.yaml
+bash scripts/check-evals.sh              # eval fixtures reference only known rule IDs
+bash scripts/generate.sh --check         # .cursor/rules/ + AGENTS.md are up to date
+```
+
+CI also runs ShellCheck on `scripts/` and a full Docker-based install harness (`_test/test.sh`).
+
 ## Installing / Updating
 
 ```bash
@@ -115,6 +130,25 @@ allowed-tools:            # Optional: restrict available tools
 
 Backlog spec drafts (not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security.
 
+### Rule ID registry
+
+`rules/rule-ids.yaml` is the canonical vocabulary for every finding ID a skill can emit. Format: `DOMAIN-CATEGORY-NNN`. **Any new rule ID used in a `skills/<name>/SKILL.md` Rule Catalog must be registered here first** — `check-rule-ids.sh` (and CI) will reject unknown IDs. Framework/compliance IDs (`SOC2-*`, `CIS-*`, `NIST-*`, etc.) are exempt and pass without a registry entry.
+
+### Eval cases
+
+Review skills can ship a `skills/<name>/evals/` folder to prove correctness without a model:
+
+```
+evals/
+  cases/
+    <case-name>/
+      <fixture file>    ← input (e.g. .tf, Dockerfile)
+      expected.txt      ← one rule ID per line the skill MUST report; empty = clean pass
+  validate.sh           ← static consistency check (copy verbatim from any existing skill)
+```
+
+`validate.sh` asserts every ID in `expected.txt` exists in the skill's Rule Catalog, and that `clean-*` cases have an empty `expected.txt`. Run it with `bash skills/<name>/evals/validate.sh`.
+
 ### Multi-tool adapters
 
 Sources in `skills/<name>/SKILL.md` generate per-tool artifacts via `scripts/generate.sh`:
@@ -141,10 +175,12 @@ Summary: X blocking issue(s), Y advisory issue(s).
 ## Adding a New Skill
 
 1. Create `skills/<name>/SKILL.md` following the frontmatter format above (one directory per skill; co-locate `evals/`, references, scripts)
-2. Use `/clouddrove:skill-creator` to iteratively develop and eval the skill
-3. Run `bash scripts/generate.sh` to refresh `.cursor/rules/<name>.mdc` + `AGENTS.md`
-4. Add an entry to the skill table in `README.md` (the plugin auto-discovers any `skills/<name>/SKILL.md`)
-5. Commit `skills/`, `.cursor/rules/`, `AGENTS.md` — teammates pull and re-run `./scripts/install.sh --all`
+2. Register any new rule IDs in `rules/rule-ids.yaml` under the appropriate domain before using them in the skill
+3. Use `/clouddrove:skill-creator` to iteratively develop and eval the skill
+4. Add eval cases under `skills/<name>/evals/cases/` — copy `validate.sh` verbatim from an existing skill (e.g. `skills/tf/evals/validate.sh`)
+5. Run `bash scripts/generate.sh` to refresh `.cursor/rules/<name>.mdc` + `AGENTS.md`
+6. Add an entry to the skill table in `README.md` (the plugin auto-discovers any `skills/<name>/SKILL.md`)
+7. Commit `skills/`, `rules/rule-ids.yaml`, `.cursor/rules/`, `AGENTS.md` — teammates pull and re-run `./scripts/install.sh --all`
 
 ## Adding a New MCP Server
 
@@ -165,3 +201,4 @@ Non-default marketplaces go in `config/marketplaces.txt`.
 - `mcp.sh` is **sourced** (not executed directly) by `install.sh` — it must not use `#!/bin/bash` exit semantics that break the parent shell
 - `scripts/set-aws-profile.sh` uses inline Python to patch `~/.claude/settings.json`; it updates `AWS_PROFILE` for `eks-mcp-server` and `billing-mcp-server`
 - The `templates/CLAUDE.md` is a template to copy into project repos for always-on team context — it is not this repo's own CLAUDE.md
+- The plugin ships two hooks via `hooks/hooks.json` (referenced from `plugin.json`): a `SessionStart` banner and a `PreToolUse` bash-guard that blocks destructive patterns (force-push, `git reset --hard`, `DROP TABLE`, `aws rds delete-db-*`, etc.). When adding new dangerous patterns to block, extend `hooks/bash-guard.sh`.

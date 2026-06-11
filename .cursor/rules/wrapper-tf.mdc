@@ -81,7 +81,7 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 risk with `# wrapper-tf:ignore <RULE-ID> -- <reason>` on the line above; honor it
 (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only findings you
 are >80% sure are real; consolidate repeats; severity is the rule's, don't invent.
-Evals: [`evals/`](./clouddrove:wrapper-tf/evals/).
+Evals: [`evals/`](./evals/).
 
 **Reused from auditkit:** `TF-MOD-002`, `TF-VAR-003`, `TF-OUT-001/002`, `TF-STATE-001/002`, `SEC-ENC-001/002/003`, `SEC-NET-001/002`, `OBS-MON-001`, `META-SUP-001`.
 **Skill-local (`CDTF-*`):** the wrapper-pattern and CloudDrove-module-gotcha rules above.

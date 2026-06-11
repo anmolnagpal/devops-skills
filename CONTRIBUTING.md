@@ -8,7 +8,7 @@ Thanks for your interest. This repo is a community-friendly collection of DevOps
 2. Frontmatter must include `name`, `description`, `metadata`, and `paths` (when the skill should auto-trigger on file globs).
 3. Body should follow the structure: a short purpose paragraph, a Keywords section, an Output Artifacts table, then sections per mode (REVIEW / NEW / etc.).
 4. Use `/clouddrove:skill-creator` (this repo) to iterate on the skill and run evals.
-5. Run `bash scripts/generate.sh` — this rebuilds `.cursor/rules/<name>.mdc` and `AGENTS.md` from your source.
+5. Run `bash scripts/generate.sh` — this rebuilds `.cursor/rules/<name>.mdc` and `AGENTS.md` from your source. Requires `pyyaml`: `pip3 install --break-system-packages pyyaml` (macOS Homebrew) or `pip install pyyaml` (other environments).
 6. Commit `skills/<name>/SKILL.md`, the new `.cursor/rules/<name>.mdc`, and the updated `AGENTS.md`.
 7. Update the skill table in `README.md`.
 

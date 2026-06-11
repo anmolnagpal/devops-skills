@@ -72,7 +72,7 @@ Reused vs new-to-registry IDs are listed under the table.
 | **META-SUP-001** | ADVISORY | Accepted-risk waiver recorded without a reason |
 
 **Reused from auditkit:** `REPO-BP-001/002`, `REPO-PR-001/002`, `REPO-CODE-001`, `SEC-SEC-005`, `CICD-PERM-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `META-SUP-001`.
-**New to the registry** (pending a follow-up auditkit PR): `REPO-BP-003/004`, `REPO-PR-003/004`, `REPO-DOC-003`, `REPO-DEP-001/002`.
+**Registered in `rules/rule-ids.yaml`:** `REPO-BP-003/004`, `REPO-PR-003/004`, `REPO-DOC-003`, `REPO-DEP-001/002`.
 
 **Output:** every AUDIT finding carries its rule ID. **No `evals/`:** AUDIT reads
 **live** repo state via the `gh` API, not static files, so the fixture-based eval

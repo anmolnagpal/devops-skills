@@ -62,7 +62,7 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 | **META-SUP-001** | ADVISORY | `k8s-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `SEC-SEC-001`, `SEC-IAM-002`, `CICD-DOCK-001`, `COST-K8S-001`, `COST-TAG-001`.
-**New to the registry** (add to auditkit `rule-ids.md`): `SEC-K8S-001`, `ARCH-HA-003`, `ARCH-SPOF-002`, `COST-K8S-003`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `SEC-K8S-001`, `ARCH-HA-003`, `ARCH-SPOF-002`, `COST-K8S-003`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** accept a known risk
 with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor

@@ -139,7 +139,7 @@ listed under the table.
 | **META-SUP-001** | ADVISORY | `docker-skill:ignore` suppression missing a `-- reason` | Add a justification after `--` |
 
 **Reused from auditkit:** `SEC-SEC-001`, `CICD-DOCK-001`, `CICD-DOCK-002`, `CICD-DOCK-003`.
-**New to the registry** (add to auditkit `rule-ids.md`): `CICD-DOCK-004`–`016`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-DOCK-004`–`016`, `META-SUP-001`.
 
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.

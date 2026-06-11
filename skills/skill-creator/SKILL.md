@@ -12,6 +12,15 @@ metadata:
 
 A skill for creating new skills and iteratively improving them.
 
+> **Standalone vs. full install:** The core workflow — Capture Intent, Write SKILL.md,
+> draft Test Cases, and iterate — works fully in this repo. The eval runner, benchmarking,
+> and description-optimization loop require supporting files (`eval-viewer/`, `scripts/`,
+> `agents/`, `assets/`, `references/`) that ship with the
+> [claude-mem](https://github.com/thedotmack/claude-mem) plugin's skill-creator. If
+> `claude-mem` is installed, those sections work automatically. If it is not, skip the
+> sections marked with script invocations and use the manual inline-review approach
+> described in the Claude.ai-specific instructions below.
+
 At a high level, the process of creating a skill goes like this:
 
 - Decide what you want the skill to do and roughly how it should do it
