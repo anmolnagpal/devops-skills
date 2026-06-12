@@ -63,6 +63,11 @@ SEC:
   SEC-K8S-005: 'missing CPU/memory limits or requests on workload'
   SEC-K8S-006: 'exposed/insecure service (NodePort to internet, kubernetes-dashboard, anonymous API)'
   SEC-K8S-007: 'automountServiceAccountToken enabled / secret exposed via env or unmounted'
+  SEC-DNS-001: 'DNSSEC not enabled'
+  SEC-DNS-002: 'no CAA record'
+  SEC-DNS-003: 'DNS zone transfer (AXFR) open'
+  SEC-EMAIL-001: 'SPF missing or weak'
+  SEC-EMAIL-002: 'DMARC missing or weak (policy/subdomain policy)'
 
 # ── CI/CD ─────────────────────────────────────────────────────────────────────
 CICD:
