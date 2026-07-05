@@ -1,7 +1,9 @@
 # Fixture: placeholder values in a *.tfvars.example file. Should produce ZERO
 # findings — FP-exclusion #1 (tf/SKILL.md) excludes example/placeholder files
-# from TF-VAR-004, since these values are never applied.
+# from TF-VAR-004, since these values are never applied. No secret-like value
+# here on purpose: the exclusion only covers TF-VAR-004 (env-specific
+# literals), not TF-VAR-001 (hardcoded secrets) — a fixture testing the
+# TF-VAR-004 exclusion shouldn't also carry an unrelated secret-shaped value.
 region      = "eu-west-1"
 account_id  = "123456789012"
 environment = "prod"
-db_password = "changeme"
