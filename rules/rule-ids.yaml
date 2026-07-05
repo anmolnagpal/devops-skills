@@ -179,17 +179,21 @@ REPO:
 
 # ── Skill-local: CloudDrove wrapper Terraform (wrapper-tf only) ────────────────
 # These are specific to the /clouddrove:wrapper-tf skill and not part of the
-# generic shared audit vocabulary.
+# generic shared audit vocabulary. Skill-local means the skill's own Rule
+# Catalog table is the source of truth for meaning — this registry mirrors it
+# so check-rule-ids.sh has something to validate IDs against, but if the two
+# ever disagree again, skills/wrapper-tf/SKILL.md wins and this file gets
+# corrected to match (not the other way around).
 CDTF:
   CDTF-WRAP-001: 'module not wrapping a clouddrove/*/aws source'
   CDTF-WRAP-002: 'wrapper missing the standard module "labels" block'
   CDTF-WRAP-003: 'wrapper bypasses labels for naming/tags'
-  CDTF-MOD-001: '_modules/<name>/ missing required file (main/variables/outputs)'
-  CDTF-MOD-002: 'wrapped module source not version-pinned'
-  CDTF-MOD-003: 'variable not threaded through to the wrapped module'
-  CDTF-MOD-004: 'output not re-exported from the wrapped module'
-  CDTF-MOD-005: 'hardcoded value that should derive from labels/vars'
-  CDTF-MOD-006: 'missing description/type on wrapper variable'
+  CDTF-MOD-001: 'waf_scop upstream typo (silently no-ops instead of waf_scope)'
+  CDTF-MOD-002: 'web_acl_association=true set inside the WAF module (belongs on ALB)'
+  CDTF-MOD-003: 'module "acm" hardcoded zone_id instead of module.dns.zone_id'
+  CDTF-MOD-004: 'subject_alternative_names passed to module "dns" (SANs belong on acm)'
+  CDTF-MOD-005: 'allow_default_action=true on WAF without validating no legitimate traffic is blocked'
+  CDTF-MOD-006: 'enable_dns_validation=false not commented (correct for the pattern, but should explain why)'
   CDTF-NAME-001: 'resource name not derived from module.labels'
   CDTF-NAME-002: 'environment/name not parameterized'
   CDTF-STATE-001: 'environment state not isolated per the wrapper convention'
