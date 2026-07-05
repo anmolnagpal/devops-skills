@@ -1,6 +1,13 @@
-FROM node:26-slim
+FROM ubuntu:24.04
 
-RUN apt-get update && apt-get install -y python3 python3-yaml git bash curl ca-certificates unzip && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system deps + Node.js 22 (LTS) via NodeSource
+RUN apt-get update && \
+    apt-get install -y curl git bash python3 python3-yaml ca-certificates unzip gnupg && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /repo
 COPY . .
@@ -9,8 +16,7 @@ COPY . .
 RUN printf '#!/bin/bash\necho "  [stub claude] $@"\necho "$@" >> /tmp/claude-calls.log\nexit 0\n' \
       > /usr/local/bin/claude && chmod +x /usr/local/bin/claude
 
-# Stub brew so install-claude.sh's Bun install branch is a no-op (Linux path
-# uses curl; this just makes the bun command available before plugins run).
+# Stub bun — Linux path uses curl install; this makes bun available immediately.
 RUN printf '#!/bin/bash\necho "  [stub bun] $@"\nexit 0\n' \
       > /usr/local/bin/bun && chmod +x /usr/local/bin/bun
 
@@ -25,7 +31,12 @@ RUN CI=true bash scripts/install.sh --claude
 
 # ── Verify ClouDrove plugin manifests + skill bodies ───────────────────────────
 RUN echo "" && echo "── ClouDrove plugin ──" && \
-    python3 -c "import json; m=json.load(open('.claude-plugin/marketplace.json')); assert any(p['name']=='clouddrove' for p in m['plugins']), 'clouddrove not listed in marketplace'; p=json.load(open('.claude-plugin/plugin.json')); assert p['name']=='clouddrove', 'plugin.json name mismatch'; print('  ✓ manifests valid, clouddrove plugin listed')" && \
+    python3 -c "import json; \
+m=json.load(open('.claude-plugin/marketplace.json')); \
+assert any(p['name']=='clouddrove' for p in m['plugins']), 'clouddrove not listed in marketplace'; \
+p=json.load(open('.claude-plugin/plugin.json')); \
+assert p['name']=='clouddrove', 'plugin.json name mismatch'; \
+print('  ✓ manifests valid, clouddrove plugin listed')" && \
     for skill in tf k8s ci owasp skill-creator docker finops github github-actions deploy adr wrapper-tf; do \
       [ -f "skills/$skill/SKILL.md" ] \
         && echo "  ✓ skills/$skill/SKILL.md" \

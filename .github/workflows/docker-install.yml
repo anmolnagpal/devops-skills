@@ -1,0 +1,37 @@
+name: Docker install (Ubuntu)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  install-ubuntu:
+    name: Install on Ubuntu 24.04 (Docker)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
+
+      - name: Build Ubuntu install image
+        run: |
+          docker build \
+            -f _test/Dockerfile \
+            -t devops-skills-ubuntu:${{ github.sha }} \
+            --label "sha=${{ github.sha }}" \
+            --label "ref=${{ github.ref_name }}" \
+            .
+
+      - name: Run install verification
+        run: docker run --rm devops-skills-ubuntu:${{ github.sha }}
+
+      - name: Cleanup image
+        if: always()
+        run: docker rmi devops-skills-ubuntu:${{ github.sha }} --force 2>/dev/null || true

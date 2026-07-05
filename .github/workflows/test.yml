@@ -13,15 +13,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  install-docker:
-    name: Docker install harness
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6
-      - name: Build test image and run install harness
-        run: bash _test/test.sh
-
   generator:
     name: Adapters in sync with skills/
     runs-on: ubuntu-latest
