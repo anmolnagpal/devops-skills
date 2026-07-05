@@ -2,7 +2,7 @@
 name: wrapper-tf
 description: "Team standard for AWS Terraform repos built on the CloudDrove wrapper-module pattern. Use when working in a repo with an `_modules/` directory that wraps `clouddrove/*/aws` modules, scaffolding a new wrapper module, generating Terraform GitHub Actions CI, reviewing wrapper-pattern PRs, or mapping the pattern to SOC2/GDPR controls. Supersedes /tf on CloudDrove repos."
 metadata:
-  version: 1.2.0
+  version: 1.3.0
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
@@ -77,6 +77,8 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 | **CDTF-MOD-004** | BLOCKING | `subject_alternative_names` on `module "dns"` (SANs belong on `acm`) |
 | **CDTF-MOD-005** | ADVISORY | `allow_default_action = true` on WAF (validate first) |
 | **CDTF-MOD-006** | ADVISORY | `enable_dns_validation = false` not commented (correct, but explain) |
+| **CDTF-MOD-007** | BLOCKING | `_modules/<name>/` missing a required file (`main.tf`, `variables.tf`, or `outputs.tf`) |
+| **CDTF-MOD-008** | ADVISORY | A wrapper `variable` is declared but never passed into the wrapped `module "<name>"` call, or vice versa — a wrapped-module input the wrapper never exposes |
 | **CDTF-STATE-001** | BLOCKING | Same backend `key` across environments (each env needs a unique key) |
 | **TF-MOD-002** | BLOCKING | CloudDrove module call without a pinned `version` (git ref/branch/omitted) |
 | **TF-VAR-003** | BLOCKING | `variable` block missing `description` (or explicit `type` — type-only is advisory) |
@@ -294,6 +296,11 @@ All resources follow `{client_name}-{environment}-{resource}`. Verify:
 - Secrets Manager: `${local.np}/{service}/master`
 
 - **BLOCKING:** Any resource name not derived from `module.labels.name_prefix`
+
+### Module completeness
+
+- **BLOCKING (`CDTF-MOD-007`):** `_modules/<name>/` is missing `main.tf`, `variables.tf`, or `outputs.tf` — every wrapper module needs all three, even if a file is nearly empty.
+- **ADVISORY (`CDTF-MOD-008`):** A `variable` declared in `_modules/<name>/variables.tf` is never passed as an argument into the wrapped `module "<name>"` call (dead input), or the wrapped CloudDrove module accepts an input the wrapper never exposes as one of its own variables (unreachable configuration). Check both directions.
 
 ### CloudDrove module gotchas
 

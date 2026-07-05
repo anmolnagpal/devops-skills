@@ -2,7 +2,7 @@
 name: deploy
 description: "Deployment strategy, production-readiness gating, and rollback planning for AWS/EKS services. Use when user says 'how should I deploy this', 'blue-green or canary', 'are we ready to ship', 'production readiness', 'plan a rollback', 'pre-deploy check', or before a first production release. Pairs with /k8s, /ci, /github-actions, /tf which own the per-artifact checks."
 metadata:
-  version: 0.3.0
+  version: 0.4.0
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
@@ -94,6 +94,25 @@ repo and collect its real findings:**
 This makes "reuses the per-artifact skills" an actual step, not an assumption — the
 gate is only as good as the skills it actually ran.
 
+**Show your work — the gate must be auditable, not just asserted.** Every READINESS
+output opens with which artifacts were found and which skill actually ran on each,
+before the BLOCKING/ADVISORY list. If an artifact was found but its skill wasn't run
+(context limit, forgot, whatever the reason), that has to show up here as a visible
+gap — never silently print `READY` having skipped one:
+
+```
+Artifacts detected: values.yaml, Dockerfile, .github/workflows/deploy.yml, *.tf
+Skills run: k8s ✓, docker ✓, github-actions ✓, tf ✗ (not run — see below)
+
+[... BLOCKING/ADVISORY findings from the skills that DID run ...]
+
+Gate: INCOMPLETE — tf artifacts found but /clouddrove:tf review was not run.
+Re-run including that skill before treating this as a readiness verdict.
+```
+
+A gate can only print `READY` or a normal `FAILED — N blocking` verdict when every
+detected artifact's skill actually ran. Anything else is `INCOMPLETE`, not `READY`.
+
 **Suppression:** a pulled-forward finding is suppressed if the per-artifact skill
 already honored its own `*-skill:ignore` comment (don't re-report what the source
 skill already excluded). For a deploy-specific check (rollback tested, gate present,
@@ -104,6 +123,9 @@ honor it. Reason mandatory, else `META-SUP-001`.
 Output the repo-standard format with rule IDs:
 
 ```
+Artifacts detected: values.yaml, .gitlab-ci.yml
+Skills run: k8s ✓, ci ✓
+
 BLOCKING — Not ready to ship
 [helm/values.yaml:—] ARCH-HA-003 No readiness/liveness probe → orchestrator can't gate traffic
 [.gitlab-ci.yml:61]  CICD-FLOW-002 Production deploy has no manual gate → add when: manual
@@ -124,7 +146,9 @@ Readiness checklist (each maps to an existing registry ID):
 - **Config & secrets** — config validated at startup; no secrets in image/values (`SEC-SEC-001`).
 - **Image** — tag pinned/immutable, set at deploy (`CICD-DOCK-001`).
 
-A clean gate prints `READY — N checks passed` and the recommended strategy.
+A clean gate prints `READY — N checks passed` and the recommended strategy — only
+when every detected artifact's skill actually ran (see "Show your work" above).
+Otherwise print `INCOMPLETE`, never `READY`.
 
 ---
 
