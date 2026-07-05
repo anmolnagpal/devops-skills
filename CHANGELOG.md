@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-07-05
+
+### Added
+
+- **Tier-2 behavioral eval harness** (opt-in) for live skill validation against real fixtures, plus fixed unanchored regex matching and non-deterministic fixture selection.
+- **Named false-positive exclusion lists** and a quote-line requirement added across all file-review skills (docker, k8s, github, wrapper-tf, owasp, finops).
+- **Suppression mechanism parity** across review skills: inline suppression support for OWASP and deploy, waiver-file mechanism for GitHub audit and FinOps.
+- **CDTF-MOD-007/008** — restored two wrapper-module checks (missing required files, unthreaded variables) lost in earlier cleanup, with full catalog/checklist/registry entries.
+- **Deploy readiness-gate transparency** — the READINESS gate now reports which artifact skills actually ran and returns INCOMPLETE rather than silently claiming READY when artifacts are skipped.
+- `SEC-DNS-001..003`, `SEC-EMAIL-001..002` (external-surface auditor), `SEC-K8S-002..007` (k8s workload security) rule IDs.
+
+### Fixed
+
+- Registry drift on `CDTF-MOD-001..006` between the canonical registry and the wrapper-tf skill.
+- Docker FP-exclusion #4 severity contradiction, k8s exception clause too narrow in scope, GitHub FP-exclusion contradictory wording.
+- Dead Bash grant on the deploy skill; its rule-reuse mechanism made concrete.
+
 ## [1.1.0] — 2026-06-10
 
 ### Added
