@@ -2,10 +2,10 @@
 name: github-actions
 description: "GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files."
 metadata:
-  version: 0.3.0
+  version: 0.4.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-06-09
+  updated: 2026-07-05
 paths:
   - "**/.github/workflows/*.yml"
   - "**/.github/workflows/*.yaml"
@@ -90,7 +90,18 @@ for each is in REVIEW below.
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
 it. Reason is mandatory (else `META-SUP-001`). **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
-don't invent. Evals: [`evals/`](./evals/).
+don't invent; quote the exact offending line — if you can't quote it, don't report
+it. Evals: [`evals/`](./evals/).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. `pull_request_target` used only to add labels/comments via `actions/github-script`, with **no checkout** of PR head at all — `CICD-SEC-002` targets the checkout-of-untrusted-code RCE pattern specifically; verify there's no `actions/checkout` step with `ref: ${{ github.event.pull_request.head.sha }}` before excluding.
+2. `${{ github.event.* }}` fields that are GitHub-controlled and not attacker-influenced (e.g. `github.event.repository.name`, `github.run_id`) interpolated into `run:` — `CICD-SEC-003` targets attacker-controlled fields (PR title/body, branch name, commit message, issue title).
+3. Self-hosted runners on a **private** repo with no external contributors — `CICD-SEC-004` targets public-repo exposure to arbitrary fork PRs.
+
+Exception: if the "label-only" workflow's `actions/github-script` step actually
+executes untrusted PR content (e.g. `eval`s the PR title), or the private repo grants
+write access to external collaborators, the exclusion doesn't apply.
 
 ---
 

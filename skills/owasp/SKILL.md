@@ -2,10 +2,10 @@
 name: owasp
 description: "Security review against OWASP Top 10:2025, ASVS 5.0, and Agentic AI risks. Use when user says 'review for security', 'is this secure', 'check for vulnerabilities', 'review auth/authorization', 'check input handling', or when writing cryptography, session management, or AI agent code."
 metadata:
-  version: 1.2.0
+  version: 1.3.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-06-10
+  updated: 2026-07-05
 allowed-tools:
   - Glob
   - Read
@@ -76,6 +76,24 @@ Auth & Sessions → `OWASP-A07`, Access Control → `OWASP-A01`, Data Protection
 
 **No `evals/`:** this skill is contextual, judgment-heavy review across 20+ languages
 with per-finding (not per-rule) severity, so the fixture-based eval harness does not fit.
+
+**Confidence gate:** report a finding only if you can quote the exact line(s) that
+motivate it — if you can't quote it, don't report it. Below 80% sure it's exploitable
+in this codebase (not just theoretically possible), downgrade to ADVISORY or drop it.
+Consolidate repeats (5 endpoints missing the same check → one finding, list the lines).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. Missing per-route auth where a framework-level middleware already enforces it globally (verify the middleware is actually mounted on this route before excluding).
+2. Findings inside test/fixture/example files or functions clearly named as such (`test_`, `fixture_`, `*.spec.*`, `examples/`) — unless the same unsafe pattern also appears in non-test code.
+3. Verbose errors or debug output gated behind an env check (`if DEBUG`, `NODE_ENV !== 'production'`) that cannot reach a production build.
+4. Missing rate-limiting or DoS hardening on endpoints that are not internet-reachable (internal-only, behind a VPN/service-mesh with no public ingress).
+5. Placeholder/example secrets in test fixtures with clearly fake values (`test_password_123`, `sk_test_...`) — flag real-looking values (high entropy, matches a live provider's key format) instead.
+
+Exceptions: a hard-exclusion above does not apply, and the finding stands, if the
+"safe" condition doesn't actually hold in this codebase (e.g. the framework middleware
+exists but isn't mounted on the route in question) — verify before excluding, don't
+assume from the pattern alone.
 
 ---
 

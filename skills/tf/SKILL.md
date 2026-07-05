@@ -2,10 +2,10 @@
 name: tf
 description: "Generic Terraform review, scaffolding, and version upgrades for AWS infrastructure using the terraform-aws-modules ecosystem. Use when user says 'review my terraform', 'before I raise an MR', 'scaffold a lambda/rds/s3/eks/vpc', 'check my .tf files', 'upgrade provider', or when working in .tf or .tfvars files. NOTE: if the repo has an `_modules/` directory wrapping `clouddrove/*/aws` modules, use /clouddrove:wrapper-tf instead — the two patterns conflict."
 metadata:
-  version: 1.2.0
+  version: 1.3.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-06-10
+  updated: 2026-07-05
 paths:
   - "**/*.tf"
   - "**/*.tfvars"
@@ -86,7 +86,17 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
 honor it (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
-don't invent. Evals: [`evals/`](./evals/).
+don't invent; quote the exact offending line/value in the finding — if you can't
+quote it, don't report it. Evals: [`evals/`](./evals/).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. `default =` values in `*.tfvars.example` or other files explicitly named/commented as placeholders/examples — real env-specific literals in files that are actually applied are what `TF-VAR-004` targets.
+2. Module-only repos with no root module — skip the `TF-STATE-001` backend check (already noted in REVIEW below).
+3. `.terraform.lock.hcl` and other generated/vendored files — never review these for style rules.
+4. A `backend` block's own literal values (bucket/region/key) — these cannot interpolate variables by design; this is the documented exception to Principle 1, not a `TF-VAR-004` finding.
+
+Exception: if a "placeholder" file is actually referenced by a real `terraform apply` (e.g. `terraform.tfvars` symlinked to the `.example`), the exclusion doesn't apply — verify the file isn't live before excluding.
 
 ---
 

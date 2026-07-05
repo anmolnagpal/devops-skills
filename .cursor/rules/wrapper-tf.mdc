@@ -80,8 +80,18 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# wrapper-tf:ignore <RULE-ID> -- <reason>` on the line above; honor it
 (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only findings you
-are >80% sure are real; consolidate repeats; severity is the rule's, don't invent.
+are >80% sure are real; consolidate repeats; severity is the rule's, don't invent;
+quote the exact offending line — if you can't quote it, don't report it.
 Evals: [`evals/`](./evals/).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. `bootstrap/` (the state bucket + lock table module) not calling `module "labels"` — it bootstraps the label registry's own backend before `_modules/labels` can be consumed; `CDTF-WRAP-002` targets `_modules/<name>/`, not `bootstrap/`.
+2. `enable_dns_validation = false` without a comment — this is `CDTF-MOD-006` at ADVISORY already, not a reason to also raise a separate BLOCKING finding.
+3. Non-prod environments (`dev`/`sandbox`) for `SEC-NET-001` (EKS public endpoint) — stays ADVISORY per the shared registry's environment convention (see `/clouddrove:k8s` dev relaxation); don't escalate to BLOCKING outside staging/prod.
+
+Exception: if `bootstrap/` also provisions long-lived application resources (not just
+state backend), the exclusion doesn't apply and it should follow the normal pattern.
 
 **Reused from auditkit:** `TF-MOD-002`, `TF-VAR-003`, `TF-OUT-001/002`, `TF-STATE-001/002`, `SEC-ENC-001/002/003`, `SEC-NET-001/002`, `OBS-MON-001`, `META-SUP-001`.
 **Skill-local (`CDTF-*`):** the wrapper-pattern and CloudDrove-module-gotcha rules above.
