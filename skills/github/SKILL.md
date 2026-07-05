@@ -2,10 +2,10 @@
 name: github
 description: "GitHub repository operations — PRs, issues, releases, branch protection, CODEOWNERS, security settings. Use when user says 'review my PR', 'create a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', or asks about GitHub repo configuration."
 metadata:
-  version: 0.2.0
+  version: 0.3.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-06-10
+  updated: 2026-07-05
 paths:
   - "**/.github/CODEOWNERS"
   - "**/CODEOWNERS"
@@ -92,7 +92,18 @@ Reused vs new-to-registry IDs are listed under the table.
 **Output:** every AUDIT finding carries its rule ID. **No `evals/`:** AUDIT reads
 **live** repo state via the `gh` API, not static files, so the fixture-based eval
 harness used by file-review skills does not apply here. **Confidence gate:** report
-only findings you confirmed from live state; severity is the rule's, don't invent.
+only findings you confirmed from live state (quote the actual `gh api` field/value
+that shows the gap — if you can't quote it, don't report it); severity is the rule's,
+don't invent.
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. Archived or template repositories — branch protection / required-review findings don't apply to a repo no one pushes to, or a template meant to be copied, not protected itself.
+2. A repo with a single maintainer and no external contributors — `REPO-PR-003` (fork PRs run workflows without approval) is moot with no forks; still check it, but note the low practical risk rather than treating it as equally urgent to a multi-contributor repo.
+
+Exception: if the "archived" repo is actually still receiving pushes (check
+`pushed_at` isn't stale), or the template repo is also used directly as a live
+service, the exclusion doesn't apply.
 
 ---
 

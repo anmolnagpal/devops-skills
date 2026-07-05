@@ -2,10 +2,10 @@
 name: k8s
 description: "Kubernetes and Helm review and scaffolding for EKS workloads. Use when user says 'review my helm values', 'before I deploy', 'scaffold a new service', 'check values.yaml', or when working in values.yaml, Chart.yaml, or Helm template files."
 metadata:
-  version: 1.3.0
+  version: 1.4.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-06-09
+  updated: 2026-07-05
 paths:
   - "**/values*.yaml"
   - "**/Chart.yaml"
@@ -81,7 +81,18 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor
 it. Reason mandatory (else `META-SUP-001`). **Confidence gate:** report only findings
 you are >80% sure are real; consolidate repeats; severity is the rule's (apply the
-dev relaxation above), don't invent. Evals: [`evals/`](./evals/).
+dev relaxation above), don't invent; quote the exact offending field/value — if you
+can't quote it, don't report it. Evals: [`evals/`](./evals/).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. `replicaCount: 1` or missing resource limits in a `values-dev.yaml` / dev overlay — already the documented dev relaxation, not `ARCH-SPOF-002`/`COST-K8S-001` at BLOCKING.
+2. Jobs and CronJobs — don't require `replicaCount >= 2` or long-lived readiness probes; they run to completion by design.
+3. A container missing its own `securityContext` when the **pod-level** `securityContext` already sets `runAsNonRoot`/`allowPrivilegeEscalation: false`/`readOnlyRootFilesystem` and the container doesn't override it — the pod-level setting applies; don't double-flag.
+4. Init containers that intentionally run as root to fix permissions (`chown`/`chmod` before handing off to the main container) — flag only if the **main** container still runs as root.
+
+Exception: if the dev overlay's values are actually deployed to staging/prod via a
+merge (e.g. no separate prod override exists), the relaxation doesn't apply.
 
 ---
 

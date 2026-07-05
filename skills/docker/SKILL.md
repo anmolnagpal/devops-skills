@@ -2,10 +2,10 @@
 name: docker
 description: "Docker operations, Dockerfile best practices, Compose, image optimization, and registry workflows. Use when user says 'review my Dockerfile', 'optimize my image', 'reduce image size', 'container won't start', 'set up compose', 'multi-stage build', or when working in Dockerfile, docker-compose*.yml, or .dockerignore files."
 metadata:
-  version: 0.3.0
+  version: 0.4.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-06-09
+  updated: 2026-07-05
   upstream: clouddrove/claude-skills (docker-skills)
 paths:
   - "**/Dockerfile"
@@ -90,8 +90,22 @@ Rules:
 - One finding per violation, deduped. Cite `file:line`. No line → cite the file.
 - **Confidence gate:** only report a finding you are >80% sure is real. Skip
   stylistic nits not in the catalog. Consolidate repeats (5 unpinned packages →
-  one `CICD-DOCK-008`, list the lines).
+  one `CICD-DOCK-008`, list the lines). Quote the exact offending line — if you
+  can't quote it, don't report it.
 - **BLOCKING vs ADVISORY** is the rule's severity in the catalog — do not invent.
+
+### False-positive exclusions
+
+Don't report these unless a stated exception applies:
+
+1. Root/no-`USER` in a **build stage** that is never the final runtime stage in a multi-stage `Dockerfile` — `CICD-DOCK-002` targets the stage that actually ships and runs.
+2. A base image that is already non-root by construction (e.g. `gcr.io/distroless/*-nonroot`, `chainguard/*`) even without an explicit `USER` line — verify the base's default UID isn't 0 before excluding.
+3. `ADD` used for local, checksum-verified tar extraction (not a remote URL) — only a remote-URL `ADD` is `CICD-DOCK-004`.
+4. Compose `privileged: true` on a documented local-dev-only override file (e.g. `docker-compose.override.yml` never shipped to prod) — still ADVISORY, not `CICD-DOCK-014` BLOCKING, unless the same file is what CI/prod actually deploys.
+
+Exception: if the "build-only" stage is still `COPY`'d into the final image (not just
+its artifacts), or the override file is the one actually used in production, the
+exclusion doesn't apply.
 
 ### Suppression
 

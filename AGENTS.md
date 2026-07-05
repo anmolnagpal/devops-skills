@@ -193,7 +193,18 @@ generic — the same IDs cover GitHub Actions and GitLab CI.)
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# ci-skill:ignore <RULE-ID> -- <reason>` on the line above (reason mandatory,
 else `META-SUP-001`). **Confidence gate:** report only findings you are >80% sure are
-real; consolidate repeats; severity is the rule's, don't invent. Evals: [`evals/`](./evals/).
+real; consolidate repeats; severity is the rule's, don't invent; quote the exact
+offending line — if you can't quote it, don't report it. Evals: [`evals/`](./evals/).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. `include:`d template files from a vetted internal template repo already reviewed elsewhere — don't re-flag the same finding on every consumer pipeline; flag it once at the template source.
+2. A `when: manual` gate that's missing on a job which only runs against a throwaway/ephemeral environment (e.g. a PR-scoped review app torn down automatically) — `CICD-FLOW-002` targets production/protected environments specifically.
+3. Non-prod jobs sharing credentials with staging in a single-environment demo/POC repo explicitly marked as such — `CICD-FLOW-003` assumes a real staging/prod split exists.
+
+Exception: if the "vetted template" hasn't actually been reviewed (no record of it),
+or the "throwaway" environment can reach production resources (shared VPC, shared
+DB), the exclusion doesn't apply.
 
 ---
 
@@ -640,8 +651,22 @@ Rules:
 - One finding per violation, deduped. Cite `file:line`. No line → cite the file.
 - **Confidence gate:** only report a finding you are >80% sure is real. Skip
   stylistic nits not in the catalog. Consolidate repeats (5 unpinned packages →
-  one `CICD-DOCK-008`, list the lines).
+  one `CICD-DOCK-008`, list the lines). Quote the exact offending line — if you
+  can't quote it, don't report it.
 - **BLOCKING vs ADVISORY** is the rule's severity in the catalog — do not invent.
+
+### False-positive exclusions
+
+Don't report these unless a stated exception applies:
+
+1. Root/no-`USER` in a **build stage** that is never the final runtime stage in a multi-stage `Dockerfile` — `CICD-DOCK-002` targets the stage that actually ships and runs.
+2. A base image that is already non-root by construction (e.g. `gcr.io/distroless/*-nonroot`, `chainguard/*`) even without an explicit `USER` line — verify the base's default UID isn't 0 before excluding.
+3. `ADD` used for local, checksum-verified tar extraction (not a remote URL) — only a remote-URL `ADD` is `CICD-DOCK-004`.
+4. Compose `privileged: true` on a documented local-dev-only override file (e.g. `docker-compose.override.yml` never shipped to prod) — still ADVISORY, not `CICD-DOCK-014` BLOCKING, unless the same file is what CI/prod actually deploys.
+
+Exception: if the "build-only" stage is still `COPY`'d into the final image (not just
+its artifacts), or the override file is the one actually used in production, the
+exclusion doesn't apply.
 
 ### Suppression
 
@@ -1345,7 +1370,18 @@ for each is in REVIEW below.
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
 it. Reason is mandatory (else `META-SUP-001`). **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
-don't invent. Evals: [`evals/`](./evals/).
+don't invent; quote the exact offending line — if you can't quote it, don't report
+it. Evals: [`evals/`](./evals/).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. `pull_request_target` used only to add labels/comments via `actions/github-script`, with **no checkout** of PR head at all — `CICD-SEC-002` targets the checkout-of-untrusted-code RCE pattern specifically; verify there's no `actions/checkout` step with `ref: ${{ github.event.pull_request.head.sha }}` before excluding.
+2. `${{ github.event.* }}` fields that are GitHub-controlled and not attacker-influenced (e.g. `github.event.repository.name`, `github.run_id`) interpolated into `run:` — `CICD-SEC-003` targets attacker-controlled fields (PR title/body, branch name, commit message, issue title).
+3. Self-hosted runners on a **private** repo with no external contributors — `CICD-SEC-004` targets public-repo exposure to arbitrary fork PRs.
+
+Exception: if the "label-only" workflow's `actions/github-script` step actually
+executes untrusted PR content (e.g. `eval`s the PR title), or the private repo grants
+write access to external collaborators, the exclusion doesn't apply.
 
 ---
 
@@ -1686,7 +1722,18 @@ Reused vs new-to-registry IDs are listed under the table.
 **Output:** every AUDIT finding carries its rule ID. **No `evals/`:** AUDIT reads
 **live** repo state via the `gh` API, not static files, so the fixture-based eval
 harness used by file-review skills does not apply here. **Confidence gate:** report
-only findings you confirmed from live state; severity is the rule's, don't invent.
+only findings you confirmed from live state (quote the actual `gh api` field/value
+that shows the gap — if you can't quote it, don't report it); severity is the rule's,
+don't invent.
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. Archived or template repositories — branch protection / required-review findings don't apply to a repo no one pushes to, or a template meant to be copied, not protected itself.
+2. A repo with a single maintainer and no external contributors — `REPO-PR-003` (fork PRs run workflows without approval) is moot with no forks; still check it, but note the low practical risk rather than treating it as equally urgent to a multi-contributor repo.
+
+Exception: if the "archived" repo is actually still receiving pushes (check
+`pushed_at` isn't stale), or the template repo is also used directly as a live
+service, the exclusion doesn't apply.
 
 ---
 
@@ -1976,7 +2023,18 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor
 it. Reason mandatory (else `META-SUP-001`). **Confidence gate:** report only findings
 you are >80% sure are real; consolidate repeats; severity is the rule's (apply the
-dev relaxation above), don't invent. Evals: [`evals/`](./evals/).
+dev relaxation above), don't invent; quote the exact offending field/value — if you
+can't quote it, don't report it. Evals: [`evals/`](./evals/).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. `replicaCount: 1` or missing resource limits in a `values-dev.yaml` / dev overlay — already the documented dev relaxation, not `ARCH-SPOF-002`/`COST-K8S-001` at BLOCKING.
+2. Jobs and CronJobs — don't require `replicaCount >= 2` or long-lived readiness probes; they run to completion by design.
+3. A container missing its own `securityContext` when the **pod-level** `securityContext` already sets `runAsNonRoot`/`allowPrivilegeEscalation: false`/`readOnlyRootFilesystem` and the container doesn't override it — the pod-level setting applies; don't double-flag.
+4. Init containers that intentionally run as root to fix permissions (`chown`/`chmod` before handing off to the main container) — flag only if the **main** container still runs as root.
+
+Exception: if the dev overlay's values are actually deployed to staging/prod via a
+merge (e.g. no separate prod override exists), the relaxation doesn't apply.
 
 ---
 
@@ -2298,6 +2356,24 @@ Auth & Sessions → `OWASP-A07`, Access Control → `OWASP-A01`, Data Protection
 
 **No `evals/`:** this skill is contextual, judgment-heavy review across 20+ languages
 with per-finding (not per-rule) severity, so the fixture-based eval harness does not fit.
+
+**Confidence gate:** report a finding only if you can quote the exact line(s) that
+motivate it — if you can't quote it, don't report it. Below 80% sure it's exploitable
+in this codebase (not just theoretically possible), downgrade to ADVISORY or drop it.
+Consolidate repeats (5 endpoints missing the same check → one finding, list the lines).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. Missing per-route auth where a framework-level middleware already enforces it globally (verify the middleware is actually mounted on this route before excluding).
+2. Findings inside test/fixture/example files or functions clearly named as such (`test_`, `fixture_`, `*.spec.*`, `examples/`) — unless the same unsafe pattern also appears in non-test code.
+3. Verbose errors or debug output gated behind an env check (`if DEBUG`, `NODE_ENV !== 'production'`) that cannot reach a production build.
+4. Missing rate-limiting or DoS hardening on endpoints that are not internet-reachable (internal-only, behind a VPN/service-mesh with no public ingress).
+5. Placeholder/example secrets in test fixtures with clearly fake values (`test_password_123`, `sk_test_...`) — flag real-looking values (high entropy, matches a live provider's key format) instead.
+
+Exceptions: a hard-exclusion above does not apply, and the finding stands, if the
+"safe" condition doesn't actually hold in this codebase (e.g. the framework middleware
+exists but isn't mounted on the route in question) — verify before excluding, don't
+assume from the pattern alone.
 
 ---
 
@@ -2928,7 +3004,17 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
 honor it (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
-don't invent. Evals: [`evals/`](./evals/).
+don't invent; quote the exact offending line/value in the finding — if you can't
+quote it, don't report it. Evals: [`evals/`](./evals/).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. `default =` values in `*.tfvars.example` or other files explicitly named/commented as placeholders/examples — real env-specific literals in files that are actually applied are what `TF-VAR-004` targets.
+2. Module-only repos with no root module — skip the `TF-STATE-001` backend check (already noted in REVIEW below).
+3. `.terraform.lock.hcl` and other generated/vendored files — never review these for style rules.
+4. A `backend` block's own literal values (bucket/region/key) — these cannot interpolate variables by design; this is the documented exception to Principle 1, not a `TF-VAR-004` finding.
+
+Exception: if a "placeholder" file is actually referenced by a real `terraform apply` (e.g. `terraform.tfvars` symlinked to the `.example`), the exclusion doesn't apply — verify the file isn't live before excluding.
 
 ---
 
@@ -3246,8 +3332,18 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# wrapper-tf:ignore <RULE-ID> -- <reason>` on the line above; honor it
 (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only findings you
-are >80% sure are real; consolidate repeats; severity is the rule's, don't invent.
+are >80% sure are real; consolidate repeats; severity is the rule's, don't invent;
+quote the exact offending line — if you can't quote it, don't report it.
 Evals: [`evals/`](./evals/).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. `bootstrap/` (the state bucket + lock table module) not calling `module "labels"` — it bootstraps the label registry's own backend before `_modules/labels` can be consumed; `CDTF-WRAP-002` targets `_modules/<name>/`, not `bootstrap/`.
+2. `enable_dns_validation = false` without a comment — this is `CDTF-MOD-006` at ADVISORY already, not a reason to also raise a separate BLOCKING finding.
+3. Non-prod environments (`dev`/`sandbox`) for `SEC-NET-001` (EKS public endpoint) — stays ADVISORY per the shared registry's environment convention (see `/clouddrove:k8s` dev relaxation); don't escalate to BLOCKING outside staging/prod.
+
+Exception: if `bootstrap/` also provisions long-lived application resources (not just
+state backend), the exclusion doesn't apply and it should follow the normal pattern.
 
 **Reused from auditkit:** `TF-MOD-002`, `TF-VAR-003`, `TF-OUT-001/002`, `TF-STATE-001/002`, `SEC-ENC-001/002/003`, `SEC-NET-001/002`, `OBS-MON-001`, `META-SUP-001`.
 **Skill-local (`CDTF-*`):** the wrapper-pattern and CloudDrove-module-gotcha rules above.

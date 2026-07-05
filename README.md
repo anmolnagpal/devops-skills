@@ -182,6 +182,18 @@ All 12 are also injected into `AGENTS.md` for Codex.
 
 Findings are tagged with stable rule IDs (`TF-STATE-001`, `SEC-NET-001`, `CICD-DOCK-002`, …). The canonical set lives in **[`rules/rule-ids.yaml`](rules/rule-ids.yaml)** (141 IDs) — the single source of truth. CI (`scripts/check-rule-ids.sh`) fails if a skill emits an ID not in the registry. The [auditkit](https://github.com/clouddrove-ci/auditkit) audit engine consumes the same registry and checks against it, so an inline plugin finding and a deep-audit finding share the same ID — and the two can't drift.
 
+### Severity models — three, by design
+
+A finding's severity means something different depending on which skill raised it:
+
+| Model | Used by | Meaning |
+|---|---|---|
+| **BLOCKING / ADVISORY**, fixed per rule ID | `tf`, `k8s`, `docker`, `ci`, `github-actions`, `github`, `wrapper-tf`, `deploy` | Severity is baked into the rule catalog — the skill never invents it. BLOCKING = fix before merge/deploy. |
+| **BLOCKING / ADVISORY**, judged per finding | `owasp` | Same two labels, but severity depends on exploitability *in this codebase* (reachable? mitigated already?) — assessed each time, not looked up. |
+| **HIGH / MED / LOW $-impact** | `finops` | Cost findings are opportunities ranked by savings magnitude, never merge-blockers — there's no "block the MR" concept for a cost lever. |
+
+All three carry the same stable rule-ID convention and `file:line`/resource citation — only the severity axis differs. If you're scripting against output (e.g. failing CI on BLOCKING), branch on the skill, not a single global severity enum.
+
 Backlog specs (drafts, not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security. Promote to active by adding frontmatter under `skills/<name>/SKILL.md`.
 
 Edit `skills/<name>/SKILL.md`, run `bash scripts/generate.sh`, commit. Re-run `./scripts/install.sh --all` to push to local installs.

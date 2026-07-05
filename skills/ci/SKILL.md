@@ -2,10 +2,10 @@
 name: ci
 description: "GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', or when working in .gitlab-ci.yml files."
 metadata:
-  version: 1.2.0
+  version: 1.3.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-06-10
+  updated: 2026-07-05
 paths:
   - "**/.gitlab-ci.yml"
   - "**/.gitlab-ci.yaml"
@@ -84,7 +84,18 @@ generic — the same IDs cover GitHub Actions and GitLab CI.)
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# ci-skill:ignore <RULE-ID> -- <reason>` on the line above (reason mandatory,
 else `META-SUP-001`). **Confidence gate:** report only findings you are >80% sure are
-real; consolidate repeats; severity is the rule's, don't invent. Evals: [`evals/`](./evals/).
+real; consolidate repeats; severity is the rule's, don't invent; quote the exact
+offending line — if you can't quote it, don't report it. Evals: [`evals/`](./evals/).
+
+**False-positive exclusions** — don't report these unless a stated exception applies:
+
+1. `include:`d template files from a vetted internal template repo already reviewed elsewhere — don't re-flag the same finding on every consumer pipeline; flag it once at the template source.
+2. A `when: manual` gate that's missing on a job which only runs against a throwaway/ephemeral environment (e.g. a PR-scoped review app torn down automatically) — `CICD-FLOW-002` targets production/protected environments specifically.
+3. Non-prod jobs sharing credentials with staging in a single-environment demo/POC repo explicitly marked as such — `CICD-FLOW-003` assumes a real staging/prod split exists.
+
+Exception: if the "vetted template" hasn't actually been reviewed (no record of it),
+or the "throwaway" environment can reach production resources (shared VPC, shared
+DB), the exclusion doesn't apply.
 
 ---
 
