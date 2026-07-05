@@ -2,14 +2,13 @@
 name: deploy
 description: "Deployment strategy, production-readiness gating, and rollback planning for AWS/EKS services. Use when user says 'how should I deploy this', 'blue-green or canary', 'are we ready to ship', 'production readiness', 'plan a rollback', 'pre-deploy check', or before a first production release. Pairs with /k8s, /ci, /github-actions, /tf which own the per-artifact checks."
 metadata:
-  version: 0.1.0
+  version: 0.2.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-06-10
+  updated: 2026-07-05
 allowed-tools:
   - Glob
   - Read
-  - Bash
 ---
 
 # Deployment Skill
@@ -72,10 +71,28 @@ State which mechanism the repo already has before recommending one it doesn't.
 
 ## READINESS — Production gate
 
-Read the service's repo (Helm values, Dockerfile, pipeline, Terraform) and confirm the
-gate. **Reuse the per-artifact skills' rule IDs** — don't re-derive; a readiness finding
-*is* the same finding `/k8s`, `/ci`, etc. would raise, surfaced at the gate. Run those
-skills for depth; this is the consolidated go/no-go.
+A readiness finding *is* the same finding `/clouddrove:k8s`, `/clouddrove:ci`,
+`/clouddrove:github-actions`, or `/clouddrove:tf` would raise on the same repo,
+surfaced at the gate — this skill does not re-derive its own checks for Helm values,
+pipelines, workflows, or Terraform.
+
+**Before compiling the gate, actually invoke each relevant per-artifact skill on this
+repo and collect its real findings:**
+
+1. Identify which artifacts exist (Glob for `values.yaml`/`Chart.yaml`, `Dockerfile`,
+   `.gitlab-ci.yml`, `.github/workflows/*.yml`, `*.tf`).
+2. For each artifact present, run its skill in review mode
+   (`/clouddrove:k8s review <env>`, `/clouddrove:docker review`, `/clouddrove:ci
+   review`, `/clouddrove:github-actions review`, `/clouddrove:tf review` or
+   `/clouddrove:wrapper-tf review`) and capture its BLOCKING/ADVISORY findings.
+3. Pull forward every BLOCKING finding into the READINESS gate as-is (same rule ID,
+   same `file:line`) — do not restate or re-judge it. ADVISORY findings pull forward
+   as ADVISORY.
+4. Add the deploy-specific checks below (rollback tested, gate present, resilience)
+   that no per-artifact skill owns.
+
+This makes "reuses the per-artifact skills" an actual step, not an assumption — the
+gate is only as good as the skills it actually ran.
 
 Output the repo-standard format with rule IDs:
 
