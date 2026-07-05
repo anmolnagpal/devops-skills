@@ -542,6 +542,25 @@ repo and collect its real findings:**
 This makes "reuses the per-artifact skills" an actual step, not an assumption — the
 gate is only as good as the skills it actually ran.
 
+**Show your work — the gate must be auditable, not just asserted.** Every READINESS
+output opens with which artifacts were found and which skill actually ran on each,
+before the BLOCKING/ADVISORY list. If an artifact was found but its skill wasn't run
+(context limit, forgot, whatever the reason), that has to show up here as a visible
+gap — never silently print `READY` having skipped one:
+
+```
+Artifacts detected: values.yaml, Dockerfile, .github/workflows/deploy.yml, *.tf
+Skills run: k8s ✓, docker ✓, github-actions ✓, tf ✗ (not run — see below)
+
+[... BLOCKING/ADVISORY findings from the skills that DID run ...]
+
+Gate: INCOMPLETE — tf artifacts found but /clouddrove:tf review was not run.
+Re-run including that skill before treating this as a readiness verdict.
+```
+
+A gate can only print `READY` or a normal `FAILED — N blocking` verdict when every
+detected artifact's skill actually ran. Anything else is `INCOMPLETE`, not `READY`.
+
 **Suppression:** a pulled-forward finding is suppressed if the per-artifact skill
 already honored its own `*-skill:ignore` comment (don't re-report what the source
 skill already excluded). For a deploy-specific check (rollback tested, gate present,
@@ -552,6 +571,9 @@ honor it. Reason mandatory, else `META-SUP-001`.
 Output the repo-standard format with rule IDs:
 
 ```
+Artifacts detected: values.yaml, .gitlab-ci.yml
+Skills run: k8s ✓, ci ✓
+
 BLOCKING — Not ready to ship
 [helm/values.yaml:—] ARCH-HA-003 No readiness/liveness probe → orchestrator can't gate traffic
 [.gitlab-ci.yml:61]  CICD-FLOW-002 Production deploy has no manual gate → add when: manual
@@ -572,7 +594,9 @@ Readiness checklist (each maps to an existing registry ID):
 - **Config & secrets** — config validated at startup; no secrets in image/values (`SEC-SEC-001`).
 - **Image** — tag pinned/immutable, set at deploy (`CICD-DOCK-001`).
 
-A clean gate prints `READY — N checks passed` and the recommended strategy.
+A clean gate prints `READY — N checks passed` and the recommended strategy — only
+when every detected artifact's skill actually ran (see "Show your work" above).
+Otherwise print `INCOMPLETE`, never `READY`.
 
 ---
 
@@ -3381,6 +3405,8 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 | **CDTF-MOD-004** | BLOCKING | `subject_alternative_names` on `module "dns"` (SANs belong on `acm`) |
 | **CDTF-MOD-005** | ADVISORY | `allow_default_action = true` on WAF (validate first) |
 | **CDTF-MOD-006** | ADVISORY | `enable_dns_validation = false` not commented (correct, but explain) |
+| **CDTF-MOD-007** | BLOCKING | `_modules/<name>/` missing a required file (`main.tf`, `variables.tf`, or `outputs.tf`) |
+| **CDTF-MOD-008** | ADVISORY | A wrapper `variable` is declared but never passed into the wrapped `module "<name>"` call, or vice versa — a wrapped-module input the wrapper never exposes |
 | **CDTF-STATE-001** | BLOCKING | Same backend `key` across environments (each env needs a unique key) |
 | **TF-MOD-002** | BLOCKING | CloudDrove module call without a pinned `version` (git ref/branch/omitted) |
 | **TF-VAR-003** | BLOCKING | `variable` block missing `description` (or explicit `type` — type-only is advisory) |
@@ -3598,6 +3624,11 @@ All resources follow `{client_name}-{environment}-{resource}`. Verify:
 - Secrets Manager: `${local.np}/{service}/master`
 
 - **BLOCKING:** Any resource name not derived from `module.labels.name_prefix`
+
+### Module completeness
+
+- **BLOCKING (`CDTF-MOD-007`):** `_modules/<name>/` is missing `main.tf`, `variables.tf`, or `outputs.tf` — every wrapper module needs all three, even if a file is nearly empty.
+- **ADVISORY (`CDTF-MOD-008`):** A `variable` declared in `_modules/<name>/variables.tf` is never passed as an argument into the wrapped `module "<name>"` call (dead input), or the wrapped CloudDrove module accepts an input the wrapper never exposes as one of its own variables (unreachable configuration). Check both directions.
 
 ### CloudDrove module gotchas
 

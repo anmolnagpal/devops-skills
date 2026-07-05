@@ -194,6 +194,8 @@ CDTF:
   CDTF-MOD-004: 'subject_alternative_names passed to module "dns" (SANs belong on acm)'
   CDTF-MOD-005: 'allow_default_action=true on WAF without validating no legitimate traffic is blocked'
   CDTF-MOD-006: 'enable_dns_validation=false not commented (correct for the pattern, but should explain why)'
+  CDTF-MOD-007: '_modules/<name>/ missing a required file (main/variables/outputs.tf)'
+  CDTF-MOD-008: 'wrapper variable not threaded into the wrapped module call, or vice versa'
   CDTF-NAME-001: 'resource name not derived from module.labels'
   CDTF-NAME-002: 'environment/name not parameterized'
   CDTF-STATE-001: 'environment state not isolated per the wrapper convention'
