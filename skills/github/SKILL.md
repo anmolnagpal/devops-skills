@@ -2,7 +2,7 @@
 name: github
 description: "GitHub repository operations — PRs, issues, releases, branch protection, CODEOWNERS, security settings. Use when user says 'review my PR', 'create a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', or asks about GitHub repo configuration."
 metadata:
-  version: 0.4.0
+  version: 0.5.0
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
@@ -115,11 +115,17 @@ location, one place a repo records every accepted risk from a live-state skill.
 **False-positive exclusions** — don't report these unless a stated exception applies:
 
 1. Archived or template repositories — branch protection / required-review findings don't apply to a repo no one pushes to, or a template meant to be copied, not protected itself.
-2. A repo with a single maintainer and no external contributors — `REPO-PR-003` (fork PRs run workflows without approval) is moot with no forks; still check it, but note the low practical risk rather than treating it as equally urgent to a multi-contributor repo.
 
 Exception: if the "archived" repo is actually still receiving pushes (check
 `pushed_at` isn't stale), or the template repo is also used directly as a live
 service, the exclusion doesn't apply.
+
+**Not an exclusion — a severity note:** on a repo with a single maintainer and no
+external contributors, `REPO-PR-003` (fork PRs run workflows without approval) is
+still a real gap the moment the repo gets its first outside contributor — report it
+normally at its catalog severity. Mention the currently-low practical risk in the
+finding's text if useful context, but don't drop or downgrade it; it isn't a stated
+exclusion above.
 
 ---
 

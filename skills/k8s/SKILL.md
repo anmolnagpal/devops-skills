@@ -2,7 +2,7 @@
 name: k8s
 description: "Kubernetes and Helm review and scaffolding for EKS workloads. Use when user says 'review my helm values', 'before I deploy', 'scaffold a new service', 'check values.yaml', or when working in values.yaml, Chart.yaml, or Helm template files."
 metadata:
-  version: 1.4.0
+  version: 1.5.0
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
@@ -91,8 +91,11 @@ can't quote it, don't report it. Evals: [`evals/`](./evals/).
 3. A container missing its own `securityContext` when the **pod-level** `securityContext` already sets `runAsNonRoot`/`allowPrivilegeEscalation: false`/`readOnlyRootFilesystem` and the container doesn't override it — the pod-level setting applies; don't double-flag.
 4. Init containers that intentionally run as root to fix permissions (`chown`/`chmod` before handing off to the main container) — flag only if the **main** container still runs as root.
 
-Exception: if the dev overlay's values are actually deployed to staging/prod via a
-merge (e.g. no separate prod override exists), the relaxation doesn't apply.
+Exception: the relaxation doesn't apply if these dev values are also what actually
+reaches staging/prod — whether merged in (no separate prod override exists), applied
+directly (e.g. `helm upgrade -f values-dev.yaml` pointed at a prod release), or simply
+the only values file the repo has. Check what's really deployed, not just the
+filename.
 
 ---
 
