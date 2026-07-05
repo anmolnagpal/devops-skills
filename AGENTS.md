@@ -687,11 +687,12 @@ Don't report these unless a stated exception applies:
 1. Root/no-`USER` in a **build stage** that is never the final runtime stage in a multi-stage `Dockerfile` — `CICD-DOCK-002` targets the stage that actually ships and runs.
 2. A base image that is already non-root by construction (e.g. `gcr.io/distroless/*-nonroot`, `chainguard/*`) even without an explicit `USER` line — verify the base's default UID isn't 0 before excluding.
 3. `ADD` used for local, checksum-verified tar extraction (not a remote URL) — only a remote-URL `ADD` is `CICD-DOCK-004`.
-4. Compose `privileged: true` on a documented local-dev-only override file (e.g. `docker-compose.override.yml` never shipped to prod) — still ADVISORY, not `CICD-DOCK-014` BLOCKING, unless the same file is what CI/prod actually deploys.
+4. Compose `privileged: true` in a documented local-dev-only override file (e.g. `docker-compose.override.yml`) that no CI/CD pipeline or deploy config in this repo references — `CICD-DOCK-014` targets what actually deploys, not a file nothing ships with. Severity stays BLOCKING wherever it does apply; this excludes the finding entirely, it doesn't invent a lower severity for it.
 
 Exception: if the "build-only" stage is still `COPY`'d into the final image (not just
-its artifacts), or the override file is the one actually used in production, the
-exclusion doesn't apply.
+its artifacts), or the override file is referenced by any CI/CD workflow, Compose
+`-f` chain, or deploy script in the repo, the exclusion doesn't apply — report
+`CICD-DOCK-014` at its catalog severity (BLOCKING).
 
 ### Suppression
 
@@ -1784,11 +1785,17 @@ location, one place a repo records every accepted risk from a live-state skill.
 **False-positive exclusions** — don't report these unless a stated exception applies:
 
 1. Archived or template repositories — branch protection / required-review findings don't apply to a repo no one pushes to, or a template meant to be copied, not protected itself.
-2. A repo with a single maintainer and no external contributors — `REPO-PR-003` (fork PRs run workflows without approval) is moot with no forks; still check it, but note the low practical risk rather than treating it as equally urgent to a multi-contributor repo.
 
 Exception: if the "archived" repo is actually still receiving pushes (check
 `pushed_at` isn't stale), or the template repo is also used directly as a live
 service, the exclusion doesn't apply.
+
+**Not an exclusion — a severity note:** on a repo with a single maintainer and no
+external contributors, `REPO-PR-003` (fork PRs run workflows without approval) is
+still a real gap the moment the repo gets its first outside contributor — report it
+normally at its catalog severity. Mention the currently-low practical risk in the
+finding's text if useful context, but don't drop or downgrade it; it isn't a stated
+exclusion above.
 
 ---
 
@@ -2088,8 +2095,11 @@ can't quote it, don't report it. Evals: [`evals/`](./evals/).
 3. A container missing its own `securityContext` when the **pod-level** `securityContext` already sets `runAsNonRoot`/`allowPrivilegeEscalation: false`/`readOnlyRootFilesystem` and the container doesn't override it — the pod-level setting applies; don't double-flag.
 4. Init containers that intentionally run as root to fix permissions (`chown`/`chmod` before handing off to the main container) — flag only if the **main** container still runs as root.
 
-Exception: if the dev overlay's values are actually deployed to staging/prod via a
-merge (e.g. no separate prod override exists), the relaxation doesn't apply.
+Exception: the relaxation doesn't apply if these dev values are also what actually
+reaches staging/prod — whether merged in (no separate prod override exists), applied
+directly (e.g. `helm upgrade -f values-dev.yaml` pointed at a prod release), or simply
+the only values file the repo has. Check what's really deployed, not just the
+filename.
 
 ---
 

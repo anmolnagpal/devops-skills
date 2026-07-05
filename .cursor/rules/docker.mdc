@@ -82,11 +82,12 @@ Don't report these unless a stated exception applies:
 1. Root/no-`USER` in a **build stage** that is never the final runtime stage in a multi-stage `Dockerfile` — `CICD-DOCK-002` targets the stage that actually ships and runs.
 2. A base image that is already non-root by construction (e.g. `gcr.io/distroless/*-nonroot`, `chainguard/*`) even without an explicit `USER` line — verify the base's default UID isn't 0 before excluding.
 3. `ADD` used for local, checksum-verified tar extraction (not a remote URL) — only a remote-URL `ADD` is `CICD-DOCK-004`.
-4. Compose `privileged: true` on a documented local-dev-only override file (e.g. `docker-compose.override.yml` never shipped to prod) — still ADVISORY, not `CICD-DOCK-014` BLOCKING, unless the same file is what CI/prod actually deploys.
+4. Compose `privileged: true` in a documented local-dev-only override file (e.g. `docker-compose.override.yml`) that no CI/CD pipeline or deploy config in this repo references — `CICD-DOCK-014` targets what actually deploys, not a file nothing ships with. Severity stays BLOCKING wherever it does apply; this excludes the finding entirely, it doesn't invent a lower severity for it.
 
 Exception: if the "build-only" stage is still `COPY`'d into the final image (not just
-its artifacts), or the override file is the one actually used in production, the
-exclusion doesn't apply.
+its artifacts), or the override file is referenced by any CI/CD workflow, Compose
+`-f` chain, or deploy script in the repo, the exclusion doesn't apply — report
+`CICD-DOCK-014` at its catalog severity (BLOCKING).
 
 ### Suppression
 
