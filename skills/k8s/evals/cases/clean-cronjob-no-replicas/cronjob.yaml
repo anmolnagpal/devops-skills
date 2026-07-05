@@ -1,0 +1,33 @@
+# Fixture: a CronJob with no replicaCount and no readiness/liveness probes.
+# Should produce ZERO findings — FP-exclusion #2 (k8s/SKILL.md): Jobs/CronJobs
+# run to completion by design and aren't held to the replica/probe rules.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nightly-report
+  labels:
+    app: nightly-report
+    env: prod
+    team: platform
+spec:
+  schedule: "0 3 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: nightly-report
+              image: 123456789012.dkr.ecr.eu-west-1.amazonaws.com/nightly-report:2.1.0
+              resources:
+                requests:
+                  cpu: "250m"
+                  memory: "512Mi"
+                limits:
+                  cpu: "500m"
+                  memory: "512Mi"
+              securityContext:
+                runAsNonRoot: true
+                runAsUser: 1000
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true

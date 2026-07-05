@@ -1,0 +1,7 @@
+# Fixture: placeholder values in a *.tfvars.example file. Should produce ZERO
+# findings — FP-exclusion #1 (tf/SKILL.md) excludes example/placeholder files
+# from TF-VAR-004, since these values are never applied.
+region      = "eu-west-1"
+account_id  = "123456789012"
+environment = "prod"
+db_password = "changeme"

@@ -389,6 +389,23 @@ bash _test/test.sh
 
 The test builds `_test/Dockerfile`, which runs `install.sh` in a clean container with a stubbed `claude` CLI and `CI=true` to skip interactive MCP prompts. It verifies all skills are symlinked and all plugins install without error.
 
+### Behavioral evals (Tier-2, opt-in)
+
+The `eval fixtures` CI gate above (Tier-1) only checks that eval docs are internally
+consistent — rule IDs in `expected.txt` exist in the catalog, `clean-*` cases expect
+nothing. It never runs a skill and checks its actual output, so a skill could regress
+silently (stop detecting a real violation) and Tier-1 would still pass.
+
+`scripts/run-behavioral-evals.sh` is the Tier-2 gate: it invokes each skill via
+`claude -p` against its fixtures and diffs the live findings against `expected.txt`.
+Opt-in — it spends API tokens and isn't wired into the free six-gate CI, so run it
+manually or on a nightly schedule:
+
+```bash
+EVALS=1 bash scripts/run-behavioral-evals.sh          # every skill with evals/
+EVALS=1 bash scripts/run-behavioral-evals.sh tf k8s    # just these skills
+```
+
 ---
 
 ## Adding a New MCP Server
