@@ -542,6 +542,13 @@ repo and collect its real findings:**
 This makes "reuses the per-artifact skills" an actual step, not an assumption — the
 gate is only as good as the skills it actually ran.
 
+**Suppression:** a pulled-forward finding is suppressed if the per-artifact skill
+already honored its own `*-skill:ignore` comment (don't re-report what the source
+skill already excluded). For a deploy-specific check (rollback tested, gate present,
+resilience — the ones with no per-artifact skill owner), accept a known risk with
+`# deploy-skill:ignore <RULE-ID> -- <reason>` on the line above the relevant config;
+honor it. Reason mandatory, else `META-SUP-001`.
+
 Output the repo-standard format with rule IDs:
 
 ```
@@ -1091,6 +1098,20 @@ opportunities, ranked by impact, never merge-blockers. IDs are an API: never ren
 **No `evals/`:** findings come from **live** AWS billing/optimizer data (Cost Explorer,
 CUR, Compute Optimizer), not static files, so the fixture-based eval harness does not
 apply. Tag every recommendation with its rule ID and $-impact.
+
+**Waiver mechanism:** a repo may accept a known cost trade-off (e.g. Multi-AZ kept in
+non-prod for load-test parity) via a tracked `.clouddrove-waivers.yml` at repo root —
+shared format and location with `/clouddrove:github`:
+
+```yaml
+waivers:
+  - rule_id: COST-DB-001
+    reason: "non-prod Multi-AZ kept for load-test parity, reviewed 2026-Q3"
+```
+
+Glob/Read `.clouddrove-waivers.yml` if present before reporting; a listed rule ID is
+suppressed — cite the reason instead. An entry missing `reason` doesn't suppress
+anything and is itself a finding: `META-SUP-001`.
 
 ---
 
@@ -1744,6 +1765,22 @@ only findings you confirmed from live state (quote the actual `gh api` field/val
 that shows the gap — if you can't quote it, don't report it); severity is the rule's,
 don't invent.
 
+**Waiver mechanism (how `META-SUP-001` gets recorded):** there's no line to attach an
+inline comment to for a live API finding, so accepted risks live in a tracked
+`.clouddrove-waivers.yml` at repo root instead:
+
+```yaml
+waivers:
+  - rule_id: REPO-PR-004
+    reason: "mixed merge strategy intentional — squash for features, merge for releases"
+```
+
+Before AUDIT, Glob/Read `.clouddrove-waivers.yml` if present. A finding whose rule ID
+appears there is suppressed — cite the waiver's reason instead of reporting the
+finding. An entry missing `reason` doesn't suppress anything and is itself a finding:
+`META-SUP-001`. This file is shared with `/clouddrove:finops` — same format, same
+location, one place a repo records every accepted risk from a live-state skill.
+
 **False-positive exclusions** — don't report these unless a stated exception applies:
 
 1. Archived or template repositories — branch protection / required-review findings don't apply to a repo no one pushes to, or a template meant to be copied, not protected itself.
@@ -2392,6 +2429,18 @@ Exceptions: a hard-exclusion above does not apply, and the finding stands, if th
 "safe" condition doesn't actually hold in this codebase (e.g. the framework middleware
 exists but isn't mounted on the route in question) — verify before excluding, don't
 assume from the pattern alone.
+
+**Suppression:** accept a known risk with `# owasp-skill:ignore <ID> -- <reason>`
+(e.g. `# owasp-skill:ignore OWASP-A05 -- input is a fixed internal enum, never
+user-supplied`) on the line above; honor it. Reason is mandatory — a suppression
+without one is itself a finding: `META-SUP-001`.
+
+**Independent re-check:** before including a **BLOCKING** finding in the output,
+re-derive it a second time using only the quoted line and the false-positive list
+above — set aside whatever chain of reasoning got you there the first time. If the
+finding doesn't independently reconfirm on that fresh pass, downgrade it to ADVISORY
+or drop it. This catches findings that only looked real because of an assumption made
+earlier in the same review, not because the code is actually exploitable.
 
 ---
 

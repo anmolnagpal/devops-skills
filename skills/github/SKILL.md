@@ -2,7 +2,7 @@
 name: github
 description: "GitHub repository operations — PRs, issues, releases, branch protection, CODEOWNERS, security settings. Use when user says 'review my PR', 'create a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', or asks about GitHub repo configuration."
 metadata:
-  version: 0.3.0
+  version: 0.4.0
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
@@ -95,6 +95,22 @@ harness used by file-review skills does not apply here. **Confidence gate:** rep
 only findings you confirmed from live state (quote the actual `gh api` field/value
 that shows the gap — if you can't quote it, don't report it); severity is the rule's,
 don't invent.
+
+**Waiver mechanism (how `META-SUP-001` gets recorded):** there's no line to attach an
+inline comment to for a live API finding, so accepted risks live in a tracked
+`.clouddrove-waivers.yml` at repo root instead:
+
+```yaml
+waivers:
+  - rule_id: REPO-PR-004
+    reason: "mixed merge strategy intentional — squash for features, merge for releases"
+```
+
+Before AUDIT, Glob/Read `.clouddrove-waivers.yml` if present. A finding whose rule ID
+appears there is suppressed — cite the waiver's reason instead of reporting the
+finding. An entry missing `reason` doesn't suppress anything and is itself a finding:
+`META-SUP-001`. This file is shared with `/clouddrove:finops` — same format, same
+location, one place a repo records every accepted risk from a live-state skill.
 
 **False-positive exclusions** — don't report these unless a stated exception applies:
 

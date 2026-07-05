@@ -85,6 +85,13 @@ repo and collect its real findings:**
 This makes "reuses the per-artifact skills" an actual step, not an assumption — the
 gate is only as good as the skills it actually ran.
 
+**Suppression:** a pulled-forward finding is suppressed if the per-artifact skill
+already honored its own `*-skill:ignore` comment (don't re-report what the source
+skill already excluded). For a deploy-specific check (rollback tested, gate present,
+resilience — the ones with no per-artifact skill owner), accept a known risk with
+`# deploy-skill:ignore <RULE-ID> -- <reason>` on the line above the relevant config;
+honor it. Reason mandatory, else `META-SUP-001`.
+
 Output the repo-standard format with rule IDs:
 
 ```

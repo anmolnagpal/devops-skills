@@ -60,6 +60,20 @@ opportunities, ranked by impact, never merge-blockers. IDs are an API: never ren
 CUR, Compute Optimizer), not static files, so the fixture-based eval harness does not
 apply. Tag every recommendation with its rule ID and $-impact.
 
+**Waiver mechanism:** a repo may accept a known cost trade-off (e.g. Multi-AZ kept in
+non-prod for load-test parity) via a tracked `.clouddrove-waivers.yml` at repo root —
+shared format and location with `/clouddrove:github`:
+
+```yaml
+waivers:
+  - rule_id: COST-DB-001
+    reason: "non-prod Multi-AZ kept for load-test parity, reviewed 2026-Q3"
+```
+
+Glob/Read `.clouddrove-waivers.yml` if present before reporting; a listed rule ID is
+suppressed — cite the reason instead. An entry missing `reason` doesn't suppress
+anything and is itself a finding: `META-SUP-001`.
+
 ---
 
 ## Where the Money Usually Goes

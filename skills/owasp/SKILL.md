@@ -2,7 +2,7 @@
 name: owasp
 description: "Security review against OWASP Top 10:2025, ASVS 5.0, and Agentic AI risks. Use when user says 'review for security', 'is this secure', 'check for vulnerabilities', 'review auth/authorization', 'check input handling', or when writing cryptography, session management, or AI agent code."
 metadata:
-  version: 1.3.0
+  version: 1.4.0
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
@@ -94,6 +94,18 @@ Exceptions: a hard-exclusion above does not apply, and the finding stands, if th
 "safe" condition doesn't actually hold in this codebase (e.g. the framework middleware
 exists but isn't mounted on the route in question) — verify before excluding, don't
 assume from the pattern alone.
+
+**Suppression:** accept a known risk with `# owasp-skill:ignore <ID> -- <reason>`
+(e.g. `# owasp-skill:ignore OWASP-A05 -- input is a fixed internal enum, never
+user-supplied`) on the line above; honor it. Reason is mandatory — a suppression
+without one is itself a finding: `META-SUP-001`.
+
+**Independent re-check:** before including a **BLOCKING** finding in the output,
+re-derive it a second time using only the quoted line and the false-positive list
+above — set aside whatever chain of reasoning got you there the first time. If the
+finding doesn't independently reconfirm on that fresh pass, downgrade it to ADVISORY
+or drop it. This catches findings that only looked real because of an assumption made
+earlier in the same review, not because the code is actually exploitable.
 
 ---
 
