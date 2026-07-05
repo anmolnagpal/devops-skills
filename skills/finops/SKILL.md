@@ -2,10 +2,10 @@
 name: finops
 description: "AWS cost optimization — waste detection, right-sizing, Savings Plans, RIs, EKS cost, multi-account governance. Use when user says 'reduce AWS bill', 'find waste', 'right-size this', 'should I buy SP or RI', 'gp2 vs gp3', 'EKS is expensive', 'NAT gateway cost', or asks about AWS cost optimization."
 metadata:
-  version: 0.2.0
+  version: 0.3.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-06-10
+  updated: 2026-07-05
   upstream: clouddrove/claude-skills (finops-skills)
 allowed-tools:
   - Glob
@@ -71,6 +71,20 @@ opportunities, ranked by impact, never merge-blockers. IDs are an API: never ren
 **No `evals/`:** findings come from **live** AWS billing/optimizer data (Cost Explorer,
 CUR, Compute Optimizer), not static files, so the fixture-based eval harness does not
 apply. Tag every recommendation with its rule ID and $-impact.
+
+**Waiver mechanism:** a repo may accept a known cost trade-off (e.g. Multi-AZ kept in
+non-prod for load-test parity) via a tracked `.clouddrove-waivers.yml` at repo root —
+shared format and location with `/clouddrove:github`:
+
+```yaml
+waivers:
+  - rule_id: COST-DB-001
+    reason: "non-prod Multi-AZ kept for load-test parity, reviewed 2026-Q3"
+```
+
+Glob/Read `.clouddrove-waivers.yml` if present before reporting; a listed rule ID is
+suppressed — cite the reason instead. An entry missing `reason` doesn't suppress
+anything and is itself a finding: `META-SUP-001`.
 
 ---
 

@@ -2,7 +2,7 @@
 name: deploy
 description: "Deployment strategy, production-readiness gating, and rollback planning for AWS/EKS services. Use when user says 'how should I deploy this', 'blue-green or canary', 'are we ready to ship', 'production readiness', 'plan a rollback', 'pre-deploy check', or before a first production release. Pairs with /k8s, /ci, /github-actions, /tf which own the per-artifact checks."
 metadata:
-  version: 0.2.0
+  version: 0.3.0
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
@@ -93,6 +93,13 @@ repo and collect its real findings:**
 
 This makes "reuses the per-artifact skills" an actual step, not an assumption — the
 gate is only as good as the skills it actually ran.
+
+**Suppression:** a pulled-forward finding is suppressed if the per-artifact skill
+already honored its own `*-skill:ignore` comment (don't re-report what the source
+skill already excluded). For a deploy-specific check (rollback tested, gate present,
+resilience — the ones with no per-artifact skill owner), accept a known risk with
+`# deploy-skill:ignore <RULE-ID> -- <reason>` on the line above the relevant config;
+honor it. Reason mandatory, else `META-SUP-001`.
 
 Output the repo-standard format with rule IDs:
 
