@@ -34,9 +34,8 @@ evals/
      flagging a heavy base) don't fail a case; a clearly *wrong* finding does.
    - **Clean cases are exact:** a `clean-*` case fails on ANY reported finding.
 
-   `pass@k` = fraction of runs meeting the recall gate. Wire into a
-   Claude-invoking harness later; the fixtures + expected files are the contract
-   that harness consumes.
+   `pass@k` = fraction of runs meeting the recall gate. `scripts/run-behavioral-evals.sh`
+   (below) is that harness — the fixtures + expected files are the contract it consumes.
 
 ## Run static validation
 
@@ -45,7 +44,23 @@ bash skills/k8s/evals/validate.sh
 ```
 
 Exit non-zero on any unknown rule ID or a non-empty `expected.txt` in a `clean-*`
-case. Add to CI alongside `scripts/generate.sh --check`.
+case. Runs in CI (`scripts/check-evals.sh`) alongside `scripts/generate.sh --check`.
+
+## Run behavioral (Tier-2) validation
+
+```bash
+EVALS=1 bash scripts/run-behavioral-evals.sh k8s
+```
+
+Actually invokes `/clouddrove:k8s review` against each fixture via `claude -p` and
+diffs live output against `expected.txt` — catches a real regression (skill stops
+detecting a violation), not just doc drift. Opt-in: spends API tokens, not wired
+into the free CI gates. Run manually or on a nightly schedule.
+
+`clean-suppressed-*` cases prove the `k8s-skill:ignore` suppression convention is
+honored. `clean-cronjob-no-replicas` proves the skill doesn't over-trigger on the
+new FP-exclusion list in `SKILL.md` — a CronJob manifest that superficially lacks
+replicas/probes but is explicitly excluded from those rules.
 
 ## Adding a case
 

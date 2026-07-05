@@ -1,0 +1,48 @@
+# Fixture: would trigger SEC-SEC-001 but the risk is suppressed with a reason.
+# Should produce ZERO findings — the suppression must be honored.
+replicaCount: 2
+
+image:
+  repository: 123456789012.dkr.ecr.eu-west-1.amazonaws.com/legacy-svc
+  tag: "1.4.2"
+  pullPolicy: IfNotPresent
+
+env:
+  # k8s-skill:ignore SEC-SEC-001 -- legacy read-only license key, rotates weekly via sidecar, tracked as ACME-1234 to migrate to Secrets Manager
+  - name: LICENSE_KEY
+    value: "trial-8f2a91"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "256Mi"
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  failureThreshold: 3
+
+commonLabels:
+  app: legacy-svc
+  env: prod
+  team: platform
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
