@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] — 2026-07-07
+
+### Fixed
+
+- `hooks/hooks.json` was missing its required top-level `hooks` wrapper key, so the plugin's `SessionStart` banner and `PreToolUse` bash-guard silently failed to load (`claude plugin list` reported `failed to load`). Both hooks now register correctly.
+
 ## [1.2.0] — 2026-07-05
 
 ### Added
