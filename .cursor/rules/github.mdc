@@ -62,7 +62,10 @@ Reused vs new-to-registry IDs are listed under the table.
 | **REPO-PR-003** | BLOCKING | Fork PRs run workflows without approval for outside collaborators |
 | **REPO-PR-004** | ADVISORY | Squash-merge not enforced (mixed merge strategies) |
 | **REPO-CODE-001** | BLOCKING | CODEOWNERS missing or not required for review |
+| **REPO-DOC-001** | ADVISORY | No `README.md` at repo root |
+| **REPO-DOC-002** | ADVISORY | No `CONTRIBUTING.md` and no runbook/operational doc |
 | **REPO-DOC-003** | ADVISORY | No PR template / issue templates |
+| **REPO-TEST-001** | ADVISORY | No test directory/config and no test job in CI |
 | **REPO-DEP-001** | BLOCKING | Dependabot security updates disabled |
 | **REPO-DEP-002** | ADVISORY | No `dependabot.yml` version-update config |
 | **SEC-SEC-005** | BLOCKING | Secret scanning / push protection disabled |
@@ -72,7 +75,7 @@ Reused vs new-to-registry IDs are listed under the table.
 | **META-SUP-001** | ADVISORY | Accepted-risk waiver recorded without a reason |
 
 **Reused from auditkit:** `REPO-BP-001/002`, `REPO-PR-001/002`, `REPO-CODE-001`, `SEC-SEC-005`, `CICD-PERM-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `META-SUP-001`.
-**Registered in `rules/rule-ids.yaml`:** `REPO-BP-003/004`, `REPO-PR-003/004`, `REPO-DOC-003`, `REPO-DEP-001/002`.
+**Registered in `rules/rule-ids.yaml`:** `REPO-BP-003/004`, `REPO-PR-003/004`, `REPO-DOC-001/002/003`, `REPO-TEST-001`, `REPO-DEP-001/002`.
 
 **Output:** every AUDIT finding carries its rule ID. **No `evals/`:** AUDIT reads
 **live** repo state via the `gh` API, not static files, so the fixture-based eval
@@ -100,10 +103,13 @@ location, one place a repo records every accepted risk from a live-state skill.
 **False-positive exclusions** — don't report these unless a stated exception applies:
 
 1. Archived or template repositories — branch protection / required-review findings don't apply to a repo no one pushes to, or a template meant to be copied, not protected itself.
+2. `REPO-DOC-001` in a monorepo/workspace whose root has no README but every package/service directory has its own (`packages/*/README.md`, `services/*/README.md`) — the root check exists to catch a repo with no entry-point docs at all, not to force a redundant root README on top of per-package ones.
 
 Exception: if the "archived" repo is actually still receiving pushes (check
 `pushed_at` isn't stale), or the template repo is also used directly as a live
-service, the exclusion doesn't apply.
+service, the exclusion doesn't apply. For `REPO-DOC-001`, if fewer than half the
+top-level packages/services have their own README, the exclusion doesn't apply —
+report it.
 
 **Not an exclusion — a severity note:** on a repo with a single maintainer and no
 external contributors, `REPO-PR-003` (fork PRs run workflows without approval) is
@@ -150,6 +156,15 @@ gh api repos/{owner}/{repo}/actions/permissions
 gh api repos/{owner}/{repo}/environments
 ```
 
+### Local repo checks (Glob, not `gh` API)
+
+`REPO-DOC-001/002` and `REPO-TEST-001` are file-existence checks against the
+checked-out repo, not live GitHub state — run these with Glob/Read, not `gh api`:
+
+- **REPO-DOC-001** — no `README.md` (or `README.rst`/`README`) at repo root.
+- **REPO-DOC-002** — no `CONTRIBUTING.md` at repo root **and** no runbook (`docs/runbook*.md`, `RUNBOOK.md`, `docs/operations*.md`) anywhere in the repo.
+- **REPO-TEST-001** — no test directory/config for the repo's language(s) (`test/`, `tests/`, `spec/`, `__tests__/`, `*_test.go`, `*.test.ts`, `pytest.ini`, `jest.config.*`) **and** no test-running step in any `.github/workflows/*.yml`. Both must be absent — a test job that runs `go test ./...` against inline table tests, or a workflow that shells out to a test framework not matched by the glob, still counts as coverage.
+
 ### Blocking findings
 
 1. **REPO-BP-001** Default branch has **no protection / no ruleset** → enable required PR reviews + required status checks + linear history.
@@ -170,6 +185,9 @@ gh api repos/{owner}/{repo}/environments
 4. **CICD-FLOW-002** No environment protection on `production` / `prod`.
 5. **REPO-DEP-002** No `dependabot.yml` version updates (only security updates).
 6. **CICD-SCAN-001** CodeQL / code scanning not enabled.
+7. **REPO-DOC-001** No `README.md` at repo root.
+8. **REPO-DOC-002** No `CONTRIBUTING.md` and no runbook.
+9. **REPO-TEST-001** No test directory/config and no test job in CI.
 
 ---
 
