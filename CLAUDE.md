@@ -128,6 +128,7 @@ allowed-tools:            # Optional: restrict available tools
 | `/clouddrove:github-actions` | `skills/github-actions/SKILL.md` | `**/.github/workflows/*.yml` |
 | `/clouddrove:github` | `skills/github/SKILL.md` | `**/CODEOWNERS`, `**/.github/dependabot.yml` |
 | `/clouddrove:owasp` | `skills/owasp/SKILL.md` | Manual only |
+| `/clouddrove:appsec` | `skills/appsec/SKILL.md` | Manual only |
 | `/clouddrove:docker` | `skills/docker/SKILL.md` | `**/Dockerfile`, `**/docker-compose*.yml` |
 | `/clouddrove:finops` | `skills/finops/SKILL.md` | Manual only |
 | `/clouddrove:deploy` | `skills/deploy/SKILL.md` | Manual only |

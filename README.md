@@ -20,8 +20,8 @@ Skills land as `/clouddrove:tf`, `/clouddrove:finops`, … with a native `(cloud
 
 ## What you get
 
-- **12 skills** that auto-trigger on file globs and answer with structured, rule-ID-tagged review output
-  (`/clouddrove:tf`, `/clouddrove:k8s`, `/clouddrove:ci`, `/clouddrove:github-actions`, `/clouddrove:github`, `/clouddrove:docker`, `/clouddrove:finops`, `/clouddrove:owasp`, `/clouddrove:wrapper-tf`, `/clouddrove:deploy`, `/clouddrove:adr`, `/clouddrove:skill-creator`)
+- **13 skills** that auto-trigger on file globs and answer with structured, rule-ID-tagged review output
+  (`/clouddrove:tf`, `/clouddrove:k8s`, `/clouddrove:ci`, `/clouddrove:github-actions`, `/clouddrove:github`, `/clouddrove:docker`, `/clouddrove:finops`, `/clouddrove:owasp`, `/clouddrove:appsec`, `/clouddrove:wrapper-tf`, `/clouddrove:deploy`, `/clouddrove:adr`, `/clouddrove:skill-creator`)
 - **Packaged as the `clouddrove` plugin** — installed from this repo's own marketplace, so skills are namespaced `(clouddrove)` in Claude Code natively
 - **Single source** in `skills/<name>/SKILL.md` — a generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
 - **One installer** with flags — `--claude` / `--cursor` / `--codex` / `--all`, global or per-project scope
@@ -171,12 +171,13 @@ Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles them al
 | `skills/docker/SKILL.md` | `/clouddrove:docker` | `docker.mdc` | `**/Dockerfile`, `**/docker-compose*.yml` |
 | `skills/finops/SKILL.md` | `/clouddrove:finops` | `finops.mdc` | manual |
 | `skills/owasp/SKILL.md` | `/clouddrove:owasp` | `owasp.mdc` | manual |
+| `skills/appsec/SKILL.md` | `/clouddrove:appsec` | `appsec.mdc` | manual |
 | `skills/wrapper-tf/SKILL.md` | `/clouddrove:wrapper-tf` | `wrapper-tf.mdc` | `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` |
 | `skills/deploy/SKILL.md` | `/clouddrove:deploy` | `deploy.mdc` | manual |
 | `skills/adr/SKILL.md` | `/clouddrove:adr` | `adr.mdc` | `**/docs/adr/*.md` |
 | `skills/skill-creator/SKILL.md` | `/clouddrove:skill-creator` | `skill-creator.mdc` | manual |
 
-All 12 are also injected into `AGENTS.md` for Codex.
+All 13 are also injected into `AGENTS.md` for Codex.
 
 ### Shared rule-ID vocabulary
 
@@ -188,7 +189,7 @@ A finding's severity means something different depending on which skill raised i
 
 | Model | Used by | Meaning |
 |---|---|---|
-| **BLOCKING / ADVISORY**, fixed per rule ID | `tf`, `k8s`, `docker`, `ci`, `github-actions`, `github`, `wrapper-tf`, `deploy` | Severity is baked into the rule catalog — the skill never invents it. BLOCKING = fix before merge/deploy. |
+| **BLOCKING / ADVISORY**, fixed per rule ID | `tf`, `k8s`, `docker`, `ci`, `github-actions`, `github`, `appsec`, `wrapper-tf`, `deploy` | Severity is baked into the rule catalog — the skill never invents it. BLOCKING = fix before merge/deploy. |
 | **BLOCKING / ADVISORY**, judged per finding | `owasp` | Same two labels, but severity depends on exploitability *in this codebase* (reachable? mitigated already?) — assessed each time, not looked up. |
 | **HIGH / MED / LOW $-impact** | `finops` | Cost findings are opportunities ranked by savings magnitude, never merge-blockers — there's no "block the MR" concept for a cost lever. |
 
@@ -212,6 +213,7 @@ In Claude Code: invoke with `/clouddrove:<skill>` (namespaced by the plugin). In
 | `/clouddrove:docker` | Dockerfile review, image optimization, Compose, registry workflows |
 | `/clouddrove:finops` | AWS cost: waste detection, right-sizing, Savings Plans/RIs, EKS cost |
 | `/clouddrove:owasp` | Security review against OWASP Top 10:2025, ASVS 5.0, Agentic AI risks |
+| `/clouddrove:appsec` | Application-level security: dependency audit (via the ecosystem's real audit tool), missing security headers, CORS wildcard misconfiguration |
 | `/clouddrove:wrapper-tf` | Team standard for AWS Terraform repos on the CloudDrove wrapper pattern: scaffold `_modules/<name>/`, generate Terraform GitHub Actions CI, review against the wrapper pattern, map to SOC2/GDPR controls. Supersedes `/clouddrove:tf` on these repos. |
 | `/clouddrove:deploy` | Deployment strategy (rolling/blue-green/canary), production-readiness gate (reuses existing rule IDs), and rollback playbook for AWS/EKS |
 | `/clouddrove:adr` | Capture architectural decisions as structured ADRs under `docs/adr/` |
