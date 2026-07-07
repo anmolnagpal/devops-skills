@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-07-07
+
+### Added
+
+- **New `appsec` skill** — dependency audit (runs the real ecosystem audit tool: `npm audit`, `pip-audit`, `govulncheck`, `cargo audit`, etc. against the actual lockfile, not a memorized known-bad-version list), missing security headers, and CORS wildcard misconfiguration. Fills previously-registered but unused `SEC-APP-001/002`, `SEC-DEP-001`.
+- **IAM checks in `tf` and `wrapper-tf`** — `SEC-IAM-001` (wildcard action/resource) and `SEC-IAM-003` (MFA not enforced, excluding service roles).
+- **Repo hygiene checks in `github`** — `REPO-DOC-001` (no README), `REPO-DOC-002` (no CONTRIBUTING/runbook), `REPO-TEST-001` (no test coverage), as local Glob-based file checks alongside the existing gh-api AUDIT flow.
+
 ## [1.2.1] — 2026-07-07
 
 ### Fixed
