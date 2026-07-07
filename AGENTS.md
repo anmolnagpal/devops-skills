@@ -3114,9 +3114,11 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 | **TF-MOD-001** | ADVISORY | Raw AWS resource where a `terraform-aws-modules` module fits |
 | **TF-MOD-002** | BLOCKING | Module `source` without a pinned `version` (git ref/branch/omitted) |
 | **TF-QUAL-001** | ADVISORY | Repetition: no `locals` block for common tags/values |
+| **SEC-IAM-001** | BLOCKING | `Action = "*"` or `Resource = "*"` in an IAM policy statement |
+| **SEC-IAM-003** | ADVISORY | IAM policy attached to a human user/group grants sensitive actions with no `Condition` requiring `aws:MultiFactorAuthPresent` |
 | **META-SUP-001** | ADVISORY | `tf-skill:ignore` suppression missing a `-- reason` |
 
-**Reused from auditkit:** `TF-VAR-001`, `TF-VAR-002`, `TF-PROV-001/002`, `TF-STATE-001/002`, `TF-RES-001`, `TF-MOD-001/002`, `TF-QUAL-001`, `META-SUP-001`.
+**Reused from auditkit:** `TF-VAR-001`, `TF-VAR-002`, `TF-PROV-001/002`, `TF-STATE-001/002`, `TF-RES-001`, `TF-MOD-001/002`, `TF-QUAL-001`, `SEC-IAM-001/003`, `META-SUP-001`.
 **Registered in `rules/rule-ids.yaml`:** `TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`.
 
 **Output:** every finding carries its rule ID, in the format below. **Suppression:**
@@ -3132,8 +3134,9 @@ quote it, don't report it. Evals: [`evals/`](./evals/).
 2. Module-only repos with no root module — skip the `TF-STATE-001` backend check (already noted in REVIEW below).
 3. `.terraform.lock.hcl` and other generated/vendored files — never review these for style rules.
 4. A `backend` block's own literal values (bucket/region/key) — these cannot interpolate variables by design; this is the documented exception to Principle 1, not a `TF-VAR-004` finding.
+5. `SEC-IAM-003` on a policy attached to a service role (`aws_iam_role` assumed by an AWS service principal, e.g. `ec2.amazonaws.com`, `lambda.amazonaws.com`) or a CI/CD OIDC role — MFA presence only applies to a human's interactive session, not a service credential.
 
-Exception: if a "placeholder" file is actually referenced by a real `terraform apply` (e.g. `terraform.tfvars` symlinked to the `.example`), the exclusion doesn't apply — verify the file isn't live before excluding.
+Exception: if a "placeholder" file is actually referenced by a real `terraform apply` (e.g. `terraform.tfvars` symlinked to the `.example`), the exclusion doesn't apply — verify the file isn't live before excluding. For `SEC-IAM-003`, if the policy is attached to an `aws_iam_user` or `aws_iam_group` (human-facing) rather than a service role, the exclusion doesn't apply — report it.
 
 ---
 
@@ -3445,6 +3448,8 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 | **SEC-ENC-001** | BLOCKING | KMS/encryption-at-rest missing (Aurora, ElastiCache, EKS etcd, S3, Secrets Manager) |
 | **SEC-ENC-002** | BLOCKING | In-transit encryption disabled (ElastiCache transit, ALB TLS / HTTP→HTTPS redirect) |
 | **SEC-ENC-003** | BLOCKING | WAF not associated with the public ALB (`waf_acl_arn` not passed) |
+| **SEC-IAM-001** | BLOCKING | `Action = "*"` or `Resource = "*"` in an IAM policy statement |
+| **SEC-IAM-003** | ADVISORY | IAM policy attached to a human user/group grants sensitive actions with no `Condition` requiring `aws:MultiFactorAuthPresent` |
 | **SEC-NET-002** | BLOCKING | `publicly_accessible = true` on Aurora |
 | **SEC-NET-001** | ADVISORY | EKS public endpoint enabled in prod |
 | **OBS-MON-001** | ADVISORY | Aurora `performance_insights_enabled = false` in prod |
@@ -3462,11 +3467,14 @@ Evals: [`evals/`](./evals/).
 1. `bootstrap/` (the state bucket + lock table module) not calling `module "labels"` — it bootstraps the label registry's own backend before `_modules/labels` can be consumed; `CDTF-WRAP-002` targets `_modules/<name>/`, not `bootstrap/`.
 2. `enable_dns_validation = false` without a comment — this is `CDTF-MOD-006` at ADVISORY already, not a reason to also raise a separate BLOCKING finding.
 3. Non-prod environments (`dev`/`sandbox`) for `SEC-NET-001` (EKS public endpoint) — stays ADVISORY per the shared registry's environment convention (see `/clouddrove:k8s` dev relaxation); don't escalate to BLOCKING outside staging/prod.
+4. `SEC-IAM-003` on a policy attached to a service role (`aws_iam_role` assumed by an AWS service principal or CI/CD OIDC role) — MFA presence only applies to a human's interactive session, not a service credential. Nearly every wrapper module attaches policies to service roles (EKS node/IRSA roles, Lambda execution roles), so this exclusion applies by default here; `SEC-IAM-003` only fires on an `aws_iam_user`/`aws_iam_group` policy, which is rare in this pattern.
 
 Exception: if `bootstrap/` also provisions long-lived application resources (not just
 state backend), the exclusion doesn't apply and it should follow the normal pattern.
+For `SEC-IAM-003`, if the policy is attached to an `aws_iam_user` or `aws_iam_group`,
+the exclusion doesn't apply — report it.
 
-**Reused from auditkit:** `TF-MOD-002`, `TF-VAR-003`, `TF-OUT-001/002`, `TF-STATE-001/002`, `SEC-ENC-001/002/003`, `SEC-NET-001/002`, `OBS-MON-001`, `META-SUP-001`.
+**Reused from auditkit:** `TF-MOD-002`, `TF-VAR-003`, `TF-OUT-001/002`, `TF-STATE-001/002`, `SEC-ENC-001/002/003`, `SEC-IAM-001/003`, `SEC-NET-001/002`, `OBS-MON-001`, `META-SUP-001`.
 **Skill-local (`CDTF-*`):** the wrapper-pattern and CloudDrove-module-gotcha rules above.
 
 ---

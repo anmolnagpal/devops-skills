@@ -2,10 +2,10 @@
 name: tf
 description: "Generic Terraform review, scaffolding, and version upgrades for AWS infrastructure using the terraform-aws-modules ecosystem. Use when user says 'review my terraform', 'before I raise an MR', 'scaffold a lambda/rds/s3/eks/vpc', 'check my .tf files', 'upgrade provider', or when working in .tf or .tfvars files. NOTE: if the repo has an `_modules/` directory wrapping `clouddrove/*/aws` modules, use /clouddrove:wrapper-tf instead — the two patterns conflict."
 metadata:
-  version: 1.3.0
+  version: 1.4.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-07-05
+  updated: 2026-07-07
 paths:
   - "**/*.tf"
   - "**/*.tfvars"
@@ -77,9 +77,11 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 | **TF-MOD-001** | ADVISORY | Raw AWS resource where a `terraform-aws-modules` module fits |
 | **TF-MOD-002** | BLOCKING | Module `source` without a pinned `version` (git ref/branch/omitted) |
 | **TF-QUAL-001** | ADVISORY | Repetition: no `locals` block for common tags/values |
+| **SEC-IAM-001** | BLOCKING | `Action = "*"` or `Resource = "*"` in an IAM policy statement |
+| **SEC-IAM-003** | ADVISORY | IAM policy attached to a human user/group grants sensitive actions with no `Condition` requiring `aws:MultiFactorAuthPresent` |
 | **META-SUP-001** | ADVISORY | `tf-skill:ignore` suppression missing a `-- reason` |
 
-**Reused from auditkit:** `TF-VAR-001`, `TF-VAR-002`, `TF-PROV-001/002`, `TF-STATE-001/002`, `TF-RES-001`, `TF-MOD-001/002`, `TF-QUAL-001`, `META-SUP-001`.
+**Reused from auditkit:** `TF-VAR-001`, `TF-VAR-002`, `TF-PROV-001/002`, `TF-STATE-001/002`, `TF-RES-001`, `TF-MOD-001/002`, `TF-QUAL-001`, `SEC-IAM-001/003`, `META-SUP-001`.
 **Registered in `rules/rule-ids.yaml`:** `TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`.
 
 **Output:** every finding carries its rule ID, in the format below. **Suppression:**
@@ -95,8 +97,9 @@ quote it, don't report it. Evals: [`evals/`](./evals/).
 2. Module-only repos with no root module — skip the `TF-STATE-001` backend check (already noted in REVIEW below).
 3. `.terraform.lock.hcl` and other generated/vendored files — never review these for style rules.
 4. A `backend` block's own literal values (bucket/region/key) — these cannot interpolate variables by design; this is the documented exception to Principle 1, not a `TF-VAR-004` finding.
+5. `SEC-IAM-003` on a policy attached to a service role (`aws_iam_role` assumed by an AWS service principal, e.g. `ec2.amazonaws.com`, `lambda.amazonaws.com`) or a CI/CD OIDC role — MFA presence only applies to a human's interactive session, not a service credential.
 
-Exception: if a "placeholder" file is actually referenced by a real `terraform apply` (e.g. `terraform.tfvars` symlinked to the `.example`), the exclusion doesn't apply — verify the file isn't live before excluding.
+Exception: if a "placeholder" file is actually referenced by a real `terraform apply` (e.g. `terraform.tfvars` symlinked to the `.example`), the exclusion doesn't apply — verify the file isn't live before excluding. For `SEC-IAM-003`, if the policy is attached to an `aws_iam_user` or `aws_iam_group` (human-facing) rather than a service role, the exclusion doesn't apply — report it.
 
 ---
 
