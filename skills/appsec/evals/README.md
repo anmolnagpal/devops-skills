@@ -68,6 +68,14 @@ into the free CI gates. Run manually or on a nightly schedule.
 1. `mkdir cases/<descriptive-name>/`
 2. Drop a fixture (manifest/lockfile/config) that violates (or cleanly passes)
    specific rules.
-3. Write `expected.txt` — one rule ID per line, the IDs the skill must report.
+3. If the fixture is a real dependency manifest (`package.json`,
+   `package-lock.json`, `go.sum`, `Gemfile.lock`, etc.) with an intentionally
+   vulnerable/outdated version, name it with a `.fixture` suffix
+   (`package.json.fixture`) instead of the real filename. GitHub's dependency
+   graph / Dependabot security updates parses real manifest filenames
+   repo-wide regardless of `.github/dependabot.yml` scope, and will open a
+   real bump PR against an intentionally-vulnerable fixture otherwise — this
+   happened once (see repo PR history) before this convention existed.
+4. Write `expected.txt` — one rule ID per line, the IDs the skill must report.
    Empty file for a clean fixture.
-4. `bash validate.sh` → green.
+5. `bash validate.sh` → green.
