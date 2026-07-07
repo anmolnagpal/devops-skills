@@ -21,6 +21,13 @@ These rules apply to every push originating from this repo. They override defaul
 7. **Never `--force` push to a shared branch.** Force-push only to your own short-lived feature branches, and only after confirming with the user.
 8. **PR before merge.** Even for your own commits — open a PR, let CI run, then merge.
 
+## Writing style
+- Never use em dash (—) or literal double-hyphen (--) in output, code comments, commit messages, docs, or skill content. Use commas, periods, or parentheses instead.
+- Never use common AI filler words: delve, leverage, robust, seamless, utilize, foster, tapestry, testament, boasts, elevate, unlock, unleash, dive in, game-changer, in today's world, it's important to note. Use plain direct words instead.
+
+## Dependency / tool versions
+- Before adding or pinning any dependency, package, tool version, or base image (Python, Go, Rust, Bash tooling, npm, Docker images, GitHub Actions, Terraform providers/modules, etc), check GitHub releases/tags or the official registry for the latest stable version first, then use that version. Do not guess or use a remembered/training-data version.
+
 ## Purpose
 
 This repo distributes reusable Claude Code **skills**, **plugins**, and **MCP servers** to the team. Skills are markdown files that encode DevOps best practices; they ship as the **`clouddrove` plugin** (this repo is also its own marketplace), installed via `claude plugin install clouddrove@devops-skills`, alongside the team plugins and MCP servers wired by the install scripts.
