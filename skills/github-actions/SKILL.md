@@ -2,10 +2,10 @@
 name: github-actions
 description: "GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files."
 metadata:
-  version: 0.5.0
+  version: 0.6.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-07-16
+  updated: 2026-07-17
 paths:
   - "**/.github/workflows/*.yml"
   - "**/.github/workflows/*.yaml"
@@ -81,11 +81,12 @@ for each is in REVIEW below.
 | **CICD-SCAN-001** | ADVISORY | No CodeQL / Dependabot / dependency review on an active repo |
 | **CICD-OPS-005** | ADVISORY | Duplicated workflow logic not extracted to `workflow_call` |
 | **CICD-OPS-006** | ADVISORY | Heavyweight render/snapshot job runs on every push instead of scoped triggers |
+| **CICD-OPS-007** | ADVISORY | Watchdog/gate workflow runs only on the self-hosted infra it monitors or protects |
 | **CICD-PERM-002** | ADVISORY | No `permissions: contents: read` baseline declared |
 | **META-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `CICD-PIN-001`, `CICD-PERM-001`, `CICD-SEC-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `SEC-IAM-002`.
-**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`006`, `CICD-PERM-002`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`007`, `CICD-PERM-002`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
@@ -99,6 +100,7 @@ it. Evals: [`evals/`](./evals/).
 1. `pull_request_target` used only to add labels/comments via `actions/github-script`, with **no checkout** of PR head at all — `CICD-SEC-002` targets the checkout-of-untrusted-code RCE pattern specifically; verify there's no `actions/checkout` step with `ref: ${{ github.event.pull_request.head.sha }}` before excluding.
 2. `${{ github.event.* }}` fields that are GitHub-controlled and not attacker-influenced (e.g. `github.event.repository.name`, `github.run_id`) interpolated into `run:` — `CICD-SEC-003` targets attacker-controlled fields (PR title/body, branch name, commit message, issue title).
 3. Self-hosted runners on a **private** repo with no external contributors — `CICD-SEC-004` targets public-repo exposure to arbitrary fork PRs.
+4. A watchdog/gate workflow on a self-hosted runner group that is genuinely provisioned and operated independently of the infra it monitors (a separate pool or cluster, not just a different label on the same fleet) — `CICD-OPS-007` targets the same-infra deadlock/blind-spot case specifically; confirm the two runner groups are actually independent before excluding.
 
 Exception: if the "label-only" workflow's `actions/github-script` step actually
 executes untrusted PR content (e.g. `eval`s the PR title), or the private repo grants
@@ -152,7 +154,8 @@ Summary: X blocking issue(s), Y advisory issue(s).
 5. **CICD-SCAN-001** No CodeQL / Dependabot / dependency review configured for an active repo.
 6. **CICD-OPS-005** Workflow not reusable — repeated 50+ lines across files → extract to `.github/workflows/_reusable-*.yml` with `workflow_call`.
 7. **CICD-OPS-006** Heavyweight render/snapshot job (golden-render, visual diff, full-suite rebuild) triggered on every push regardless of what changed → scope `on:` to the machinery that actually affects the render: `paths:` for the templates/renderer/scaffolding scripts, `push: { tags: ['v*'] }` for release events, and a `schedule:` cron for a nightly full run. A push to unrelated files shouldn't pay for a heavy render, and a golden-render failure should mean the rendering machinery actually changed, not noise from an unrelated commit.
-8. **CICD-PERM-002** Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
+8. **CICD-OPS-007** Watchdog/gate workflow (a runner-health check, a cost-policy gate, anything that detects or blocks on an outage/misconfiguration of self-hosted or org-managed runner infra) scheduled only on the self-hosted pool it monitors (e.g. `runs-on: arc-runners` in an arc-runners health check) → run it on independent infra (normally `ubuntu-latest`), with a comment documenting the exception. Left uncaught, an outage of that pool either silently disables the check or deadlocks the PR that would fix the outage.
+9. **CICD-PERM-002** Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
 
 ### Example output
 
@@ -352,6 +355,7 @@ Walk the workflow files and propose patches for:
 5. Move secrets out of `run:` interpolation into `env:` mappings.
 6. For production jobs: require `environment:` with reviewers.
 7. Suggest enabling Dependabot, CodeQL, and `dependency-review-action` on PRs.
+8. Migrating a workflow from `ubuntu-latest` to a self-hosted/ARC runner: verify every tool its `run:` steps assume is preinstalled (`gh`, `jq`, `docker`, language runtimes) is actually present on the target image — GitHub-hosted images bundle a large toolset that self-hosted/ARC scale-set images generally don't. Add explicit install steps for anything missing, or confirm the custom runner image bundles it. A `workflow_dispatch` dry run against the target runner is the only way to catch this before a real trigger fails; add one if the workflow doesn't have one.
 
 Output as a unified diff or per-file edit list, never silently rewrite.
 
@@ -363,3 +367,28 @@ Output as a unified diff or per-file edit list, never silently rewrite.
 - Reusable workflows belong in `.github/workflows/_<name>.yml` (underscore prefix is convention).
 - For self-hosted runners, prefer ephemeral (Actions Runner Controller on Kubernetes) over persistent.
 - Composite actions in `.github/actions/<name>/action.yml` need their own review pass.
+- Never merge stderr into a retry loop's success value: `if VAR=$(cmd 2>&1); then` corrupts `VAR` whenever a passing `cmd` writes non-fatal stderr (a CLI notice, a deprecation warning, an API pagination notice). Redirect stderr to a scratch file or a second variable and only read it in the failure branch.
+- A workflow that detects or gates on self-hosted runner outages must itself run on independent infra, never the pool it watches (`CICD-OPS-007`).
+
+### Self-hosted/ARC runners often lack `gh`
+
+GitHub-hosted `ubuntu-latest` images bundle `gh`, `jq`, `docker`, and common language runtimes; self-hosted/ARC scale-set images generally don't. A workflow migrated from `ubuntu-latest` to `runs-on: arc-runners` (or similar) that calls `gh` directly in a `run:` step looks identical in the YAML and passes review, then fails with `gh: command not found` on its first real trigger post-merge — `workflow_dispatch` dry runs are the only pre-merge way to catch it, and most lifecycle workflows don't have one.
+
+Fix pattern — add a step before the first `gh` call:
+
+```yaml
+- name: Ensure gh CLI is installed
+  run: |
+    set -euo pipefail
+    if ! command -v gh >/dev/null 2>&1; then
+      SUDO=""; [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+      $SUDO mkdir -p -m 755 /etc/apt/keyrings
+      curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | $SUDO tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null
+      $SUDO chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | $SUDO tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+      $SUDO apt-get update
+      $SUDO apt-get install -y gh
+    fi
+```
+
+`set -euo pipefail` makes a failed download fail loudly at that line instead of a confusing downstream apt/gpg error. Handles both root and non-root/sudo containers.

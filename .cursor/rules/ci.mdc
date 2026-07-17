@@ -334,3 +334,9 @@ Next steps:
 2. Update CHART_DIR, NAMESPACE, and SERVICE_NAME to match your repo
 3. Run /ci review to validate before merging
 ```
+
+---
+
+## Notes for Claude
+
+- Operating on a repo's own pipeline/workflow config from inside a constrained or sandboxed runner (raw `git` write subcommands blocked, only read-only git and an API CLI allowed) isn't GitLab-specific — see `skills/github/SKILL.md`'s "Preparing a branch/commit/PR without shell git" note for the general technique (applies equally to a GitLab-hosted runner with restricted shell git and a REST/GraphQL API fallback).

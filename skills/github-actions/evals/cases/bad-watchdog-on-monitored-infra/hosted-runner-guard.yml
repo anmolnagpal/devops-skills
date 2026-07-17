@@ -1,0 +1,21 @@
+# Fixture: a cost-policy watchdog/gate workflow that runs only on the self-hosted
+# pool it is meant to police. Not a real pipeline.
+name: hosted-runner-guard
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: arc-runners
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5.0.0
+      - run: ./scripts/check-hosted-runner-exceptions.sh
