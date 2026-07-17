@@ -183,6 +183,14 @@ Prefer `terraform-aws-modules` over raw AWS provider resources:
 
 Always pin module versions with `version = "~> X.Y"` — never use a git ref, branch, or omit the version.
 
+A module's registry version listing and its GitHub tag history can diverge: a tag can exist in git before the registry publishes it, and the registry can lag or skip a tag. Don't treat a GitHub tag as proof a pin is safe. Before pinning, check the target version appears in the registry listing itself, not just GitHub releases/tags, and confirm it resolves with a real `terraform init`. This applies to every pin bump, not just new modules.
+
+If a module `source` is a private git repo instead of the public registry, CI needs its own authenticated git transport configured before `terraform init` runs, separate from whatever authenticated the pipeline's checkout. See `/clouddrove:ci` (Secrets and credentials, Terraform pipelines).
+
+### Performance and CI environment
+
+Point `TF_PLUGIN_CACHE_DIR` at a persistent, writable path on the runner, not a per-job or ephemeral temp dir, since a cache that's wiped between jobs never accumulates and buys nothing. Concurrent `terraform init` runs (parallel jobs, a matrix over environments) can safely share one cache directory: Terraform's plugin cache handles concurrent readers.
+
 ### Review output format
 
 ```

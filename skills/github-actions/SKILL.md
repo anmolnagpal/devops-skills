@@ -2,10 +2,10 @@
 name: github-actions
 description: "GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files."
 metadata:
-  version: 0.4.0
+  version: 0.5.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-07-05
+  updated: 2026-07-16
 paths:
   - "**/.github/workflows/*.yml"
   - "**/.github/workflows/*.yaml"
@@ -80,11 +80,12 @@ for each is in REVIEW below.
 | **CICD-OPS-004** | ADVISORY | Matrix without `fail-fast: false` for independent combos |
 | **CICD-SCAN-001** | ADVISORY | No CodeQL / Dependabot / dependency review on an active repo |
 | **CICD-OPS-005** | ADVISORY | Duplicated workflow logic not extracted to `workflow_call` |
+| **CICD-OPS-006** | ADVISORY | Heavyweight render/snapshot job runs on every push instead of scoped triggers |
 | **CICD-PERM-002** | ADVISORY | No `permissions: contents: read` baseline declared |
 | **META-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `CICD-PIN-001`, `CICD-PERM-001`, `CICD-SEC-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `SEC-IAM-002`.
-**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`006`, `CICD-PERM-002`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
@@ -150,7 +151,8 @@ Summary: X blocking issue(s), Y advisory issue(s).
 4. **CICD-OPS-004** Matrix without `fail-fast: false` for independent OS/version combinations.
 5. **CICD-SCAN-001** No CodeQL / Dependabot / dependency review configured for an active repo.
 6. **CICD-OPS-005** Workflow not reusable — repeated 50+ lines across files → extract to `.github/workflows/_reusable-*.yml` with `workflow_call`.
-7. **CICD-PERM-002** Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
+7. **CICD-OPS-006** Heavyweight render/snapshot job (golden-render, visual diff, full-suite rebuild) triggered on every push regardless of what changed → scope `on:` to the machinery that actually affects the render: `paths:` for the templates/renderer/scaffolding scripts, `push: { tags: ['v*'] }` for release events, and a `schedule:` cron for a nightly full run. A push to unrelated files shouldn't pay for a heavy render, and a golden-render failure should mean the rendering machinery actually changed, not noise from an unrelated commit.
+8. **CICD-PERM-002** Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
 
 ### Example output
 

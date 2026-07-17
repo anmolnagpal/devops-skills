@@ -2,10 +2,10 @@
 name: tf
 description: "Generic Terraform review, scaffolding, and version upgrades for AWS infrastructure using the terraform-aws-modules ecosystem. Use when user says 'review my terraform', 'before I raise an MR', 'scaffold a lambda/rds/s3/eks/vpc', 'check my .tf files', 'upgrade provider', or when working in .tf or .tfvars files. NOTE: if the repo has an `_modules/` directory wrapping `clouddrove/*/aws` modules, use /clouddrove:wrapper-tf instead — the two patterns conflict."
 metadata:
-  version: 1.4.0
+  version: 1.5.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-07-07
+  updated: 2026-07-16
 paths:
   - "**/*.tf"
   - "**/*.tfvars"
@@ -194,6 +194,14 @@ Prefer `terraform-aws-modules` over raw AWS provider resources:
 - IAM → `terraform-aws-modules/iam/aws ~> 5.0`
 
 Always pin module versions with `version = "~> X.Y"` — never use a git ref, branch, or omit the version.
+
+A module's registry version listing and its GitHub tag history can diverge: a tag can exist in git before the registry publishes it, and the registry can lag or skip a tag. Don't treat a GitHub tag as proof a pin is safe. Before pinning, check the target version appears in the registry listing itself, not just GitHub releases/tags, and confirm it resolves with a real `terraform init`. This applies to every pin bump, not just new modules.
+
+If a module `source` is a private git repo instead of the public registry, CI needs its own authenticated git transport configured before `terraform init` runs, separate from whatever authenticated the pipeline's checkout. See `/clouddrove:ci` (Secrets and credentials, Terraform pipelines).
+
+### Performance and CI environment
+
+Point `TF_PLUGIN_CACHE_DIR` at a persistent, writable path on the runner, not a per-job or ephemeral temp dir, since a cache that's wiped between jobs never accumulates and buys nothing. Concurrent `terraform init` runs (parallel jobs, a matrix over environments) can safely share one cache directory: Terraform's plugin cache handles concurrent readers.
 
 ### Review output format
 
