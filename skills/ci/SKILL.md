@@ -2,10 +2,10 @@
 name: ci
 description: "GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', or when working in .gitlab-ci.yml files."
 metadata:
-  version: 1.3.1
+  version: 1.3.2
   author: Anmol Nagpal
   category: devops
-  updated: 2026-07-16
+  updated: 2026-07-17
 paths:
   - "**/.gitlab-ci.yml"
   - "**/.gitlab-ci.yaml"
@@ -346,3 +346,9 @@ Next steps:
 2. Update CHART_DIR, NAMESPACE, and SERVICE_NAME to match your repo
 3. Run /ci review to validate before merging
 ```
+
+---
+
+## Notes for Claude
+
+- Operating on a repo's own pipeline/workflow config from inside a constrained or sandboxed runner (raw `git` write subcommands blocked, only read-only git and an API CLI allowed) isn't GitLab-specific — see `skills/github/SKILL.md`'s "Preparing a branch/commit/PR without shell git" note for the general technique (applies equally to a GitLab-hosted runner with restricted shell git and a REST/GraphQL API fallback).

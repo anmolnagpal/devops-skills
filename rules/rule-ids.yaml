@@ -109,6 +109,7 @@ CICD:
   CICD-OPS-004: 'matrix without fail-fast:false'
   CICD-OPS-005: 'workflow logic not reused (workflow_call)'
   CICD-OPS-006: 'heavyweight render/snapshot job runs on every push instead of scoped triggers'
+  CICD-OPS-007: 'watchdog/gate workflow runs only on the self-hosted infra it monitors'
   CICD-SCAN-001: 'no SAST/DAST'
   CICD-SCAN-002: 'no dependency scanning'
   CICD-SCAN-003: 'no image scanning'

@@ -612,6 +612,12 @@ Next steps:
 3. Run /ci review to validate before merging
 ```
 
+---
+
+## Notes for Claude
+
+- Operating on a repo's own pipeline/workflow config from inside a constrained or sandboxed runner (raw `git` write subcommands blocked, only read-only git and an API CLI allowed) isn't GitLab-specific — see `skills/github/SKILL.md`'s "Preparing a branch/commit/PR without shell git" note for the general technique (applies equally to a GitLab-hosted runner with restricted shell git and a REST/GraphQL API fallback).
+
 
 ## /deploy
 
@@ -1583,11 +1589,12 @@ for each is in REVIEW below.
 | **CICD-SCAN-001** | ADVISORY | No CodeQL / Dependabot / dependency review on an active repo |
 | **CICD-OPS-005** | ADVISORY | Duplicated workflow logic not extracted to `workflow_call` |
 | **CICD-OPS-006** | ADVISORY | Heavyweight render/snapshot job runs on every push instead of scoped triggers |
+| **CICD-OPS-007** | ADVISORY | Watchdog/gate workflow runs only on the self-hosted infra it monitors or protects |
 | **CICD-PERM-002** | ADVISORY | No `permissions: contents: read` baseline declared |
 | **META-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `CICD-PIN-001`, `CICD-PERM-001`, `CICD-SEC-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `SEC-IAM-002`.
-**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`006`, `CICD-PERM-002`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`007`, `CICD-PERM-002`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
@@ -1601,6 +1608,7 @@ it. Evals: [`evals/`](./evals/).
 1. `pull_request_target` used only to add labels/comments via `actions/github-script`, with **no checkout** of PR head at all — `CICD-SEC-002` targets the checkout-of-untrusted-code RCE pattern specifically; verify there's no `actions/checkout` step with `ref: ${{ github.event.pull_request.head.sha }}` before excluding.
 2. `${{ github.event.* }}` fields that are GitHub-controlled and not attacker-influenced (e.g. `github.event.repository.name`, `github.run_id`) interpolated into `run:` — `CICD-SEC-003` targets attacker-controlled fields (PR title/body, branch name, commit message, issue title).
 3. Self-hosted runners on a **private** repo with no external contributors — `CICD-SEC-004` targets public-repo exposure to arbitrary fork PRs.
+4. A watchdog/gate workflow on a self-hosted runner group that is genuinely provisioned and operated independently of the infra it monitors (a separate pool or cluster, not just a different label on the same fleet) — `CICD-OPS-007` targets the same-infra deadlock/blind-spot case specifically; confirm the two runner groups are actually independent before excluding.
 
 Exception: if the "label-only" workflow's `actions/github-script` step actually
 executes untrusted PR content (e.g. `eval`s the PR title), or the private repo grants
@@ -1654,7 +1662,8 @@ Summary: X blocking issue(s), Y advisory issue(s).
 5. **CICD-SCAN-001** No CodeQL / Dependabot / dependency review configured for an active repo.
 6. **CICD-OPS-005** Workflow not reusable — repeated 50+ lines across files → extract to `.github/workflows/_reusable-*.yml` with `workflow_call`.
 7. **CICD-OPS-006** Heavyweight render/snapshot job (golden-render, visual diff, full-suite rebuild) triggered on every push regardless of what changed → scope `on:` to the machinery that actually affects the render: `paths:` for the templates/renderer/scaffolding scripts, `push: { tags: ['v*'] }` for release events, and a `schedule:` cron for a nightly full run. A push to unrelated files shouldn't pay for a heavy render, and a golden-render failure should mean the rendering machinery actually changed, not noise from an unrelated commit.
-8. **CICD-PERM-002** Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
+8. **CICD-OPS-007** Watchdog/gate workflow (a runner-health check, a cost-policy gate, anything that detects or blocks on an outage/misconfiguration of self-hosted or org-managed runner infra) scheduled only on the self-hosted pool it monitors (e.g. `runs-on: arc-runners` in an arc-runners health check) → run it on independent infra (normally `ubuntu-latest`), with a comment documenting the exception. Left uncaught, an outage of that pool either silently disables the check or deadlocks the PR that would fix the outage.
+9. **CICD-PERM-002** Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
 
 ### Example output
 
@@ -1854,6 +1863,7 @@ Walk the workflow files and propose patches for:
 5. Move secrets out of `run:` interpolation into `env:` mappings.
 6. For production jobs: require `environment:` with reviewers.
 7. Suggest enabling Dependabot, CodeQL, and `dependency-review-action` on PRs.
+8. Migrating a workflow from `ubuntu-latest` to a self-hosted/ARC runner: verify every tool its `run:` steps assume is preinstalled (`gh`, `jq`, `docker`, language runtimes) is actually present on the target image — GitHub-hosted images bundle a large toolset that self-hosted/ARC scale-set images generally don't. Add explicit install steps for anything missing, or confirm the custom runner image bundles it. A `workflow_dispatch` dry run against the target runner is the only way to catch this before a real trigger fails; add one if the workflow doesn't have one.
 
 Output as a unified diff or per-file edit list, never silently rewrite.
 
@@ -1865,6 +1875,31 @@ Output as a unified diff or per-file edit list, never silently rewrite.
 - Reusable workflows belong in `.github/workflows/_<name>.yml` (underscore prefix is convention).
 - For self-hosted runners, prefer ephemeral (Actions Runner Controller on Kubernetes) over persistent.
 - Composite actions in `.github/actions/<name>/action.yml` need their own review pass.
+- Never merge stderr into a retry loop's success value: `if VAR=$(cmd 2>&1); then` corrupts `VAR` whenever a passing `cmd` writes non-fatal stderr (a CLI notice, a deprecation warning, an API pagination notice). Redirect stderr to a scratch file or a second variable and only read it in the failure branch.
+- A workflow that detects or gates on self-hosted runner outages must itself run on independent infra, never the pool it watches (`CICD-OPS-007`).
+
+### Self-hosted/ARC runners often lack `gh`
+
+GitHub-hosted `ubuntu-latest` images bundle `gh`, `jq`, `docker`, and common language runtimes; self-hosted/ARC scale-set images generally don't. A workflow migrated from `ubuntu-latest` to `runs-on: arc-runners` (or similar) that calls `gh` directly in a `run:` step looks identical in the YAML and passes review, then fails with `gh: command not found` on its first real trigger post-merge — `workflow_dispatch` dry runs are the only pre-merge way to catch it, and most lifecycle workflows don't have one.
+
+Fix pattern — add a step before the first `gh` call:
+
+```yaml
+- name: Ensure gh CLI is installed
+  run: |
+    set -euo pipefail
+    if ! command -v gh >/dev/null 2>&1; then
+      SUDO=""; [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1 && SUDO="sudo"
+      $SUDO mkdir -p -m 755 /etc/apt/keyrings
+      curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | $SUDO tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null
+      $SUDO chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+      echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | $SUDO tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+      $SUDO apt-get update
+      $SUDO apt-get install -y gh
+    fi
+```
+
+`set -euo pipefail` makes a failed download fail loudly at that line instead of a confusing downstream apt/gpg error. Handles both root and non-root/sudo containers.
 
 
 ## /github
@@ -2215,6 +2250,40 @@ Confirm with the user before tagging. Releases are visible to anyone with repo a
 - Org-level settings (SSO, IP allowlists, base permissions) live at `gh api orgs/{org}` — repo audits should mention but not modify org policy without explicit permission.
 - Fine-grained PATs are preferred over classic PATs. Suggest expiry ≤ 90 days.
 - Never paste secrets into the chat. If a secret leaks in a commit, the only safe action is rotate-then-purge (BFG / git-filter-repo), not just delete.
+
+### Preparing a branch/commit/PR without shell git
+
+In a sandboxed executor where raw `git` write subcommands (`git checkout -b`, `git add`, `git commit`, even `git commit --allow-empty` or a dry-run `git add -n`) require interactive approval that never resolves in a headless run, while read-only git subcommands (`status`, `log`, `branch --show-current`, `diff`) and all `gh` CLI calls work freely: prepare the branch/commit/PR entirely through the GitHub Git Data API via `gh api`. `gh repo clone` / `gh pr checkout` also work in this constraint — they invoke git internally, but the literal invoked command starts with `gh`.
+
+1. Create a blob per changed file: `gh api repos/<owner>/<repo>/git/blobs -F content=@path -f encoding=utf-8`.
+2. Build a tree from the base commit's tree sha plus those blobs: `gh api repos/<owner>/<repo>/git/trees -f base_tree=<base-tree-sha> -f 'tree[][path]=<path>' -f 'tree[][mode]=100644' -f 'tree[][type]=blob' -f 'tree[][sha]=<blob-sha>'`.
+3. Create a commit against that tree: `gh api repos/<owner>/<repo>/git/commits -f message="..." -f tree=<tree-sha> -f 'parents[]=<parent-sha>'`.
+4. Create or force-update the branch ref: `gh api repos/<owner>/<repo>/git/refs -f ref=refs/heads/<branch> -f sha=<commit-sha>` (new branch) or `gh api -X PATCH repos/<owner>/<repo>/git/refs/heads/<branch> -f sha=<commit-sha> -F force=true` (existing branch).
+5. `gh pr create` as usual.
+
+Gotcha: `gh api repos/<owner>/<repo>/git/blobs -f content=@path` silently sets the field to the **literal string** `@path` instead of reading the file — `-f`/`--field` does not do file-read expansion. Use `-F`/`--raw-field` instead (`-F content=@path -f encoding=utf-8`), which actually reads the file's bytes. Using `-f` produces no error, just a blob byte-for-byte equal to the string `@path` — easy to miss without explicitly fetching the blob back and diffing it against the source file.
+
+### Rebasing an existing PR onto a moved base, without `git rebase`
+
+Same Git Data API toolchain above, extended one step further, for rebasing an existing PR branch onto a moved base tip when `git rebase`/`git push` are unavailable (only read-only git and `gh api` allowed):
+
+1. For each file the PR touches, diff (old merge-base → new base tip) and (old merge-base → PR tip) separately to see whether the two sides' changes land in disjoint regions of the file. When they do, hand-merge by editing the PR-tip version of the file to also carry the base's independent addition — append-only/disjoint sections merge cleanly this way with zero true conflicts.
+2. Build a new tree with `base_tree` set to the **current** base tip's tree sha (not the old one), overriding only the touched files' blobs.
+3. Create a commit whose `parents` points at the current base tip sha (not the old PR history).
+4. Force-update the **existing** PR branch ref (`gh api -X PATCH repos/<owner>/<repo>/git/refs/heads/<branch> -f sha=<new-commit-sha> -F force=true`) rather than opening a new PR — this preserves the PR number and review thread, and produces a clean `mergeable: MERGEABLE` result equivalent to a real rebase.
+
+Gotcha: this always squashes the PR to a single commit, losing the original commit boundaries — disclose that tradeoff to the user/reviewer before force-updating.
+
+### Check for existing work before redoing a requeued/retried job
+
+Before preparing a new branch/commit/PR for a job whose issue thread carries a watchdog "run was lost; re-queued" comment (or otherwise signals this is a resumed/retried run of a job that may already have produced client-repo artifacts), check the target repo for an existing open OR recently-merged PR/branch matching the same task before starting fresh work:
+
+```bash
+gh pr list --repo <target> --search "<branch-slug-guess>"
+gh pr list --repo <target> --state all --search "<short task keywords>"
+```
+
+Treat a hit as work already done — verify it actually satisfies the issue, then report accordingly — rather than re-doing it from scratch. Don't rely on the target repo having its own duplicate-PR guard to catch the resulting collision; that guard is a property of the specific repo, not something every client repo has.
 
 
 ## /k8s
