@@ -389,7 +389,6 @@ Identify whether this is a Terraform pipeline, Helm pipeline, or both, then appl
 - AWS credentials must come from GitLab CI/CD variables or OIDC — never hardcoded values
 - Never use `echo`, `cat`, or `printenv` in ways that print secret variable values to job logs
 - Use OIDC / IAM role federation for AWS authentication where possible — preferred over static keys
-- A private Terraform module `source` (a clouddrove module repo, or a client's own) needs authenticated git configured before `terraform init` pulls it, not only before the top-level checkout. The default anonymous transport can't reach a private repo.
 
 ### Image versions
 - Always pin Docker image versions — never use `:latest`
@@ -416,7 +415,6 @@ stages:
 - Never use `-auto-approve` in production apply jobs
 - Never hardcode `TF_VAR_` values — all variables come from GitLab CI/CD variables
 - Remote backend only — never use local Terraform state
-- If any module `source` is a private git URL, git auth for that source must be configured in `before_script` (or an earlier stage) ahead of `terraform init`. `init` clones each module source on its own and does not inherit whatever authenticated the pipeline's own checkout.
 
 ### Helm / EKS pipelines
 - Always run `helm lint` before any deploy step
@@ -1582,12 +1580,11 @@ for each is in REVIEW below.
 | **CICD-OPS-004** | ADVISORY | Matrix without `fail-fast: false` for independent combos |
 | **CICD-SCAN-001** | ADVISORY | No CodeQL / Dependabot / dependency review on an active repo |
 | **CICD-OPS-005** | ADVISORY | Duplicated workflow logic not extracted to `workflow_call` |
-| **CICD-OPS-006** | ADVISORY | Heavyweight render/snapshot job runs on every push instead of scoped triggers |
 | **CICD-PERM-002** | ADVISORY | No `permissions: contents: read` baseline declared |
 | **META-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `CICD-PIN-001`, `CICD-PERM-001`, `CICD-SEC-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `SEC-IAM-002`.
-**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`006`, `CICD-PERM-002`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
@@ -1653,8 +1650,7 @@ Summary: X blocking issue(s), Y advisory issue(s).
 4. **CICD-OPS-004** Matrix without `fail-fast: false` for independent OS/version combinations.
 5. **CICD-SCAN-001** No CodeQL / Dependabot / dependency review configured for an active repo.
 6. **CICD-OPS-005** Workflow not reusable — repeated 50+ lines across files → extract to `.github/workflows/_reusable-*.yml` with `workflow_call`.
-7. **CICD-OPS-006** Heavyweight render/snapshot job (golden-render, visual diff, full-suite rebuild) triggered on every push regardless of what changed → scope `on:` to the machinery that actually affects the render: `paths:` for the templates/renderer/scaffolding scripts, `push: { tags: ['v*'] }` for release events, and a `schedule:` cron for a nightly full run. A push to unrelated files shouldn't pay for a heavy render, and a golden-render failure should mean the rendering machinery actually changed, not noise from an unrelated commit.
-8. **CICD-PERM-002** Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
+7. **CICD-PERM-002** Missing `contents: read` baseline — start every workflow with `permissions: contents: read` then escalate per-job.
 
 ### Example output
 
@@ -3392,14 +3388,6 @@ Prefer `terraform-aws-modules` over raw AWS provider resources:
 
 Always pin module versions with `version = "~> X.Y"` — never use a git ref, branch, or omit the version.
 
-A module's registry version listing and its GitHub tag history can diverge: a tag can exist in git before the registry publishes it, and the registry can lag or skip a tag. Don't treat a GitHub tag as proof a pin is safe. Before pinning, check the target version appears in the registry listing itself, not just GitHub releases/tags, and confirm it resolves with a real `terraform init`. This applies to every pin bump, not just new modules.
-
-If a module `source` is a private git repo instead of the public registry, CI needs its own authenticated git transport configured before `terraform init` runs, separate from whatever authenticated the pipeline's checkout. See `/clouddrove:ci` (Secrets and credentials, Terraform pipelines).
-
-### Performance and CI environment
-
-Point `TF_PLUGIN_CACHE_DIR` at a persistent, writable path on the runner, not a per-job or ephemeral temp dir, since a cache that's wiped between jobs never accumulates and buys nothing. Concurrent `terraform init` runs (parallel jobs, a matrix over environments) can safely share one cache directory: Terraform's plugin cache handles concurrent readers.
-
 ### Review output format
 
 ```
@@ -3730,15 +3718,6 @@ module "<name>" {
 
 `label_order = ["name"]` is **mandatory** — without it, upstream CloudDrove appends `environment` a second time, producing `acme-prod-prod-eks`.
 
-### Client repo bootstrap: prune before stamp
-
-Before any of the actions above run, a brand-new client repo is scaffolded from a full template, with every `_modules/*` wrapper, example environments, and other-cloud trees included, then cut down to the layout above. That cut-down happens in a fixed order: prune, then stamp. Never the reverse (**stamp-then-prune**).
-
-1. **Prune first**: delete the modules, example environments, and other-cloud (non-AWS) trees the client doesn't need.
-2. **Stamp second**: only once pruning is done, write the client's manifest/metadata file (produced by whatever bootstrap tooling runs the scaffold, one example is `.factory/manifest.yaml`) recording what remains.
-
-Stamping before pruning breaks in two distinct ways. The manifest can end up listing modules the next step deletes, so it references trees that no longer exist the moment scaffolding finishes. And a prune step that isn't manifest-aware can just as easily delete something the stamp step produced or still needs (the manifest file itself, if it landed inside a directory the prune step doesn't know to spare), destroying the record instead of merely making it stale.
-
 ---
 
 ## NEW — Scaffold a Module
@@ -3804,18 +3783,6 @@ Generate two workflow files following team standards.
    - `timeout-minutes: 60`, `-lock-timeout=300s` on all plan/apply steps
 6. **Plan exit codes:** 0 = no changes (✅), 1 = error (❌), 2 = changes to apply (✅) — only exit 1 is a failure.
 
-### tflint plugin install workaround
-
-`tflint --init` can fail even with network access and a correct `.tflint.hcl`, when GitHub's Sigstore-backed attestation verifier for release assets is broken upstream (tracked at [terraform-linters/tflint#2591](https://github.com/terraform-linters/tflint/issues/2591)). The installer downloads the plugin binary but can't verify it, and the job fails before linting even starts. Older tflint releases that predate the attestation check aren't affected.
-
-Workaround: skip the verifying installer and place the plugin binary directly where tflint expects it, instead of relying on `tflint --init`:
-
-1. Download the plugin release asset for your platform directly (not via `tflint --init`).
-2. Extract the binary into the plugin directory tflint already scans: `~/.tflint.d/plugins` by default, or the path set by `TFLINT_PLUGIN_DIR` / a `plugin_dir` in `.tflint.hcl`.
-3. Re-run `tflint --init`. An already-populated plugin directory is a no-op ("All plugins are already installed"), so the run proceeds straight to linting without touching the broken verifier.
-
-This is a stopgap for the upstream Sigstore breakage, not a permanent CI pattern. Drop it once tflint#2591 is resolved, and confirm `tflint --init` works unmodified before removing the manual install step.
-
 ### `drift.yml` — Nightly detection
 
 1. `schedule: cron: "0 6 * * *"` + `workflow_dispatch`
@@ -3878,10 +3845,6 @@ All resources follow `{client_name}-{environment}-{resource}`. Verify:
 
 - **BLOCKING:** Any CloudDrove module call without a pinned `version =` constraint
 - **BLOCKING:** Using a git ref / branch instead of a registry version
-
-### Registry vs. tag verification
-
-A registry listing and the module's GitHub tag history can diverge: a tag can exist before the registry publishes it, and the registry can lag or skip a tag. Look the target version up in the registry itself (not just GitHub releases/tags) before pinning, and confirm it resolves with a real `terraform init`, for every pin bump, not just new modules.
 
 ### Known upstream bugs (AWS provider v5)
 

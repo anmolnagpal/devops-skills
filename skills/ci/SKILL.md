@@ -2,10 +2,10 @@
 name: ci
 description: "GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', or when working in .gitlab-ci.yml files."
 metadata:
-  version: 1.3.1
+  version: 1.3.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-07-16
+  updated: 2026-07-05
 paths:
   - "**/.gitlab-ci.yml"
   - "**/.gitlab-ci.yaml"
@@ -124,7 +124,6 @@ Identify whether this is a Terraform pipeline, Helm pipeline, or both, then appl
 - AWS credentials must come from GitLab CI/CD variables or OIDC — never hardcoded values
 - Never use `echo`, `cat`, or `printenv` in ways that print secret variable values to job logs
 - Use OIDC / IAM role federation for AWS authentication where possible — preferred over static keys
-- A private Terraform module `source` (a clouddrove module repo, or a client's own) needs authenticated git configured before `terraform init` pulls it, not only before the top-level checkout. The default anonymous transport can't reach a private repo.
 
 ### Image versions
 - Always pin Docker image versions — never use `:latest`
@@ -151,7 +150,6 @@ stages:
 - Never use `-auto-approve` in production apply jobs
 - Never hardcode `TF_VAR_` values — all variables come from GitLab CI/CD variables
 - Remote backend only — never use local Terraform state
-- If any module `source` is a private git URL, git auth for that source must be configured in `before_script` (or an earlier stage) ahead of `terraform init`. `init` clones each module source on its own and does not inherit whatever authenticated the pipeline's own checkout.
 
 ### Helm / EKS pipelines
 - Always run `helm lint` before any deploy step
