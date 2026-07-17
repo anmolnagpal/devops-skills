@@ -2,10 +2,10 @@
 name: wrapper-tf
 description: "Team standard for AWS Terraform repos built on the CloudDrove wrapper-module pattern. Use when working in a repo with an `_modules/` directory that wraps `clouddrove/*/aws` modules, scaffolding a new wrapper module, generating Terraform GitHub Actions CI, reviewing wrapper-pattern PRs, or mapping the pattern to SOC2/GDPR controls. Supersedes /tf on CloudDrove repos."
 metadata:
-  version: 1.5.0
+  version: 1.4.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-07-16
+  updated: 2026-07-07
 paths:
   - "_modules/**/*.tf"
   - "environments/**/*.tf"
@@ -203,15 +203,6 @@ module "<name>" {
 
 `label_order = ["name"]` is **mandatory** — without it, upstream CloudDrove appends `environment` a second time, producing `acme-prod-prod-eks`.
 
-### Client repo bootstrap: prune before stamp
-
-Before any of the actions above run, a brand-new client repo is scaffolded from a full template, with every `_modules/*` wrapper, example environments, and other-cloud trees included, then cut down to the layout above. That cut-down happens in a fixed order: prune, then stamp. Never the reverse (**stamp-then-prune**).
-
-1. **Prune first**: delete the modules, example environments, and other-cloud (non-AWS) trees the client doesn't need.
-2. **Stamp second**: only once pruning is done, write the client's manifest/metadata file (produced by whatever bootstrap tooling runs the scaffold, one example is `.factory/manifest.yaml`) recording what remains.
-
-Stamping before pruning breaks in two distinct ways. The manifest can end up listing modules the next step deletes, so it references trees that no longer exist the moment scaffolding finishes. And a prune step that isn't manifest-aware can just as easily delete something the stamp step produced or still needs (the manifest file itself, if it landed inside a directory the prune step doesn't know to spare), destroying the record instead of merely making it stale.
-
 ---
 
 ## NEW — Scaffold a Module
@@ -277,18 +268,6 @@ Generate two workflow files following team standards.
    - `timeout-minutes: 60`, `-lock-timeout=300s` on all plan/apply steps
 6. **Plan exit codes:** 0 = no changes (✅), 1 = error (❌), 2 = changes to apply (✅) — only exit 1 is a failure.
 
-### tflint plugin install workaround
-
-`tflint --init` can fail even with network access and a correct `.tflint.hcl`, when GitHub's Sigstore-backed attestation verifier for release assets is broken upstream (tracked at [terraform-linters/tflint#2591](https://github.com/terraform-linters/tflint/issues/2591)). The installer downloads the plugin binary but can't verify it, and the job fails before linting even starts. Older tflint releases that predate the attestation check aren't affected.
-
-Workaround: skip the verifying installer and place the plugin binary directly where tflint expects it, instead of relying on `tflint --init`:
-
-1. Download the plugin release asset for your platform directly (not via `tflint --init`).
-2. Extract the binary into the plugin directory tflint already scans: `~/.tflint.d/plugins` by default, or the path set by `TFLINT_PLUGIN_DIR` / a `plugin_dir` in `.tflint.hcl`.
-3. Re-run `tflint --init`. An already-populated plugin directory is a no-op ("All plugins are already installed"), so the run proceeds straight to linting without touching the broken verifier.
-
-This is a stopgap for the upstream Sigstore breakage, not a permanent CI pattern. Drop it once tflint#2591 is resolved, and confirm `tflint --init` works unmodified before removing the manual install step.
-
 ### `drift.yml` — Nightly detection
 
 1. `schedule: cron: "0 6 * * *"` + `workflow_dispatch`
@@ -351,10 +330,6 @@ All resources follow `{client_name}-{environment}-{resource}`. Verify:
 
 - **BLOCKING:** Any CloudDrove module call without a pinned `version =` constraint
 - **BLOCKING:** Using a git ref / branch instead of a registry version
-
-### Registry vs. tag verification
-
-A registry listing and the module's GitHub tag history can diverge: a tag can exist before the registry publishes it, and the registry can lag or skip a tag. Look the target version up in the registry itself (not just GitHub releases/tags) before pinning, and confirm it resolves with a real `terraform init`, for every pin bump, not just new modules.
 
 ### Known upstream bugs (AWS provider v5)
 
