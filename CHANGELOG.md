@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Registry-vs-tag pin verification in `tf` and `wrapper-tf`**: a module's registry version listing and its GitHub tag history can diverge, so every pin bump needs a registry lookup and a real `terraform init` against that pin, not just a GitHub releases/tags check.
+- **tflint plugin install workaround in `wrapper-tf`**: documented the direct plugin-binary install workaround for `tflint --init` failing when GitHub's Sigstore-backed attestation verifier is broken upstream (terraform-linters/tflint#2591).
+- **Authenticated git for private Terraform module clones in `ci` and `tf`**: CI must configure authenticated git transport for a private Terraform module `source` before `terraform init`, not only before the pipeline's own repo checkout.
+- **`TF_PLUGIN_CACHE_DIR` guidance in `tf`**: point the plugin cache at a persistent, writable runner path; concurrent `terraform init` runs can safely share one cache directory.
+- **`CICD-OPS-006` in `github-actions`**: flags a heavyweight render/snapshot job (golden-render, visual diff, full-suite rebuild) triggered on every push instead of scoped `paths:`/tag/`schedule:` triggers, with a new eval case.
+- **Stamp-then-prune client bootstrap hygiene in `wrapper-tf`**: a client repo scaffold must prune unneeded modules/environments/other-cloud trees before stamping the manifest, never the reverse, to avoid a manifest that references deleted trees or a prune step that destroys the manifest itself.
+
 ## [1.3.0] — 2026-07-07
 
 ### Added
