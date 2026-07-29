@@ -161,5 +161,12 @@ printed — don't infer a vulnerability from a package name/version you recogniz
 For `SEC-APP-001`/`SEC-APP-002`, quote the exact config/middleware line; if you
 can't quote it, don't report it.
 
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
+
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.

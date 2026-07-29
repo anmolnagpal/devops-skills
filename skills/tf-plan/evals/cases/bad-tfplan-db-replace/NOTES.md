@@ -12,8 +12,10 @@ is no recovery point. The finding must state the data loss and the missing
 snapshot, not just that a replacement is happening. Exclusion 2 does not apply
 precisely because no snapshot exists anywhere in the plan.
 
-Target environment is unambiguous from the backend key (`env/prod/...`) and the
-`Environment: prod` tags, so the dev relaxation does not apply.
+Target environment is unambiguous from `variables.environment` and the
+`Environment: prod` tags, so the dev relaxation does not apply. Note the fixture has
+no top-level `backend` key, because real `terraform show -json` output does not have
+one.
 
 `TF-PLAN-003` — the deleted security group rule carries the description "added by
 hand during the incident on 2026-06-14". It exists in state and reality but not in

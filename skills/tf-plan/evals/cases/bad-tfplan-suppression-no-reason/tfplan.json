@@ -7,8 +7,15 @@
       "type": "aws_ebs_volume",
       "name": "ledger_archive",
       "change": {
-        "actions": ["delete", "create"],
-        "replace_paths": [["availability_zone"]],
+        "actions": [
+          "delete",
+          "create"
+        ],
+        "replace_paths": [
+          [
+            "availability_zone"
+          ]
+        ],
         "before": {
           "availability_zone": "eu-west-1a",
           "size": 500,
@@ -32,8 +39,9 @@
       }
     }
   ],
-  "backend": {
-    "type": "s3",
-    "config": { "key": "env/prod/terraform.tfstate" }
+  "variables": {
+    "environment": {
+      "value": "prod"
+    }
   }
 }

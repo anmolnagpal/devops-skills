@@ -17,14 +17,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Enforced `safety` frontmatter on every skill** (`read-only` / `runs-commands` / `writes-files`). `check-skills.sh` derives the correct value from `allowed-tools` and fails on a mismatch, so a skill that quietly gains `Write` cannot keep claiming read-only.
 - **`npx skills` install path documented** — `npx skills add anmolnagpal/devops-skills` already enumerates every skill against the existing layout, so this documents working behavior rather than adding an integration.
 
+- **Persisted review reports** — `_docs/REVIEW-REPORT.md` defines a report format (machine-readable frontmatter, one table row per finding, a suppressions-honored section, and a mandatory "not assessed" section) plus the `docs/reviews/<skill>-<date>.md` path convention. Review skills stay `read-only`: they produce the content and name the path, and the session performs the write, so no skill gains `Write` and the enforced read-only guarantee is unaffected.
+- **Reference docs for the new skills** — depth-on-demand material in `skills/<name>/references/`: force-replacement attribute tables and the `terraform show -json` field guide for `tf-plan`, PromQL patterns and SLO/burn-rate arithmetic for `observability`, failure-mode diagnosis and a secrets decision table for `gitops`, and postmortem language guidance for `incident`.
+- **Eval rule coverage at 100%** — every one of the 145 catalog rules across 11 suites now has at least one fixture claiming it should fire, up from 56%. Nine new cases, five of them repo-shaped directories, since absence rules and cross-file rules (`CDTF-STATE-001`, `CICD-OPS-005`, the `OBS-*` absence set) cannot be tested from a single file.
+- **`META-SUP-001` proven in every suite** — the rule was in eleven catalogs with no fixture behind it, and the semantics were undefined. Every inline-suppression skill now states that a suppression missing its reason doesn't suppress anything, matching the wording `finops` and `github` already used for waiver files, with a fixture per suite.
+
 ### Changed
 
 - **README restructured** as a user-facing document: skills grouped into six categories (IaC, containers, CI/CD, security, cost, delivery) instead of one flat 13-row list, a Mermaid diagram documenting how skills relate (`wrapper-tf` supersedes `tf`, `deploy` aggregates artifact skills, `github`/`finops` share a waiver file, `appsec` escalates to `owasp`), five install paths (plugin, one-liner, clone, submodule pin, fork-and-customize), a table of contents, and new Versioning, Contributing, and License sections. The `templates/CLAUDE.md` project-context step moved up from the tail of the doc to its own section, since every skill reads it.
+- **README reading order** — the skill catalog and a new "Using them" section with real example prompts now sit above installation, the seven per-category tables collapse into one table with a category column and per-skill links, the four secondary install paths fold into a details block, and a short explainer of what a skill is was added for readers new to the concept.
 - **Maintainer docs moved to `CONTRIBUTING.md`**: skill file format, rule-ID registration, eval cases, the six CI gates, the Tier-2 behavioral eval harness, and the add-a-plugin / add-an-MCP-server steps now live there instead of interleaved with user-facing README content.
 
 ### Fixed
 
 - README rule-ID count was stale (141), actual registry holds 154 IDs across 10 domains.
+- **`tf-plan` assumed a top-level `backend` key in `terraform show -json` output, which does not exist.** The skill now derives the target environment from `variables`, the workspace, resource tags, or module addresses, and says so explicitly; the five plan fixtures were corrected to match real plan output.
 - Removed a duplicate `/skill-creator` row from the skill table and a stale GitLab-403 authentication note (the repo is on GitHub).
 
 ## [1.3.0] — 2026-07-07

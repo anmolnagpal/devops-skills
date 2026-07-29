@@ -7,9 +7,14 @@
       "type": "aws_sqs_queue",
       "name": "jobs",
       "change": {
-        "actions": ["create"],
+        "actions": [
+          "create"
+        ],
         "before": null,
-        "after": { "name": "prod-report-jobs", "message_retention_seconds": 345600 }
+        "after": {
+          "name": "prod-report-jobs",
+          "message_retention_seconds": 345600
+        }
       }
     },
     {
@@ -17,9 +22,13 @@
       "type": "aws_iam_role_policy",
       "name": "worker_sqs",
       "change": {
-        "actions": ["create"],
+        "actions": [
+          "create"
+        ],
         "before": null,
-        "after": { "name": "prod-report-worker-sqs" }
+        "after": {
+          "name": "prod-report-worker-sqs"
+        }
       }
     },
     {
@@ -27,9 +36,17 @@
       "type": "aws_ecs_service",
       "name": "worker",
       "change": {
-        "actions": ["update"],
-        "before": { "desired_count": 2, "task_definition": "report-worker:41" },
-        "after": { "desired_count": 2, "task_definition": "report-worker:42" }
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 2,
+          "task_definition": "report-worker:41"
+        },
+        "after": {
+          "desired_count": 2,
+          "task_definition": "report-worker:42"
+        }
       }
     },
     {
@@ -37,26 +54,39 @@
       "type": "aws_cloudwatch_log_group",
       "name": "worker",
       "change": {
-        "actions": ["no-op"],
+        "actions": [
+          "no-op"
+        ],
         "before": {
           "name": "/aws/ecs/prod/report-worker",
           "retention_in_days": 30,
           "arn": "arn:aws:logs:eu-west-1:123456789012:log-group:/aws/ecs/prod/report-worker",
-          "tags": { "Environment": "prod" },
-          "tags_all": { "Environment": "prod", "ManagedBy": "terraform" }
+          "tags": {
+            "Environment": "prod"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "ManagedBy": "terraform"
+          }
         },
         "after": {
           "name": "/aws/ecs/prod/report-worker",
           "retention_in_days": 30,
           "arn": "arn:aws:logs:eu-west-1:123456789012:log-group:/aws/ecs/prod/report-worker",
-          "tags": { "Environment": "prod" },
-          "tags_all": { "Environment": "prod", "ManagedBy": "terraform" }
+          "tags": {
+            "Environment": "prod"
+          },
+          "tags_all": {
+            "Environment": "prod",
+            "ManagedBy": "terraform"
+          }
         }
       }
     }
   ],
-  "backend": {
-    "type": "s3",
-    "config": { "key": "env/prod/terraform.tfstate" }
+  "variables": {
+    "environment": {
+      "value": "prod"
+    }
   }
 }

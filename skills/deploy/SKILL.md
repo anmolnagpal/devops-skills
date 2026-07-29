@@ -178,3 +178,9 @@ Rollback pre-checks (block the deploy if any fail):
 
 Flag any irreversible step (dropped column, deleted resource, data backfill) — these need
 explicit sign-off and usually a forward-fix plan, not a rollback.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.

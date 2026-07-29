@@ -345,5 +345,10 @@ escalation is documented rather than invented per finding.
 before concluding one is missing. Do not grade a runbook's prose; grade whether the
 sections that matter at 03:00 are present and specific.
 
+**References**, loaded on demand:
+- **[Writing a postmortem](./references/postmortem.md)** — the blame-to-system rewrite
+  table, why counterfactuals teach nothing, action items that are not wishes, the
+  "what we are not doing" section, and a review checklist.
+
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.

@@ -77,6 +77,25 @@ Summary: X blocking issue(s), Y advisory issue(s).
 
 Three severity models exist (catalog-fixed, judged-per-finding, and dollar-impact). Pick the one that matches your skill and say which in the skill body; see the table in `README.md`.
 
+### Reference docs
+
+Keep `SKILL.md` under 500 lines and push depth into `skills/<name>/references/*.md`,
+loaded by the skill only when a task needs it. The body carries the rules and the review
+flow; a reference carries the material a reader would otherwise have to look up
+elsewhere (PromQL patterns, force-replacement attribute tables, failure-mode diagnosis).
+
+Link them inline where they are relevant, and list them once near the end of the body so
+the set is discoverable. Do not pre-load them from the body; the point is that they cost
+nothing until needed.
+
+### Persisted review reports
+
+Review skills stay `read-only`. When a review should be saved to a file, the skill
+produces the content in the format at [`_docs/REVIEW-REPORT.md`](_docs/REVIEW-REPORT.md)
+and names the path; the session performs the write. Do not add `Write` to a review skill
+to let it save its own output, because that flips it to `writes-files` and the read-only
+guarantee is worth more than the convenience.
+
 ### The `safety` label
 
 Every skill declares its blast radius in frontmatter. `check-skills.sh` asserts the label matches what `allowed-tools` actually permits, so it cannot drift into a comfortable lie:

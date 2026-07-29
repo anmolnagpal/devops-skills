@@ -415,7 +415,9 @@ devops-skills/
   skills/                    ← Canonical skill sources, one dir per skill (edit here)
     <name>/SKILL.md          ← the skill body (tf, k8s, ci, owasp, docker, finops, deploy, adr, wrapper-tf, …)
     <name>/evals/            ← static eval fixtures + validate.sh (file-input skills)
-    owasp/*.md               ← reference docs loaded on-demand; docker/ finops/ add scripts too
+    <name>/references/*.md   ← depth-on-demand docs the skill loads when needed
+                               (docker, finops, gitops, incident, observability, tf-plan;
+                                owasp keeps its three at the skill root)
     specs/                   ← Backlog spec docs (not active skills)
   rules/rule-ids.yaml        ← Canonical shared rule-ID registry (single source of truth)
   .cursor/rules/             ← Generated Cursor rules (.mdc), from scripts/generate.sh
@@ -442,6 +444,7 @@ devops-skills/
     marketplaces.txt         ← Claude plugin marketplaces
   _docs/
     CHEATSHEET.md            ← Example prompts per skill and MCP server
+    REVIEW-REPORT.md         ← Persisted review-report format + path convention
   _test/                     ← Dockerfile + test.sh for the install harness
   CHANGELOG.md  CONTRIBUTING.md  SECURITY.md  LICENSE  README.md
 ```

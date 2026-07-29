@@ -794,10 +794,12 @@
       }
     }
   },
-  "backend": {
-    "type": "s3",
-    "config": {
-      "key": "env/shared/terraform.tfstate"
+  "variables": {
+    "environments": {
+      "value": [
+        "dev",
+        "prod"
+      ]
     }
   }
 }

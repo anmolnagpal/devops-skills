@@ -433,3 +433,9 @@ Summary: <N> controls covered, <N> gaps.
 ```
 
 Mark `❌ MISSING` for any control where the responsible module is absent from `environments/{env}/main.tf` or the module exists but the relevant variable is disabled.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.

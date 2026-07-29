@@ -5,8 +5,9 @@ see: both are properties of the change set as a whole.
 
 - `TF-PLAN-004` — 32 resource changes in one apply, above the rule's threshold of 25,
   and they span two environments. `module.dev_services` and `module.prod_services`
-  are in the same state file (`env/shared/terraform.tfstate`), so one apply moves dev
-  and prod together and a failure halfway through leaves both partially applied. The
+  are in one root module, and `variables.environments` lists both, so a single apply
+  moves dev and prod together and a failure halfway through leaves both partially
+  applied. The
   cross-environment half of this rule matters more than the count: 32 changes inside
   one environment would be large, while 32 across two is unrollbackable.
 - `TF-PLAN-005` — the AWS provider goes `~> 5.31` to `~> 6.0`, a major bump, in the

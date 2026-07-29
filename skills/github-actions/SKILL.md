@@ -362,3 +362,9 @@ Output as a unified diff or per-file edit list, never silently rewrite.
 - Reusable workflows belong in `.github/workflows/_<name>.yml` (underscore prefix is convention).
 - For self-hosted runners, prefer ephemeral (Actions Runner Controller on Kubernetes) over persistent.
 - Composite actions in `.github/actions/<name>/action.yml` need their own review pass.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.

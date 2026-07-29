@@ -432,3 +432,9 @@ Next steps:
 4. For IRSA: create the IAM role and add ARN to serviceAccount.annotations
 5. Run /k8s review before your first deploy
 ```
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
