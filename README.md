@@ -18,7 +18,7 @@
 
 Skills land as `/clouddrove:tf`, `/clouddrove:finops`, … with a native `(clouddrove)` label. Cursor, Codex, and MCP servers need the [installer](#install).
 
-**Contents:** [What you get](#what-you-get) · [See it in action](#see-it-in-action) · [Install](#install) · [Skills](#skills) · [Project context](#always-on-project-context) · [Why this](#why-this-not-the-alternatives) · [Plugins](#plugins) · [MCP servers](#mcp-servers) · [Repo layout](#repository-structure) · [Versioning](#versioning) · [Contributing](#contributing)
+**Contents:** [See it in action](#see-it-in-action) · [The 17 skills](#skills) · [Using them](#using-them) · [Install](#install) · [How it fits together](#how-it-fits-together) · [Project context](#always-on-project-context) · [Why this](#why-this-not-the-alternatives) · [Plugins](#plugins) · [MCP servers](#mcp-servers) · [Versioning](#versioning) · [Contributing](#contributing)
 
 ## What you get
 
@@ -84,11 +84,63 @@ Gate: FAILED — 3 blocking. Recommended strategy: blue-green (stateful, first p
 
 > Outputs above are representative. Findings, rule IDs, and `file:line` are real to your repo when you run the skill.
 
+## Skills
+
+**New to Agent Skills?** A skill is a markdown file that teaches your coding agent
+one job properly: what to check, in what order, and what to say about it. Once
+installed, the agent picks the right one by itself when you open a matching file or
+ask a matching question, so there is nothing to remember and nothing to paste.
+
+All 17, grouped. Click a skill to read its rule catalog. In Claude Code they are
+`/clouddrove:<name>`; in Cursor the matching rule auto-attaches on the globs below;
+in Codex they load from `AGENTS.md`.
+
+| | Skill | What it does | Auto-triggers on |
+|---|---|---|---|
+| **IaC** | [`tf`](skills/tf/SKILL.md) | Terraform review, AWS resource scaffolding, provider upgrades | `**/*.tf`, `**/*.tfvars` |
+|  | [`wrapper-tf`](skills/wrapper-tf/SKILL.md) | CloudDrove wrapper-module pattern, plus SOC2/GDPR control mapping. Supersedes `tf` on these repos | `_modules/**/*.tf`, `environments/**/*.tf` |
+|  | [`tf-plan`](skills/tf-plan/SKILL.md) | Reviews the **plan**, not the source: what this apply destroys, replaces, or leaks | `**/tfplan*.json` |
+| **Containers** | [`k8s`](skills/k8s/SKILL.md) | Helm values review and scaffolding, workload and RBAC security | `**/values*.yaml`, `**/Chart.yaml` |
+|  | [`docker`](skills/docker/SKILL.md) | Dockerfile review, image size, Compose, registry workflows | `**/Dockerfile`, `**/docker-compose*.yml` |
+| **CI/CD** | [`github-actions`](skills/github-actions/SKILL.md) | Workflow review and hardening (OIDC, SHA pinning, injection) | `**/.github/workflows/*.yml` |
+|  | [`ci`](skills/ci/SKILL.md) | GitLab CI pipeline review and Terraform/Helm scaffolds | `**/.gitlab-ci.yml` |
+|  | [`gitops`](skills/gitops/SKILL.md) | Argo CD and Flux: mutable refs, wildcard AppProjects, unguarded auto-prune, sync waves | `**/argocd/**`, `**/flux-system/**` |
+| **Security** | [`owasp`](skills/owasp/SKILL.md) | OWASP Top 10:2025, ASVS 5.0, Agentic AI risks. Severity judged by exploitability | manual |
+|  | [`appsec`](skills/appsec/SKILL.md) | Dependency audit via the real ecosystem tool, security headers, CORS | manual |
+| **Observability** | [`observability`](skills/observability/SKILL.md) | Logging, retention, metrics, alerts that actually page a human, tracing, SLOs | `**/prometheus*.y*ml`, `**/alertmanager*.y*ml` |
+| **Cost** | [`finops`](skills/finops/SKILL.md) | AWS waste detection, right-sizing, Savings Plans/RIs, EKS cost | manual |
+| **Delivery** | [`deploy`](skills/deploy/SKILL.md) | Rollout strategy, production-readiness gate, rollback playbook | manual |
+|  | [`incident`](skills/incident/SKILL.md) | Runbooks that work at 03:00, on-call readiness, blameless postmortems | `**/docs/runbooks/*.md` |
+|  | [`github`](skills/github/SKILL.md) | Repo hygiene: branch protection, CODEOWNERS, releases, required docs | `**/CODEOWNERS`, `**/.github/dependabot.yml` |
+|  | [`adr`](skills/adr/SKILL.md) | Capture architectural decisions as structured ADRs | `**/docs/adr/*.md` |
+| **Meta** | [`skill-creator`](skills/skill-creator/SKILL.md) | Author, eval, and refine new skills in this repo | manual |
+
+## Using them
+
+Nothing to memorize. Open a file the skill watches and ask in your own words, or
+name the skill directly:
+
+```text
+"review my terraform before I raise the MR"
+"is this plan safe to apply to prod?"        → reads tfplan.json, tells you what it destroys
+"why is it replacing my database?"
+"review my helm values for prod"
+"do my alerts actually reach anyone?"        → traces the route to a real receiver
+"write a runbook for the checkout API"
+"where is my AWS bill going?"
+"review this before I put it on-call"
+"/clouddrove:appsec"                          → explicit, when you want a specific skill
+```
+
+Full prompt list per skill: **[CHEATSHEET.md](_docs/CHEATSHEET.md)**.
+
+---
+
 ## Install
 
-Works with **Claude Code**, **Cursor**, and **Codex** (same skills, different injection per tool). Pick the path that fits how your team consumes the repo.
+Works with **Claude Code**, **Cursor**, and **Codex** (same skills, different injection per tool). Two paths cover almost everyone; four more are folded away below.
 
-### 1. Claude Code plugin (no clone)
+### Claude Code, no clone
 
 ```text
 /plugin marketplace add anmolnagpal/devops-skills
@@ -97,7 +149,7 @@ Works with **Claude Code**, **Cursor**, and **Codex** (same skills, different in
 
 Skills appear as `/clouddrove:tf`, `/clouddrove:deploy`, … Does not install Cursor rules, Codex `AGENTS.md`, team plugins, or MCP servers.
 
-### 2. Installer one-liner (recommended, all tools)
+### Everything, one command (recommended)
 
 ```bash
 # Claude Code only
@@ -127,7 +179,10 @@ Narrower runs:
 
 **Updating:** re-run the same one-liner. If the repo is already installed it pulls the latest and re-runs the installer.
 
-### 3. `npx skills` (any of 70+ agents)
+<details>
+<summary><strong>Four more ways to install</strong> (npx skills for other agents, SSH clone, submodule pin, fork-and-customize)</summary>
+
+#### `npx skills` (any of 70+ agents)
 
 The [open Agent Skills CLI](https://github.com/vercel-labs/skills) reads this repo directly, so tools outside Claude/Cursor/Codex can consume the same skills:
 
@@ -138,16 +193,16 @@ npx skills add anmolnagpal/devops-skills --all           # all skills, all detec
 npx skills add anmolnagpal/devops-skills -g              # user-level instead of project-level
 ```
 
-Installs the skill bodies only. Team plugins, MCP servers, and the settings template need path 2.
+Installs the skill bodies only. Team plugins, MCP servers, and the settings template need the installer above.
 
-### 4. Clone (SSH, or a custom install dir)
+#### Clone (SSH, or a custom install dir)
 
 ```bash
 git clone git@github.com:anmolnagpal/devops-skills.git ~/devops-skills
 ~/devops-skills/scripts/install.sh --all
 ```
 
-### 5. Git submodule (pin a version per project repo)
+#### Git submodule (pin a version per project repo)
 
 Best when a project needs a reproducible skill set that moves only when you bump it:
 
@@ -160,7 +215,7 @@ git add .gitmodules .devops-skills .cursor AGENTS.md
 
 Teammates get it with `git submodule update --init`. Bump with `git -C .devops-skills fetch --tags && git -C .devops-skills checkout <tag>`, then re-run the installer.
 
-### 6. Fork and customize (your own rule catalog)
+#### Fork and customize (your own rule catalog)
 
 For teams that need different severities, extra rule IDs, or company-specific skills:
 
@@ -171,6 +226,8 @@ For teams that need different severities, extra rule IDs, or company-specific sk
 
 CI carries over with the fork, so your changes keep the same six gates. Merge upstream with `git remote add upstream https://github.com/anmolnagpal/devops-skills`.
 
+</details>
+
 ### What the installer writes to your machine
 
 `install.sh --claude` seeds `~/.claude/settings.json` from `templates/settings.json` on first run. On subsequent runs it **merges missing permission entries only**; it never clobbers existing keys (`enabledPlugins`, `mcpServers`, `hooks`, …).
@@ -179,65 +236,7 @@ The template ships a safe DevOps allow-list (read-only kubectl/terraform/aws/git
 
 `install.sh` is idempotent: already-installed plugins, MCP servers, and symlinks are reused.
 
----
-
-## Skills
-
-Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles all 17; `scripts/generate.sh` emits `.cursor/rules/<name>.mdc` for Cursor and one `AGENTS.md` for Codex from the same file.
-
-Invoke with `/clouddrove:<skill>` in Claude Code. In Cursor, rules auto-attach via `globs:`. In Codex, `AGENTS.md` loads by default.
-
-### Infrastructure as Code
-
-| Skill | Purpose | Auto-trigger |
-|---|---|---|
-| `/clouddrove:tf` | Terraform on the `terraform-aws-modules` ecosystem: pre-MR review, AWS resource scaffolding, provider upgrade guidance | `**/*.tf`, `**/*.tfvars` |
-| `/clouddrove:wrapper-tf` | CloudDrove wrapper-module pattern: scaffold `_modules/<name>/`, generate Terraform GitHub Actions CI, review against the pattern, map to SOC2/GDPR controls. Supersedes `tf` on these repos | `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` |
-| `/clouddrove:tf-plan` | Reviews the **plan**, not the source: destroys and replacements of data-bearing resources, secrets readable in plan output, drift, blast radius, and whether apply is bound to the plan you reviewed | `**/tfplan*.json` |
-
-### Containers and orchestration
-
-| Skill | Purpose | Auto-trigger |
-|---|---|---|
-| `/clouddrove:k8s` | Kubernetes/Helm: pre-deploy review, production-ready values scaffolding | `**/values*.yaml`, `**/Chart.yaml`, `**/templates/*.yaml` |
-| `/clouddrove:docker` | Dockerfile review, image optimization, Compose, registry workflows | `**/Dockerfile`, `**/docker-compose*.yml` |
-
-### CI/CD
-
-| Skill | Purpose | Auto-trigger |
-|---|---|---|
-| `/clouddrove:github-actions` | GitHub Actions: workflow review, security hardening (OIDC, action pinning), scaffolds | `**/.github/workflows/*.yml` |
-| `/clouddrove:ci` | GitLab CI/CD: pipeline review, Terraform/Helm pipeline scaffolds | `**/.gitlab-ci.yml` |
-| `/clouddrove:gitops` | Argo CD and Flux: mutable source refs, AppProject wildcard grants, unguarded auto-prune, sync waves, selfHeal drift enforcement, per-environment separation | `**/argocd/**/*.yaml`, `**/flux-system/**/*.yaml`, `**/*appproject*.yaml`, `**/*applicationset*.yaml`, `**/*helmrelease*.yaml` |
-
-### Security
-
-| Skill | Purpose | Auto-trigger |
-|---|---|---|
-| `/clouddrove:owasp` | Security review against OWASP Top 10:2025, ASVS 5.0, Agentic AI risks. Severity judged per finding by exploitability | manual |
-| `/clouddrove:appsec` | Application-level security: dependency audit (runs the ecosystem's real audit tool), missing security headers, CORS wildcards. Deterministic, catalog severity | manual |
-
-### Observability
-
-| Skill | Purpose | Auto-trigger |
-|---|---|---|
-| `/clouddrove:observability` | Centralized logging, log retention, metrics scraping, alert rules that actually page a human, tracing, dashboards, SLO/SLI and burn-rate alerts | `**/prometheus*.y*ml`, `**/alertmanager*.y*ml`, `**/*rules*.yaml`, `**/otel-collector*.yaml`, `**/servicemonitor*.yaml` |
-
-### Cost
-
-| Skill | Purpose | Auto-trigger |
-|---|---|---|
-| `/clouddrove:finops` | AWS cost: waste detection, right-sizing, Savings Plans/RIs, EKS cost | manual |
-
-### Delivery and process
-
-| Skill | Purpose | Auto-trigger |
-|---|---|---|
-| `/clouddrove:deploy` | Deployment strategy (rolling/blue-green/canary), production-readiness gate, rollback playbook for AWS/EKS | manual |
-| `/clouddrove:github` | GitHub repo hygiene: settings audit, CODEOWNERS, branch protection, releases, README/CONTRIBUTING/test-coverage checks | `**/CODEOWNERS`, `**/.github/dependabot.yml`, PR/issue templates |
-| `/clouddrove:incident` | Runbooks that work at 03:00, incident readiness audit before a rotation starts, severity and escalation model, blameless postmortems | `**/docs/runbooks/*.md`, `**/docs/incidents/*.md`, `**/RUNBOOK.md` |
-| `/clouddrove:adr` | Capture architectural decisions as structured ADRs under `docs/adr/` | `**/docs/adr/*.md` |
-| `/clouddrove:skill-creator` | Author, eval, and refine new skills in this repo | manual |
+## How it fits together
 
 ### How the skills relate
 
