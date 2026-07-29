@@ -162,7 +162,7 @@ Accept a known gap inline; honor it and do not report:
 
 Format: `# observability-skill:ignore <RULE-ID> -- <reason>` (or the file's native
 comment syntax). Reason is mandatory. A suppression without one is itself an
-advisory finding: `META-SUP-001`.
+advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For findings with no line to attach to (`OBS-SLO-001`, `OBS-DASH-001`), use the
 tracked `.clouddrove-waivers.yml` at repo root, same format as

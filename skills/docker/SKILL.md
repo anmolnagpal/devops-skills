@@ -120,7 +120,8 @@ USER root
 
 Format: `# docker-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
 suppression without a reason is itself an advisory finding — report it as
-`META-SUP-001 Suppression missing justification`.
+`META-SUP-001 Suppression missing justification`. A suppression missing its reason
+doesn't suppress anything: report the underlying finding as well.
 
 ---
 

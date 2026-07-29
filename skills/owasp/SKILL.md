@@ -99,7 +99,7 @@ assume from the pattern alone.
 **Suppression:** accept a known risk with `# owasp-skill:ignore <ID> -- <reason>`
 (e.g. `# owasp-skill:ignore OWASP-A05 -- input is a fixed internal enum, never
 user-supplied`) on the line above; honor it. Reason is mandatory — a suppression
-without one is itself a finding: `META-SUP-001`.
+without one is itself a finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 **Independent re-check:** before including a **BLOCKING** finding in the output,
 re-derive it a second time using only the quoted line and the false-positive list

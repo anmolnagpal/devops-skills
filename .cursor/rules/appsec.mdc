@@ -114,7 +114,7 @@ app.use(cors({ origin: "*" }))
 
 Format: `// appsec-skill:ignore <RULE-ID> -- <reason>` (or the file's native
 comment syntax). Reason is mandatory. A suppression without one is itself an
-advisory finding: `META-SUP-001`.
+advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For `SEC-DEP-001`, where there's no line to attach a comment to (a transitive
 lockfile entry), use a tracked `.clouddrove-waivers.yml` at repo root instead,

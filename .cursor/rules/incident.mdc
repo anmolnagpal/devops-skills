@@ -136,7 +136,7 @@ report:
 ```
 
 Format: `incident-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
-suppression without one is itself an advisory finding: `META-SUP-001`.
+suppression without one is itself an advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 ---
 

@@ -204,7 +204,7 @@ spec:
 
 Format: `# gitops-skill:ignore <RULE-ID> -- <reason>` on the line above the field.
 Reason is mandatory. A suppression without one is itself an advisory finding:
-`META-SUP-001`.
+`META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For tree-level findings with no single line (`CICD-GITOPS-004`,
 `CICD-GITOPS-006`), use the tracked `.clouddrove-waivers.yml` at repo root, same

@@ -217,7 +217,7 @@ resource "aws_ebs_volume" "scratch" {
 ```
 
 Format: `# tf-plan-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
-suppression without one is itself an advisory finding: `META-SUP-001`.
+suppression without one is itself an advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For plan-level findings with no source line (`TF-PLAN-004`, `TF-PLAN-005`), use
 the tracked `.clouddrove-waivers.yml` at repo root, same format as

@@ -119,7 +119,7 @@ already honored its own `*-skill:ignore` comment (don't re-report what the sourc
 skill already excluded). For a deploy-specific check (rollback tested, gate present,
 resilience — the ones with no per-artifact skill owner), accept a known risk with
 `# deploy-skill:ignore <RULE-ID> -- <reason>` on the line above the relevant config;
-honor it. Reason mandatory, else `META-SUP-001`.
+honor it. Reason mandatory, else `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 Output the repo-standard format with rule IDs:
 

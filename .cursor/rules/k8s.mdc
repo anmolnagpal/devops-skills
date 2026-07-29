@@ -78,7 +78,7 @@ pod is observed as a running noisy-neighbor rather than as a config default.
 
 **Output:** every finding carries its rule ID. **Suppression:** accept a known risk
 with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor
-it. Reason mandatory (else `META-SUP-001`). **Confidence gate:** report only findings
+it. Reason mandatory (else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only findings
 you are >80% sure are real; consolidate repeats; severity is the rule's (apply the
 dev relaxation above), don't invent; quote the exact offending field/value — if you
 can't quote it, don't report it. Evals: [`evals/`](./evals/).

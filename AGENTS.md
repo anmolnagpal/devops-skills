@@ -235,7 +235,7 @@ app.use(cors({ origin: "*" }))
 
 Format: `// appsec-skill:ignore <RULE-ID> -- <reason>` (or the file's native
 comment syntax). Reason is mandatory. A suppression without one is itself an
-advisory finding: `META-SUP-001`.
+advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For `SEC-DEP-001`, where there's no line to attach a comment to (a transitive
 lockfile entry), use a tracked `.clouddrove-waivers.yml` at repo root instead,
@@ -348,7 +348,7 @@ generic — the same IDs cover GitHub Actions and GitLab CI.)
 
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# ci-skill:ignore <RULE-ID> -- <reason>` on the line above (reason mandatory,
-else `META-SUP-001`). **Confidence gate:** report only findings you are >80% sure are
+else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only findings you are >80% sure are
 real; consolidate repeats; severity is the rule's, don't invent; quote the exact
 offending line — if you can't quote it, don't report it. Evals: [`evals/`](./evals/).
 
@@ -722,7 +722,7 @@ already honored its own `*-skill:ignore` comment (don't re-report what the sourc
 skill already excluded). For a deploy-specific check (rollback tested, gate present,
 resilience — the ones with no per-artifact skill owner), accept a known risk with
 `# deploy-skill:ignore <RULE-ID> -- <reason>` on the line above the relevant config;
-honor it. Reason mandatory, else `META-SUP-001`.
+honor it. Reason mandatory, else `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 Output the repo-standard format with rule IDs:
 
@@ -885,7 +885,8 @@ USER root
 
 Format: `# docker-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
 suppression without a reason is itself an advisory finding — report it as
-`META-SUP-001 Suppression missing justification`.
+`META-SUP-001 Suppression missing justification`. A suppression missing its reason
+doesn't suppress anything: report the underlying finding as well.
 
 ---
 
@@ -1588,7 +1589,7 @@ for each is in REVIEW below.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
-it. Reason is mandatory (else `META-SUP-001`). **Confidence gate:** report only
+it. Reason is mandatory (else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
 don't invent; quote the exact offending line — if you can't quote it, don't report
 it. Evals: [`evals/`](./evals/).
@@ -2404,7 +2405,7 @@ spec:
 
 Format: `# gitops-skill:ignore <RULE-ID> -- <reason>` on the line above the field.
 Reason is mandatory. A suppression without one is itself an advisory finding:
-`META-SUP-001`.
+`META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For tree-level findings with no single line (`CICD-GITOPS-004`,
 `CICD-GITOPS-006`), use the tracked `.clouddrove-waivers.yml` at repo root, same
@@ -2696,7 +2697,7 @@ report:
 ```
 
 Format: `incident-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
-suppression without one is itself an advisory finding: `META-SUP-001`.
+suppression without one is itself an advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 ---
 
@@ -2975,7 +2976,7 @@ pod is observed as a running noisy-neighbor rather than as a config default.
 
 **Output:** every finding carries its rule ID. **Suppression:** accept a known risk
 with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor
-it. Reason mandatory (else `META-SUP-001`). **Confidence gate:** report only findings
+it. Reason mandatory (else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only findings
 you are >80% sure are real; consolidate repeats; severity is the rule's (apply the
 dev relaxation above), don't invent; quote the exact offending field/value — if you
 can't quote it, don't report it. Evals: [`evals/`](./evals/).
@@ -3464,7 +3465,7 @@ Accept a known gap inline; honor it and do not report:
 
 Format: `# observability-skill:ignore <RULE-ID> -- <reason>` (or the file's native
 comment syntax). Reason is mandatory. A suppression without one is itself an
-advisory finding: `META-SUP-001`.
+advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For findings with no line to attach to (`OBS-SLO-001`, `OBS-DASH-001`), use the
 tracked `.clouddrove-waivers.yml` at repo root, same format as
@@ -3728,7 +3729,7 @@ assume from the pattern alone.
 **Suppression:** accept a known risk with `# owasp-skill:ignore <ID> -- <reason>`
 (e.g. `# owasp-skill:ignore OWASP-A05 -- input is a fixed internal enum, never
 user-supplied`) on the line above; honor it. Reason is mandatory — a suppression
-without one is itself a finding: `META-SUP-001`.
+without one is itself a finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 **Independent re-check:** before including a **BLOCKING** finding in the output,
 re-derive it a second time using only the quoted line and the false-positive list
@@ -4497,7 +4498,7 @@ resource "aws_ebs_volume" "scratch" {
 ```
 
 Format: `# tf-plan-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
-suppression without one is itself an advisory finding: `META-SUP-001`.
+suppression without one is itself an advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For plan-level findings with no source line (`TF-PLAN-004`, `TF-PLAN-005`), use
 the tracked `.clouddrove-waivers.yml` at repo root, same format as
@@ -4658,7 +4659,7 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 
 **Output:** every finding carries its rule ID, in the format below. **Suppression:**
 accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
-honor it (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only
+honor it (reason mandatory, else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
 don't invent; quote the exact offending line/value in the finding — if you can't
 quote it, don't report it. Evals: [`evals/`](./evals/).
@@ -4992,7 +4993,7 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# wrapper-tf:ignore <RULE-ID> -- <reason>` on the line above; honor it
-(reason mandatory, else `META-SUP-001`). **Confidence gate:** report only findings you
+(reason mandatory, else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only findings you
 are >80% sure are real; consolidate repeats; severity is the rule's, don't invent;
 quote the exact offending line — if you can't quote it, don't report it.
 Evals: [`evals/`](./evals/).

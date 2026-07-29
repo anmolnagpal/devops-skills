@@ -1,0 +1,14 @@
+stages: [build, deploy]
+
+build:
+  stage: build
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+
+deploy_prod:
+  stage: deploy
+  # ci-skill:ignore CICD-FLOW-002
+  script:
+    - helm upgrade --install api ./chart --namespace prod --atomic
+  environment:
+    name: production

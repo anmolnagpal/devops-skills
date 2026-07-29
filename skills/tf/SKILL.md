@@ -87,7 +87,7 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 
 **Output:** every finding carries its rule ID, in the format below. **Suppression:**
 accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
-honor it (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only
+honor it (reason mandatory, else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
 don't invent; quote the exact offending line/value in the finding — if you can't
 quote it, don't report it. Evals: [`evals/`](./evals/).
