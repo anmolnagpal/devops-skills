@@ -1,0 +1,64 @@
+# Everything here is production-shaped except the host boundary it punches through.
+replicaCount: 3
+
+image:
+  repository: 123456789012.dkr.ecr.eu-west-1.amazonaws.com/report-worker
+  tag: ""
+  pullPolicy: IfNotPresent
+
+commonLabels:
+  app: report-worker
+  env: prod
+  team: data-platform
+
+hostNetwork: true
+hostPID: true
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  privileged: true
+
+volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock
+      type: Socket
+
+volumeMounts:
+  - name: docker-sock
+    mountPath: /var/run/docker.sock
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "1"
+    memory: "512Mi"
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  failureThreshold: 3
+
+service:
+  type: ClusterIP
+  port: 8080
+
+serviceAccount:
+  create: true
+  automountServiceAccountToken: false

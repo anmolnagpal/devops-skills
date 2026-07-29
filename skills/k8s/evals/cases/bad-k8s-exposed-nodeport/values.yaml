@@ -1,0 +1,57 @@
+# Public-facing marketing site, exposed the lazy way.
+replicaCount: 2
+
+image:
+  repository: 123456789012.dkr.ecr.eu-west-1.amazonaws.com/brochure-web
+  tag: ""
+  pullPolicy: IfNotPresent
+
+commonLabels:
+  app: brochure-web
+  env: prod
+  team: web
+
+service:
+  type: NodePort
+  port: 8080
+  nodePort: 31820
+
+serviceAccount:
+  create: true
+  automountServiceAccountToken: true
+
+env:
+  - name: LOG_LEVEL
+    value: "info"
+  - name: SESSION_SIGNING_KEY
+    value: "s3cr3t-signing-key-do-not-ship"
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "128Mi"
+
+readinessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  failureThreshold: 3
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 15
+  failureThreshold: 3

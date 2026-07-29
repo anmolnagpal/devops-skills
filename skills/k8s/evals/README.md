@@ -62,6 +62,18 @@ honored. `clean-cronjob-no-replicas` proves the skill doesn't over-trigger on th
 new FP-exclusion list in `SKILL.md` — a CronJob manifest that superficially lacks
 replicas/probes but is explicitly excluded from those rules.
 
+`clean-k8s-daemonset-hostpath` is the counterpart for the workload-security rules:
+a node-level log shipper whose `hostPath` mounts are exactly the documented
+`SEC-K8S-002` exception. If the skill starts flagging every `hostPath` it sees,
+this case turns red while `bad-k8s-host-boundary` stays green, which is the pair
+that distinguishes a working rule from a noisy one.
+
+Two of the workload-security cases differ only in scope, on purpose:
+`bad-k8s-host-boundary` is a bare `values.yaml` and must stay silent on
+`SEC-K8S-004`, while `bad-k8s-rbac-cluster-admin` ships a whole chart and must
+report it. `SEC-K8S-004` is only assessable when the chart is visible, and that
+pair is what keeps the distinction honest.
+
 ## Adding a case
 
 1. `mkdir cases/<descriptive-name>/`
