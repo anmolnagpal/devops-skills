@@ -225,10 +225,10 @@ with, not law:
 
 | Severity | Definition | Response | Who is woken |
 |---|---|---|---|
-| **SEV1** | Complete outage, or data loss in progress | Immediate, 24/7 | Primary on-call, incident commander, comms lead |
-| **SEV2** | Major feature broken or severe degradation for many users | Immediate during business hours, paged out of hours | Primary on-call |
-| **SEV3** | Minor or workaround-available degradation | Next business day | Nobody; ticket to the owning team |
-| **SEV4** | Cosmetic, or affects internal tooling only | Backlog | Nobody |
+| SEV1 | Complete outage, or data loss in progress | Immediate, 24/7 | Primary on-call, incident commander, comms lead |
+| SEV2 | Major feature broken or severe degradation for many users | Immediate during business hours, paged out of hours | Primary on-call |
+| SEV3 | Minor or workaround-available degradation | Next business day | Nobody; ticket to the owning team |
+| SEV4 | Cosmetic, or affects internal tooling only | Backlog | Nobody |
 
 Two rules that matter more than the table: severity is set by user impact rather
 than by technical excitement, and anyone may raise it while only the incident

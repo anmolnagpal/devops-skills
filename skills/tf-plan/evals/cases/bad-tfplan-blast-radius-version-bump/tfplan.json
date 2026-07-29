@@ -1,0 +1,803 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.3",
+  "resource_changes": [
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[1]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[2]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[3]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[4]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[5]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[6]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[7]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[8]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[9]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[10]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[11]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[12]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[13]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[14]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[15]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[16]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[17]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.dev_services.aws_ecs_service.svc[18]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 1,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        },
+        "after": {
+          "desired_count": 2,
+          "cluster": "dev-cluster",
+          "tags": {
+            "Environment": "dev"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[1]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[2]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[3]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[4]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[5]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[6]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[7]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[8]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[9]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[10]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[11]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[12]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[13]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    },
+    {
+      "address": "module.prod_services.aws_ecs_service.svc[14]",
+      "type": "aws_ecs_service",
+      "name": "svc",
+      "change": {
+        "actions": [
+          "update"
+        ],
+        "before": {
+          "desired_count": 4,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        },
+        "after": {
+          "desired_count": 6,
+          "cluster": "prod-cluster",
+          "tags": {
+            "Environment": "prod"
+          }
+        }
+      }
+    }
+  ],
+  "configuration": {
+    "provider_config": {
+      "aws": {
+        "name": "aws",
+        "version_constraint": "~> 6.0",
+        "previous_version_constraint": "~> 5.31"
+      }
+    }
+  },
+  "prior_state": {
+    "values": {
+      "root_module": {
+        "child_modules": [
+          {
+            "address": "module.dev_services"
+          },
+          {
+            "address": "module.prod_services"
+          }
+        ]
+      }
+    }
+  },
+  "backend": {
+    "type": "s3",
+    "config": {
+      "key": "env/shared/terraform.tfstate"
+    }
+  }
+}

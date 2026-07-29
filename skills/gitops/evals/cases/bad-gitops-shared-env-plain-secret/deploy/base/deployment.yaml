@@ -1,0 +1,17 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: checkout
+  namespace: checkout
+  labels:
+    app: checkout
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: checkout
+          image: 123456789012.dkr.ecr.eu-west-1.amazonaws.com/checkout:latest
+          envFrom:
+            - secretRef:
+                name: checkout-secrets
