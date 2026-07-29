@@ -22,7 +22,7 @@ Skills land as `/clouddrove:tf`, `/clouddrove:finops`, … with a native `(cloud
 
 ## What you get
 
-- **16 skills** that auto-trigger on file globs and answer with structured, rule-ID-tagged review output, grouped into [seven categories](#skills)
+- **17 skills** that auto-trigger on file globs and answer with structured, rule-ID-tagged review output, grouped into [seven categories](#skills)
 - **Packaged as the `clouddrove` plugin**: installed from this repo's own marketplace, so skills are namespaced `(clouddrove)` in Claude Code natively
 - **Single source** in `skills/<name>/SKILL.md`. A generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
 - **One installer** with flags: `--claude` / `--cursor` / `--codex` / `--all`, global or per-project scope
@@ -132,7 +132,7 @@ Narrower runs:
 The [open Agent Skills CLI](https://github.com/vercel-labs/skills) reads this repo directly, so tools outside Claude/Cursor/Codex can consume the same skills:
 
 ```bash
-npx skills add anmolnagpal/devops-skills --list          # show the 16 skills
+npx skills add anmolnagpal/devops-skills --list          # show the 17 skills
 npx skills add anmolnagpal/devops-skills -s tf,k8s       # install two
 npx skills add anmolnagpal/devops-skills --all           # all skills, all detected agents
 npx skills add anmolnagpal/devops-skills -g              # user-level instead of project-level
@@ -183,7 +183,7 @@ The template ships a safe DevOps allow-list (read-only kubectl/terraform/aws/git
 
 ## Skills
 
-Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles all 16; `scripts/generate.sh` emits `.cursor/rules/<name>.mdc` for Cursor and one `AGENTS.md` for Codex from the same file.
+Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles all 17; `scripts/generate.sh` emits `.cursor/rules/<name>.mdc` for Cursor and one `AGENTS.md` for Codex from the same file.
 
 Invoke with `/clouddrove:<skill>` in Claude Code. In Cursor, rules auto-attach via `globs:`. In Codex, `AGENTS.md` loads by default.
 
@@ -235,12 +235,13 @@ Invoke with `/clouddrove:<skill>` in Claude Code. In Cursor, rules auto-attach v
 |---|---|---|
 | `/clouddrove:deploy` | Deployment strategy (rolling/blue-green/canary), production-readiness gate, rollback playbook for AWS/EKS | manual |
 | `/clouddrove:github` | GitHub repo hygiene: settings audit, CODEOWNERS, branch protection, releases, README/CONTRIBUTING/test-coverage checks | `**/CODEOWNERS`, `**/.github/dependabot.yml`, PR/issue templates |
+| `/clouddrove:incident` | Runbooks that work at 03:00, incident readiness audit before a rotation starts, severity and escalation model, blameless postmortems | `**/docs/runbooks/*.md`, `**/docs/incidents/*.md`, `**/RUNBOOK.md` |
 | `/clouddrove:adr` | Capture architectural decisions as structured ADRs under `docs/adr/` | `**/docs/adr/*.md` |
 | `/clouddrove:skill-creator` | Author, eval, and refine new skills in this repo | manual |
 
 ### How the skills relate
 
-They are not 16 independent prompts. Two shared foundations sit under all of them, and several skills consume each other's output:
+They are not 17 independent prompts. Two shared foundations sit under all of them, and several skills consume each other's output:
 
 ```mermaid
 flowchart TD
@@ -259,6 +260,7 @@ flowchart TD
     GH["github"]
     FIN["finops"]
     OBS["observability"]
+    INC["incident"]
     OW["owasp"]
     APP["appsec"]
 
@@ -274,6 +276,7 @@ flowchart TD
     REG --> APP
     REG --> FIN
     REG --> OBS
+    REG --> INC
     CTX --> TF
     CTX --> K8S
     CTX --> FIN
@@ -290,6 +293,7 @@ flowchart TD
     CI --> DEP
     GOP --> DEP
     OBS --> DEP
+    OBS -->|"alerts need runbooks"| INC
 
     GH <-->|"shared waiver file"| FIN
     APP -->|"deterministic surface,<br/>escalate judgment calls"| OW
@@ -326,7 +330,7 @@ Every skill declares its blast radius in frontmatter, and `scripts/check-skills.
 |---|---|---|
 | `read-only` | `tf`, `tf-plan`, `k8s`, `ci`, `github-actions`, `gitops`, `owasp`, `deploy`, `observability` | Cannot mutate anything. Reads files, reports findings. |
 | `runs-commands` | `docker`, `finops`, `github`, `appsec`, `wrapper-tf` | Shells out to real tooling (`npm audit`, `gh api`, `aws`, `docker`), writes no files. |
-| `writes-files` | `adr`, `skill-creator` | Creates or edits files in your repo. |
+| `writes-files` | `adr`, `incident`, `skill-creator` | Creates or edits files in your repo. |
 
 Check any skill's label with `grep '^safety:' skills/<name>/SKILL.md`. The repo also ships a `PreToolUse` bash-guard hook that blocks destructive commands regardless of which skill asked.
 
