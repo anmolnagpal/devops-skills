@@ -1,0 +1,69 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform
+  namespace: argocd
+spec:
+  project: payments
+  source:
+    repoURL: https://github.com/acme/platform.git
+    targetRevision: v3.4.0
+    path: apps
+    directory:
+      recurse: true
+  destination:
+    server: https://prod-eks.eu-west-1.eks.amazonaws.com
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      allowEmpty: false
+      selfHeal: true
+    syncOptions:
+      - PruneLast=true
+---
+# Children of the app-of-apps above. No sync-wave annotations anywhere, so
+# cert-manager's CRDs and the Certificates that need them apply together.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+spec:
+  project: payments
+  source:
+    repoURL: https://charts.jetstack.io
+    chart: cert-manager
+    targetRevision: v1.19.2
+    helm:
+      values: |
+        crds:
+          enabled: true
+  destination:
+    server: https://prod-eks.eu-west-1.eks.amazonaws.com
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      allowEmpty: false
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-issuers
+  namespace: argocd
+spec:
+  project: payments
+  source:
+    repoURL: https://github.com/acme/platform.git
+    targetRevision: v3.4.0
+    path: issuers
+  destination:
+    server: https://prod-eks.eu-west-1.eks.amazonaws.com
+    namespace: cert-manager
+  syncPolicy:
+    automated:
+      prune: true
+      allowEmpty: false
+      selfHeal: true

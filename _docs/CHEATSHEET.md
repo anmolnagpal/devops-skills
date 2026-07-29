@@ -211,6 +211,69 @@ Use on any repo where `_modules/<name>/` wraps `clouddrove/<name>/aws`. Supersed
 
 ---
 
+### `/clouddrove:tf-plan` — Terraform Plan Review
+
+Run `terraform plan -out=tfplan && terraform show -json tfplan > tfplan.json`
+first. The skill reads the artifact; it never runs Terraform itself.
+
+**Example conversations:**
+```
+"Review tfplan.json before I apply this"
+"Is this plan safe to apply to prod?"
+"What will this plan destroy?"
+"Why is it replacing aws_db_instance.main?"
+"Check this plan for drift"
+"Does my pipeline apply the same plan it reviewed?"
+```
+
+---
+
+### `/clouddrove:gitops` — Argo CD / Flux
+
+**Example conversations:**
+```
+"Review my Argo CD Applications"
+"Why did Argo delete my resources?"
+"Check this AppProject for over-granted access"
+"Review my app-of-apps sync wave ordering"
+"Set up GitOps for the checkout service"
+"Review my Flux Kustomizations"
+"Is my targetRevision safe for prod?"
+```
+
+---
+
+### `/clouddrove:observability` — Monitoring, Alerting, SLOs
+
+**Example conversations:**
+```
+"Review my monitoring setup"
+"Am I flying blind on this service?"
+"Do my alerts actually reach anyone?"
+"Review my alertmanager routes"
+"Write alert rules for the checkout API"
+"Define an SLO for payments-api"
+"Check my log retention"
+"Set up burn-rate alerts"
+```
+
+---
+
+### `/clouddrove:incident` — Runbooks, On-call, Postmortems
+
+**Example conversations:**
+```
+"Write a runbook for the checkout API"
+"Review my runbooks"
+"Are we ready to put this service on-call?"
+"Define severity levels for our team"
+"Which alerts are missing runbooks?"
+"Write a postmortem from this timeline"
+"Review this postmortem for blameless language"
+```
+
+---
+
 ### `/skill-creator` — Build a New Skill
 
 **Example conversations:**

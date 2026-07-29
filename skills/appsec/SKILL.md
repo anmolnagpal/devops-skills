@@ -1,6 +1,7 @@
 ---
 name: appsec
 description: "Application-level security review: dependency manifests for known-vulnerable packages, missing HTTP security headers, permissive CORS configuration. Use when user says 'review my dependencies', 'check for vulnerable packages', 'run a dependency audit', 'audit security headers', 'review CORS config', or when working in package.json/package-lock.json, go.mod/go.sum, requirements.txt/poetry.lock, Gemfile.lock, Cargo.toml/Cargo.lock, pom.xml, or server/app config with CORS or header middleware."
+safety: runs-commands
 metadata:
   version: 0.1.0
   author: Anmol Nagpal

@@ -1,0 +1,52 @@
+# One ApplicationSet generating one Application per environment: dev, staging,
+# prod. Separation is at runtime, which is what CICD-GITOPS-006 asks for.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: checkout
+  namespace: argocd
+spec:
+  generators:
+    - list:
+        elements:
+          - env: dev
+            revision: main
+            server: https://dev-eks.eu-west-1.eks.amazonaws.com
+          - env: staging
+            revision: v2.7.1
+            server: https://staging-eks.eu-west-1.eks.amazonaws.com
+          - env: prod
+            revision: v2.7.0
+            server: https://prod-eks.eu-west-1.eks.amazonaws.com
+  template:
+    metadata:
+      name: 'checkout-{{env}}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "1"
+    spec:
+      project: payments
+      source:
+        repoURL: https://github.com/acme/checkout.git
+        # gitops-skill:ignore CICD-GITOPS-001 -- dev element tracks main by design;
+        # staging and prod elements are pinned to tags above
+        targetRevision: '{{revision}}'
+        path: 'deploy/overlays/{{env}}'
+      destination:
+        server: '{{server}}'
+        namespace: checkout
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - PruneLast=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 5m
+      revisionHistoryLimit: 10

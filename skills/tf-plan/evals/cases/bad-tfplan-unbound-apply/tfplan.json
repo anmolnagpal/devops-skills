@@ -1,0 +1,42 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.3",
+  "resource_changes": [
+    {
+      "address": "aws_db_instance.replica",
+      "type": "aws_db_instance",
+      "name": "replica",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "identifier": "prod-payments-replica",
+          "username": "app_rw",
+          "password": "Sup3rS3cret-prod-2026",
+          "allocated_storage": 200
+        },
+        "after_sensitive": {
+          "identifier": false,
+          "username": false,
+          "password": false,
+          "allocated_storage": false
+        }
+      }
+    },
+    {
+      "address": "aws_ssm_parameter.db_url",
+      "type": "aws_ssm_parameter",
+      "name": "db_url",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": { "name": "/prod/payments/db_url", "type": "SecureString" },
+        "after_sensitive": { "value": true }
+      }
+    }
+  ],
+  "backend": {
+    "type": "s3",
+    "config": { "key": "env/prod/terraform.tfstate" }
+  }
+}

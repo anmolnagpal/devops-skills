@@ -1,6 +1,6 @@
 # devops-skills
 
-> **One source of DevOps expertise, three AI coding tools.** Reusable skills for **Claude Code**, **Cursor**, and **Codex** that review and scaffold Terraform, Kubernetes/Helm, Docker, CI/CD (GitHub Actions + GitLab), AWS FinOps, GitHub repo hygiene, and OWASP security — without you copy-pasting the same prompt into every project.
+> **One source of DevOps expertise, three AI coding tools.** Reusable skills for **Claude Code**, **Cursor**, and **Codex** that review and scaffold Terraform, Kubernetes/Helm, Docker, CI/CD (GitHub Actions + GitLab), AWS FinOps, GitHub repo hygiene, and OWASP security, without you copy-pasting the same prompt into every project.
 
 [![test](https://github.com/anmolnagpal/devops-skills/actions/workflows/test.yml/badge.svg)](https://github.com/anmolnagpal/devops-skills/actions/workflows/test.yml)
 [![release](https://img.shields.io/github/v/release/anmolnagpal/devops-skills?label=release)](https://github.com/anmolnagpal/devops-skills/releases)
@@ -16,25 +16,26 @@
 /plugin install clouddrove@devops-skills
 ```
 
-Skills land as `/clouddrove:tf`, `/clouddrove:finops`, … with a native `(clouddrove)` label. For Cursor/Codex/MCP, use the [installer](#quick-start).
+Skills land as `/clouddrove:tf`, `/clouddrove:finops`, … with a native `(clouddrove)` label. Cursor, Codex, and MCP servers need the [installer](#install).
+
+**Contents:** [What you get](#what-you-get) · [See it in action](#see-it-in-action) · [Install](#install) · [Skills](#skills) · [Project context](#always-on-project-context) · [Why this](#why-this-not-the-alternatives) · [Plugins](#plugins) · [MCP servers](#mcp-servers) · [Repo layout](#repository-structure) · [Versioning](#versioning) · [Contributing](#contributing)
 
 ## What you get
 
-- **13 skills** that auto-trigger on file globs and answer with structured, rule-ID-tagged review output
-  (`/clouddrove:tf`, `/clouddrove:k8s`, `/clouddrove:ci`, `/clouddrove:github-actions`, `/clouddrove:github`, `/clouddrove:docker`, `/clouddrove:finops`, `/clouddrove:owasp`, `/clouddrove:appsec`, `/clouddrove:wrapper-tf`, `/clouddrove:deploy`, `/clouddrove:adr`, `/clouddrove:skill-creator`)
-- **Packaged as the `clouddrove` plugin** — installed from this repo's own marketplace, so skills are namespaced `(clouddrove)` in Claude Code natively
-- **Single source** in `skills/<name>/SKILL.md` — a generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
-- **One installer** with flags — `--claude` / `--cursor` / `--codex` / `--all`, global or per-project scope
-- **Curated Claude plugin set** — Terraform code/module generation (HashiCorp), claude-mem, superpowers, caveman, engineering-workflow-skills
+- **17 skills** that auto-trigger on file globs and answer with structured, rule-ID-tagged review output, grouped into [seven categories](#skills)
+- **Packaged as the `clouddrove` plugin**: installed from this repo's own marketplace, so skills are namespaced `(clouddrove)` in Claude Code natively
+- **Single source** in `skills/<name>/SKILL.md`. A generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
+- **One installer** with flags: `--claude` / `--cursor` / `--codex` / `--all`, global or per-project scope
+- **Curated Claude plugin set**: Terraform code/module generation (HashiCorp), claude-mem, superpowers, caveman, engineering-workflow-skills
 - **MCP servers** wired in: Kubernetes live access, EKS ops, AWS Cost Explorer, Atlassian (Jira + Confluence), Outline docs/wiki
 
 > **New here?** Skip to **[CHEATSHEET.md](_docs/CHEATSHEET.md)** for one-line prompts per skill.
 
 ## See it in action
 
-Every review answers in the same shape — **BLOCKING** (must fix) and **ADVISORY** (should fix), each finding tagged with a stable rule ID and a `file:line`, then a one-line summary.
+Every review answers in the same shape: **BLOCKING** (must fix) and **ADVISORY** (should fix), each finding tagged with a stable rule ID and a `file:line`, then a one-line summary.
 
-**`/clouddrove:tf review`** — pre-MR Terraform check:
+**`/clouddrove:tf review`** (pre-MR Terraform check):
 
 ```text
 BLOCKING — Must fix before MR
@@ -51,7 +52,7 @@ ADVISORY — Should fix
 Summary: 3 blocking issue(s), 2 advisory issue(s).
 ```
 
-**`/clouddrove:finops`** — AWS cost review:
+**`/clouddrove:finops`** (AWS cost review):
 
 ```text
 BLOCKING — none
@@ -65,7 +66,7 @@ ADVISORY — Should fix
 Summary: 0 blocking, 2 advisory. Estimated saving: ~$530/month.
 ```
 
-**`/clouddrove:deploy`** — production-readiness gate before first prod release:
+**`/clouddrove:deploy`** (production-readiness gate before first prod release):
 
 ```text
 PRODUCTION READINESS — payments-api → prod
@@ -83,30 +84,20 @@ Gate: FAILED — 3 blocking. Recommended strategy: blue-green (stateful, first p
 
 > Outputs above are representative. Findings, rule IDs, and `file:line` are real to your repo when you run the skill.
 
-## Why this, not the alternatives
+## Install
 
-| Instead of… | You get here |
-|---|---|
-| **Copy-pasting the same prompt** into every repo | One versioned source, auto-triggers on file globs, namespaced `/clouddrove:<skill>` — edit once, everyone pulls the update |
-| **A generic skill pack** | Opinionated DevOps depth — real Terraform/EKS/Helm/FinOps/OWASP review and scaffolding, not vibes |
-| **A static linter** (tfsec, checkov, hadolint) | In-context reasoning *and* scaffolding *and* explanation, in your editor. Linters still win on deterministic pattern checks — run both |
-| **Claude-only skills** | One source emits Cursor `.mdc` and Codex `AGENTS.md` too — same review across all three tools |
-| **Prose findings** | Every finding carries a **stable rule ID** shared with the [auditkit](https://github.com/clouddrove-ci/auditkit) audit engine — an inline review finding and a deep-audit finding are the *same* ID, so baselines and dedup carry across both |
+Works with **Claude Code**, **Cursor**, and **Codex** (same skills, different injection per tool). Pick the path that fits how your team consumes the repo.
 
-**The honest line:** static linters are faster for pure pattern matching, and a deep audit engine (auditkit) is the executor for whole-repo + live-cloud scans. This plugin is the **IDE-time advisory layer** that speaks the same rule-ID language as that engine — review *before* you commit, with findings that line up when the auditor runs later. It's CI-tested (six gates), not just a prompt dump.
-
-## Quick Start
-
-Multi-tool: works with **Claude Code**, **Cursor**, and **Codex** (same skills, different injection per tool).
-
-**Claude Code — install as a plugin** (no clone needed):
+### 1. Claude Code plugin (no clone)
 
 ```text
 /plugin marketplace add anmolnagpal/devops-skills
 /plugin install clouddrove@devops-skills
 ```
 
-Skills then appear as `/clouddrove:tf`, `/clouddrove:deploy`, … with a native `(clouddrove)` label. The install script below does the same automatically (plus Cursor/Codex and MCP).
+Skills appear as `/clouddrove:tf`, `/clouddrove:deploy`, … Does not install Cursor rules, Codex `AGENTS.md`, team plugins, or MCP servers.
+
+### 2. Installer one-liner (recommended, all tools)
 
 ```bash
 # Claude Code only
@@ -115,11 +106,9 @@ Skills then appear as `/clouddrove:tf`, `/clouddrove:deploy`, … with a native 
 # All three tools
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/anmolnagpal/devops-skills/main/scripts/bootstrap.sh)" -- --all
 
-# Interactive (no flags) — prompts for which tools
+# Interactive (no flags): prompts for which tools
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/anmolnagpal/devops-skills/main/scripts/bootstrap.sh)"
 ```
-
-What each flag does:
 
 | Flag | What it installs |
 |------|------------------|
@@ -128,7 +117,7 @@ What each flag does:
 | `--codex`  | `AGENTS.md` into `~/.codex/AGENTS.md` (or `--project <path>`) |
 | `--all`    | All three |
 
-Per-tool flags:
+Narrower runs:
 
 ```bash
 ./scripts/install.sh --claude --no-mcp --no-plugins   # skills only
@@ -136,142 +125,286 @@ Per-tool flags:
 ./scripts/install.sh --codex  --project ~/work/repo
 ```
 
-> **GitLab authentication:** If you get a 403, make sure you have access to the repo. You may need to use SSH clone instead — see [Manual install](#manual-install) below.
+**Updating:** re-run the same one-liner. If the repo is already installed it pulls the latest and re-runs the installer.
 
-## Updating
+### 3. `npx skills` (any of 70+ agents)
+
+The [open Agent Skills CLI](https://github.com/vercel-labs/skills) reads this repo directly, so tools outside Claude/Cursor/Codex can consume the same skills:
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/anmolnagpal/devops-skills/main/scripts/bootstrap.sh)"
+npx skills add anmolnagpal/devops-skills --list          # show the 17 skills
+npx skills add anmolnagpal/devops-skills -s tf,k8s       # install two
+npx skills add anmolnagpal/devops-skills --all           # all skills, all detected agents
+npx skills add anmolnagpal/devops-skills -g              # user-level instead of project-level
 ```
 
-Same command. If the repo is already installed it pulls the latest and re-runs the installer.
+Installs the skill bodies only. Team plugins, MCP servers, and the settings template need path 2.
 
-## Manual install
-
-If you prefer SSH or need to use a different install directory:
+### 4. Clone (SSH, or a custom install dir)
 
 ```bash
 git clone git@github.com:anmolnagpal/devops-skills.git ~/devops-skills
-~/devops-skills/scripts/install.sh
+~/devops-skills/scripts/install.sh --all
 ```
+
+### 5. Git submodule (pin a version per project repo)
+
+Best when a project needs a reproducible skill set that moves only when you bump it:
+
+```bash
+git submodule add https://github.com/anmolnagpal/devops-skills .devops-skills
+git -C .devops-skills checkout v1.2.0            # pin a release (see releases page)
+./.devops-skills/scripts/install.sh --cursor --codex --project .
+git add .gitmodules .devops-skills .cursor AGENTS.md
+```
+
+Teammates get it with `git submodule update --init`. Bump with `git -C .devops-skills fetch --tags && git -C .devops-skills checkout <tag>`, then re-run the installer.
+
+### 6. Fork and customize (your own rule catalog)
+
+For teams that need different severities, extra rule IDs, or company-specific skills:
+
+1. Fork the repo.
+2. Edit `rules/rule-ids.yaml` and `skills/<name>/SKILL.md`.
+3. Run `bash scripts/generate.sh` (rebuilds Cursor + Codex adapters).
+4. Point Claude Code at your fork: `/plugin marketplace add <your-org>/devops-skills`.
+
+CI carries over with the fork, so your changes keep the same six gates. Merge upstream with `git remote add upstream https://github.com/anmolnagpal/devops-skills`.
+
+### What the installer writes to your machine
+
+`install.sh --claude` seeds `~/.claude/settings.json` from `templates/settings.json` on first run. On subsequent runs it **merges missing permission entries only**; it never clobbers existing keys (`enabledPlugins`, `mcpServers`, `hooks`, …).
+
+The template ships a safe DevOps allow-list (read-only kubectl/terraform/aws/git) and a deny-list (`kubectl delete`, `terraform apply`, `terraform destroy`, `rm -rf`, `aws s3 rm`, `aws ec2 terminate-instances`). The plugin also registers two hooks: a `SessionStart` context banner and a `PreToolUse` bash-guard that blocks destructive commands.
+
+`install.sh` is idempotent: already-installed plugins, MCP servers, and symlinks are reused.
 
 ---
 
 ## Skills
 
-Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles them all; the generator emits per-tool adapters via `scripts/generate.sh`:
+Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles all 17; `scripts/generate.sh` emits `.cursor/rules/<name>.mdc` for Cursor and one `AGENTS.md` for Codex from the same file.
 
-| Source | Claude slash | Cursor rule | Auto-trigger |
-|--------|--------------|-------------|--------------|
-| `skills/tf/SKILL.md` | `/clouddrove:tf` | `tf.mdc` | `**/*.tf`, `**/*.tfvars` |
-| `skills/k8s/SKILL.md` | `/clouddrove:k8s` | `k8s.mdc` | `**/values*.yaml`, `**/Chart.yaml`, `**/templates/*.yaml` |
-| `skills/ci/SKILL.md` | `/clouddrove:ci` | `ci.mdc` | `**/.gitlab-ci.yml` |
-| `skills/github-actions/SKILL.md` | `/clouddrove:github-actions` | `github-actions.mdc` | `**/.github/workflows/*.yml` |
-| `skills/github/SKILL.md` | `/clouddrove:github` | `github.mdc` | `**/CODEOWNERS`, `**/.github/dependabot.yml`, PR/issue templates |
-| `skills/docker/SKILL.md` | `/clouddrove:docker` | `docker.mdc` | `**/Dockerfile`, `**/docker-compose*.yml` |
-| `skills/finops/SKILL.md` | `/clouddrove:finops` | `finops.mdc` | manual |
-| `skills/owasp/SKILL.md` | `/clouddrove:owasp` | `owasp.mdc` | manual |
-| `skills/appsec/SKILL.md` | `/clouddrove:appsec` | `appsec.mdc` | manual |
-| `skills/wrapper-tf/SKILL.md` | `/clouddrove:wrapper-tf` | `wrapper-tf.mdc` | `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` |
-| `skills/deploy/SKILL.md` | `/clouddrove:deploy` | `deploy.mdc` | manual |
-| `skills/adr/SKILL.md` | `/clouddrove:adr` | `adr.mdc` | `**/docs/adr/*.md` |
-| `skills/skill-creator/SKILL.md` | `/clouddrove:skill-creator` | `skill-creator.mdc` | manual |
+Invoke with `/clouddrove:<skill>` in Claude Code. In Cursor, rules auto-attach via `globs:`. In Codex, `AGENTS.md` loads by default.
 
-All 13 are also injected into `AGENTS.md` for Codex.
+### Infrastructure as Code
+
+| Skill | Purpose | Auto-trigger |
+|---|---|---|
+| `/clouddrove:tf` | Terraform on the `terraform-aws-modules` ecosystem: pre-MR review, AWS resource scaffolding, provider upgrade guidance | `**/*.tf`, `**/*.tfvars` |
+| `/clouddrove:wrapper-tf` | CloudDrove wrapper-module pattern: scaffold `_modules/<name>/`, generate Terraform GitHub Actions CI, review against the pattern, map to SOC2/GDPR controls. Supersedes `tf` on these repos | `_modules/**/*.tf`, `environments/**/*.tf`, `.github/workflows/terraform.yml` |
+| `/clouddrove:tf-plan` | Reviews the **plan**, not the source: destroys and replacements of data-bearing resources, secrets readable in plan output, drift, blast radius, and whether apply is bound to the plan you reviewed | `**/tfplan*.json` |
+
+### Containers and orchestration
+
+| Skill | Purpose | Auto-trigger |
+|---|---|---|
+| `/clouddrove:k8s` | Kubernetes/Helm: pre-deploy review, production-ready values scaffolding | `**/values*.yaml`, `**/Chart.yaml`, `**/templates/*.yaml` |
+| `/clouddrove:docker` | Dockerfile review, image optimization, Compose, registry workflows | `**/Dockerfile`, `**/docker-compose*.yml` |
+
+### CI/CD
+
+| Skill | Purpose | Auto-trigger |
+|---|---|---|
+| `/clouddrove:github-actions` | GitHub Actions: workflow review, security hardening (OIDC, action pinning), scaffolds | `**/.github/workflows/*.yml` |
+| `/clouddrove:ci` | GitLab CI/CD: pipeline review, Terraform/Helm pipeline scaffolds | `**/.gitlab-ci.yml` |
+| `/clouddrove:gitops` | Argo CD and Flux: mutable source refs, AppProject wildcard grants, unguarded auto-prune, sync waves, selfHeal drift enforcement, per-environment separation | `**/argocd/**/*.yaml`, `**/flux-system/**/*.yaml`, `**/*appproject*.yaml`, `**/*applicationset*.yaml`, `**/*helmrelease*.yaml` |
+
+### Security
+
+| Skill | Purpose | Auto-trigger |
+|---|---|---|
+| `/clouddrove:owasp` | Security review against OWASP Top 10:2025, ASVS 5.0, Agentic AI risks. Severity judged per finding by exploitability | manual |
+| `/clouddrove:appsec` | Application-level security: dependency audit (runs the ecosystem's real audit tool), missing security headers, CORS wildcards. Deterministic, catalog severity | manual |
+
+### Observability
+
+| Skill | Purpose | Auto-trigger |
+|---|---|---|
+| `/clouddrove:observability` | Centralized logging, log retention, metrics scraping, alert rules that actually page a human, tracing, dashboards, SLO/SLI and burn-rate alerts | `**/prometheus*.y*ml`, `**/alertmanager*.y*ml`, `**/*rules*.yaml`, `**/otel-collector*.yaml`, `**/servicemonitor*.yaml` |
+
+### Cost
+
+| Skill | Purpose | Auto-trigger |
+|---|---|---|
+| `/clouddrove:finops` | AWS cost: waste detection, right-sizing, Savings Plans/RIs, EKS cost | manual |
+
+### Delivery and process
+
+| Skill | Purpose | Auto-trigger |
+|---|---|---|
+| `/clouddrove:deploy` | Deployment strategy (rolling/blue-green/canary), production-readiness gate, rollback playbook for AWS/EKS | manual |
+| `/clouddrove:github` | GitHub repo hygiene: settings audit, CODEOWNERS, branch protection, releases, README/CONTRIBUTING/test-coverage checks | `**/CODEOWNERS`, `**/.github/dependabot.yml`, PR/issue templates |
+| `/clouddrove:incident` | Runbooks that work at 03:00, incident readiness audit before a rotation starts, severity and escalation model, blameless postmortems | `**/docs/runbooks/*.md`, `**/docs/incidents/*.md`, `**/RUNBOOK.md` |
+| `/clouddrove:adr` | Capture architectural decisions as structured ADRs under `docs/adr/` | `**/docs/adr/*.md` |
+| `/clouddrove:skill-creator` | Author, eval, and refine new skills in this repo | manual |
+
+### How the skills relate
+
+They are not 17 independent prompts. Two shared foundations sit under all of them, and several skills consume each other's output:
+
+```mermaid
+flowchart TD
+    REG["rules/rule-ids.yaml<br/>166 shared rule IDs"]
+    CTX["templates/CLAUDE.md<br/>always-on project context"]
+
+    TF["tf"]
+    WTF["wrapper-tf"]
+    TFP["tf-plan"]
+    K8S["k8s"]
+    DOCK["docker"]
+    GHA["github-actions"]
+    CI["ci"]
+    GOP["gitops"]
+    DEP["deploy<br/>readiness gate"]
+    GH["github"]
+    FIN["finops"]
+    OBS["observability"]
+    INC["incident"]
+    OW["owasp"]
+    APP["appsec"]
+
+    REG --> TF
+    REG --> WTF
+    REG --> TFP
+    REG --> K8S
+    REG --> DOCK
+    REG --> GHA
+    REG --> CI
+    REG --> GOP
+    REG --> GH
+    REG --> APP
+    REG --> FIN
+    REG --> OBS
+    REG --> INC
+    CTX --> TF
+    CTX --> K8S
+    CTX --> FIN
+
+    WTF -->|"supersedes on _modules/ repos"| TF
+    TF -->|"source review, then plan review"| TFP
+    WTF --> TFP
+
+    TF --> DEP
+    WTF --> DEP
+    K8S --> DEP
+    DOCK --> DEP
+    GHA --> DEP
+    CI --> DEP
+    GOP --> DEP
+    OBS --> DEP
+    OBS -->|"alerts need runbooks"| INC
+
+    GH <-->|"shared waiver file"| FIN
+    APP -->|"deterministic surface,<br/>escalate judgment calls"| OW
+```
+
+What that means in practice:
+
+- **`tf` and `wrapper-tf` are mutually exclusive.** If the repo has an `_modules/` directory wrapping `clouddrove/*/aws` modules, use `wrapper-tf`; the two patterns conflict.
+- **`deploy` aggregates, it does not re-derive.** Its readiness gate runs the artifact skills that apply to the repo and reuses their findings and rule IDs. If an artifact type exists but its skill was not run, the gate returns `INCOMPLETE` rather than claiming `READY`.
+- **`appsec` and `owasp` split by determinism.** `appsec` checks things with a yes/no answer (a vulnerable lockfile entry, a missing header, a `*` CORS origin). `owasp` judges exploitability in context. Run `appsec` first, escalate the judgment calls.
+- **`github` and `finops` share one waiver file**, same format and location, so a suppression written for one is readable by the other.
 
 ### Shared rule-ID vocabulary
 
-Findings are tagged with stable rule IDs (`TF-STATE-001`, `SEC-NET-001`, `CICD-DOCK-002`, …). The canonical set lives in **[`rules/rule-ids.yaml`](rules/rule-ids.yaml)** (141 IDs) — the single source of truth. CI (`scripts/check-rule-ids.sh`) fails if a skill emits an ID not in the registry. The [auditkit](https://github.com/clouddrove-ci/auditkit) audit engine consumes the same registry and checks against it, so an inline plugin finding and a deep-audit finding share the same ID — and the two can't drift.
+Findings are tagged with stable rule IDs (`TF-STATE-001`, `SEC-NET-001`, `CICD-DOCK-002`, …). The canonical set lives in **[`rules/rule-ids.yaml`](rules/rule-ids.yaml)** (166 IDs across 10 domains), the single source of truth. CI (`scripts/check-rule-ids.sh`) fails if a skill emits an ID not in the registry. The [auditkit](https://github.com/clouddrove-ci/auditkit) audit engine consumes the same registry, so an inline plugin finding and a deep-audit finding share the same ID, and the two cannot drift.
 
-### Severity models — three, by design
+### Severity models: three, by design
 
 A finding's severity means something different depending on which skill raised it:
 
 | Model | Used by | Meaning |
 |---|---|---|
-| **BLOCKING / ADVISORY**, fixed per rule ID | `tf`, `k8s`, `docker`, `ci`, `github-actions`, `github`, `appsec`, `wrapper-tf`, `deploy` | Severity is baked into the rule catalog — the skill never invents it. BLOCKING = fix before merge/deploy. |
-| **BLOCKING / ADVISORY**, judged per finding | `owasp` | Same two labels, but severity depends on exploitability *in this codebase* (reachable? mitigated already?) — assessed each time, not looked up. |
-| **HIGH / MED / LOW $-impact** | `finops` | Cost findings are opportunities ranked by savings magnitude, never merge-blockers — there's no "block the MR" concept for a cost lever. |
+| **BLOCKING / ADVISORY**, fixed per rule ID | `tf`, `k8s`, `docker`, `ci`, `github-actions`, `github`, `appsec`, `wrapper-tf`, `deploy` | Severity is baked into the rule catalog; the skill never invents it. BLOCKING = fix before merge/deploy. |
+| **BLOCKING / ADVISORY**, judged per finding | `owasp` | Same two labels, but severity depends on exploitability *in this codebase* (reachable? already mitigated?), assessed each time, not looked up. |
+| **HIGH / MED / LOW $-impact** | `finops` | Cost findings are opportunities ranked by savings magnitude, never merge-blockers. There is no "block the MR" concept for a cost lever. |
 
-All three carry the same stable rule-ID convention and `file:line`/resource citation — only the severity axis differs. If you're scripting against output (e.g. failing CI on BLOCKING), branch on the skill, not a single global severity enum.
+All three carry the same stable rule-ID convention and `file:line`/resource citation; only the severity axis differs. If you script against the output (e.g. failing CI on BLOCKING), branch on the skill, not on a single global severity enum.
 
-Backlog specs (drafts, not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security. Promote to active by adding frontmatter under `skills/<name>/SKILL.md`.
+### Safety labels
 
-Edit `skills/<name>/SKILL.md`, run `bash scripts/generate.sh`, commit. Re-run `./scripts/install.sh --all` to push to local installs.
+Every skill declares its blast radius in frontmatter, and `scripts/check-skills.sh` fails the build if the label contradicts the skill's `allowed-tools`. So the guarantee is enforced, not asserted:
 
-In Claude Code: invoke with `/clouddrove:<skill>` (namespaced by the plugin). In Cursor: rules auto-attach via `globs:`. In Codex: `AGENTS.md` loaded by default.
+| Label | Skills | Means |
+|---|---|---|
+| `read-only` | `tf`, `tf-plan`, `k8s`, `ci`, `github-actions`, `gitops`, `owasp`, `deploy`, `observability` | Cannot mutate anything. Reads files, reports findings. |
+| `runs-commands` | `docker`, `finops`, `github`, `appsec`, `wrapper-tf` | Shells out to real tooling (`npm audit`, `gh api`, `aws`, `docker`), writes no files. |
+| `writes-files` | `adr`, `incident`, `skill-creator` | Creates or edits files in your repo. |
 
-### What each skill does
+Check any skill's label with `grep '^safety:' skills/<name>/SKILL.md`. The repo also ships a `PreToolUse` bash-guard hook that blocks destructive commands regardless of which skill asked.
 
-| Skill | Purpose |
-|-------|---------|
-| `/clouddrove:tf` | Terraform (generic / `terraform-aws-modules` ecosystem): pre-MR review, AWS resource scaffolding, provider upgrade guidance |
-| `/clouddrove:k8s` | Kubernetes/Helm: pre-deploy review, production-ready values scaffolding |
-| `/clouddrove:ci` | GitLab CI/CD: pipeline review, Terraform/Helm pipeline scaffolds |
-| `/clouddrove:github-actions` | GitHub Actions: workflow review, security hardening (OIDC, pinning), scaffolds |
-| `/clouddrove:github` | GitHub repo hygiene: settings audit, CODEOWNERS, branch protection, releases |
-| `/clouddrove:docker` | Dockerfile review, image optimization, Compose, registry workflows |
-| `/clouddrove:finops` | AWS cost: waste detection, right-sizing, Savings Plans/RIs, EKS cost |
-| `/clouddrove:owasp` | Security review against OWASP Top 10:2025, ASVS 5.0, Agentic AI risks |
-| `/clouddrove:appsec` | Application-level security: dependency audit (via the ecosystem's real audit tool), missing security headers, CORS wildcard misconfiguration |
-| `/clouddrove:wrapper-tf` | Team standard for AWS Terraform repos on the CloudDrove wrapper pattern: scaffold `_modules/<name>/`, generate Terraform GitHub Actions CI, review against the wrapper pattern, map to SOC2/GDPR controls. Supersedes `/clouddrove:tf` on these repos. |
-| `/clouddrove:deploy` | Deployment strategy (rolling/blue-green/canary), production-readiness gate (reuses existing rule IDs), and rollback playbook for AWS/EKS |
-| `/clouddrove:adr` | Capture architectural decisions as structured ADRs under `docs/adr/` |
-| `/clouddrove:skill-creator` | Author, eval, and refine new skills in this repo |
-| `/skill-creator` | Build, test, and iterate new skills |
+### Backlog specs
+
+`skills/specs/` holds drafts that are not runnable skills yet: aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security. Promote one by authoring `skills/<name>/SKILL.md` with frontmatter (see [CONTRIBUTING.md](CONTRIBUTING.md#promote-a-backlog-spec)).
+
+---
+
+## Always-on project context
+
+Skills are sharper when they already know your AWS accounts, Terraform backend, EKS clusters, and team conventions. `templates/CLAUDE.md` is that shared context file: Claude Code auto-loads it every session, so you get the team's assumptions without invoking a skill at all.
+
+```bash
+cp ~/devops-skills/templates/CLAUDE.md /path/to/your/repo/CLAUDE.md
+cp -r ~/devops-skills/templates/.claude /path/to/your/repo/.claude
+# Fill in the CLAUDE.md placeholders, then commit both
+```
+
+Do this once per project repo. Every skill above reads it before reviewing, which is what keeps a `tf` review from suggesting a backend you already standardized on.
+
+---
+
+## Why this, not the alternatives
+
+| Instead of… | You get here |
+|---|---|
+| **Copy-pasting the same prompt** into every repo | One versioned source, auto-triggers on file globs, namespaced `/clouddrove:<skill>`. Edit once, everyone pulls the update |
+| **A generic skill pack** | Opinionated DevOps depth: real Terraform/EKS/Helm/FinOps/OWASP review and scaffolding, not vibes |
+| **A static linter** (tfsec, checkov, hadolint) | In-context reasoning *and* scaffolding *and* explanation, in your editor. Linters still win on deterministic pattern checks, so run both |
+| **Claude-only skills** | One source emits Cursor `.mdc` and Codex `AGENTS.md` too, so you get the same review across all three tools |
+| **Prose findings** | Every finding carries a **stable rule ID** shared with the [auditkit](https://github.com/clouddrove-ci/auditkit) audit engine, so an inline review finding and a deep-audit finding are the *same* ID, so baselines and dedup carry across both |
+
+**The honest line:** static linters are faster for pure pattern matching, and a deep audit engine (auditkit) is the executor for whole-repo + live-cloud scans. This plugin is the **IDE-time advisory layer** that speaks the same rule-ID language as that engine: review *before* you commit, with findings that line up when the auditor runs later. It's CI-tested (six gates), not just a prompt dump.
 
 ---
 
 ## Plugins
 
-Declared in `plugins.txt` and installed automatically by `install.sh`. Skips any already installed.
-
-All plugins live in `config/plugins.txt` and are installed automatically by `install.sh`.
+All plugins live in `config/plugins.txt` and are installed automatically by `install.sh`. Already-installed ones are skipped.
 
 | Plugin | Source | What it adds |
 |--------|--------|--------------|
 | `terraform-code-generation` | hashicorp | Terraform style guide, registry search, import, tests |
 | `terraform-module-generation` | hashicorp | Module refactoring and Terraform Stacks |
-| `claude-mem` | thedotmack | Persistent cross-session memory — Claude remembers past decisions and context |
+| `claude-mem` | thedotmack | Persistent cross-session memory, so Claude remembers past decisions and context |
 | `engineering-workflow-skills` | mhattingpete | Git operations, code review, feature planning workflows |
-| `superpowers` | obra/superpowers | TDD, systematic debugging, brainstorming/planning, and subagent dev workflows |
-| `caveman` | JuliusBrussee/caveman | Ultra-compressed communication mode — cuts ~75% tokens while preserving technical accuracy |
+| `superpowers` | obra/superpowers | TDD, systematic debugging, brainstorming/planning, subagent dev workflows |
+| `caveman` | JuliusBrussee/caveman | Ultra-compressed communication mode, cuts ~75% tokens while preserving technical accuracy |
 
-### Adding a plugin
-
-Add a line to `config/plugins.txt`:
-- `name@marketplace` — for official Claude plugin marketplace installs
-- `hub:github-org/repo` — for plugins installed via `npx claudepluginhub`
-
-If it's from a new marketplace, also add it to `config/marketplaces.txt`. Then commit and push — teammates pick it up on next `./scripts/install.sh`.
+Adding one: see [CONTRIBUTING.md](CONTRIBUTING.md#add-a-plugin).
 
 ---
 
 ## MCP Servers
 
-Configured interactively during `install.sh`. Each server prompts you to install or skip. Already-installed servers are skipped automatically.
+Configured interactively during `install.sh`. Each server prompts you to install or skip; already-installed servers are skipped automatically.
 
 | Server | What it gives Claude |
 |--------|---------------------|
-| `kubernetes-mcp-server` | Live read access to EKS clusters — pods, logs, events, Helm releases |
-| `eks-mcp-server` | AWS-native EKS ops — cluster diagnostics, CloudWatch, IAM/OIDC, resource management |
+| `kubernetes-mcp-server` | Live read access to EKS clusters: pods, logs, events, Helm releases |
+| `eks-mcp-server` | AWS-native EKS ops: cluster diagnostics, CloudWatch, IAM/OIDC, resource management |
 | `billing-mcp-server` | Cost Explorer, budget tracking, savings plan analysis, Compute Optimizer |
-| `mcp-atlassian` | Jira + Confluence — JQL search, create/update issues, add comments, transition tickets |
-| `outline` | Outline docs/wiki — search, read, create/update documents (remote HTTP, browser OAuth) |
+| `mcp-atlassian` | Jira + Confluence: JQL search, create/update issues, add comments, transition tickets |
+| `outline` | Outline docs/wiki: search, read, create/update documents (remote HTTP, browser OAuth) |
 
 ### Switching AWS profile
 
-If you need to switch the AWS profile used by the AWS MCP servers:
-
 ```bash
-# Interactive
-~/devops-skills/scripts/set-aws-profile.sh
-
-# Or directly
-~/devops-skills/scripts/set-aws-profile.sh prod
+~/devops-skills/scripts/set-aws-profile.sh          # interactive
+~/devops-skills/scripts/set-aws-profile.sh prod     # direct
 ```
 
-Restart Claude Code after switching.
+Restart Claude Code after switching. Adding a server: see [CONTRIBUTING.md](CONTRIBUTING.md#add-an-mcp-server).
 
 ---
 
@@ -286,8 +419,8 @@ devops-skills/
     owasp/*.md               ← reference docs loaded on-demand; docker/ finops/ add scripts too
     specs/                   ← Backlog spec docs (not active skills)
   rules/rule-ids.yaml        ← Canonical shared rule-ID registry (single source of truth)
-  .cursor/rules/             ← Generated Cursor rules (.mdc) — from scripts/generate.sh
-  AGENTS.md                  ← Generated Codex skill doc — from scripts/generate.sh
+  .cursor/rules/             ← Generated Cursor rules (.mdc), from scripts/generate.sh
+  AGENTS.md                  ← Generated Codex skill doc, from scripts/generate.sh
   agents/                    ← Reserved for Claude Code agents
   hooks/                     ← Shipped with the plugin (registered via hooks.json)
     hooks.json               ← Plugin hook config (uses ${CLAUDE_PLUGIN_ROOT})
@@ -310,110 +443,53 @@ devops-skills/
     marketplaces.txt         ← Claude plugin marketplaces
   _docs/
     CHEATSHEET.md            ← Example prompts per skill and MCP server
-  README.md
+  _test/                     ← Dockerfile + test.sh for the install harness
+  CHANGELOG.md  CONTRIBUTING.md  SECURITY.md  LICENSE  README.md
 ```
 
 ---
 
-## Global settings.json
+## Versioning
 
-`install.sh --claude` seeds `~/.claude/settings.json` from `templates/settings.json` on first run. On subsequent runs it **merges missing permission entries only** — never clobbers existing keys (`enabledPlugins`, `mcpServers`, `hooks`, etc.).
+The plugin follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html); every release is recorded in **[CHANGELOG.md](CHANGELOG.md)** ([Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format). Current version: see `.claude-plugin/plugin.json` and the [releases page](https://github.com/anmolnagpal/devops-skills/releases).
 
-Template ships with a safe DevOps allow-list (read-only kubectl/terraform/aws/git) and deny-list (`kubectl delete`, `terraform apply`, `terraform destroy`, `rm -rf`, `aws s3 rm`, `aws ec2 terminate-instances`). Edit `templates/settings.json` to change team defaults, commit, teammates re-run `./scripts/install.sh --claude`.
+What each bump means for you:
 
----
+| Bump | What changed | What you do |
+|---|---|---|
+| **Patch** (1.3.0 → 1.3.1) | Rule wording, false-positive fixes, hook or script bugs | Nothing. Re-run the installer when convenient. |
+| **Minor** (1.2.x → 1.3.0) | New skill, new rule IDs, new checks in an existing skill | Re-run the installer. Expect *more* findings than before; new BLOCKING rules can fail a previously-green review. |
+| **Major** | Renamed or removed skills, changed rule IDs, changed output shape | Read the CHANGELOG entry first. Anything scripted against skill output or rule IDs may need updating. |
 
-## Project CLAUDE.md Template
-
-Copy `templates/CLAUDE.md` into the root of any project repo and fill in the placeholders. Claude Code auto-loads it every session, giving Claude permanent context about your AWS setup, Terraform backend, EKS clusters, and team conventions — without needing to invoke a skill.
+Upgrading:
 
 ```bash
-cp ~/devops-skills/templates/CLAUDE.md /path/to/your/repo/CLAUDE.md
-cp -r ~/devops-skills/templates/.claude /path/to/your/repo/.claude
-# Fill in the CLAUDE.md placeholders, then commit both
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/anmolnagpal/devops-skills/main/scripts/bootstrap.sh)"
 ```
 
----
-
-## Adding a New Team Skill
-
-Skills follow a standard format. Use the `/skill-creator` skill to build and test new ones.
-
-### Skill file format
-
-```markdown
----
-name: skill-name
-description: "Concise description — include when to use and key trigger keywords"
-metadata:
-  version: 1.0.0
-  author: Anmol Nagpal
-  category: devops
-  updated: YYYY-MM-DD
----
-
-# Skill Title
-
-One-line summary.
-
-## Keywords
-keyword1, keyword2, keyword3
-
-## Output Artifacts
-
-| Request | Output |
-|---------|--------|
-| "do X" | Produces Y |
+Same command as install; it pulls the latest and re-runs. In Claude Code alone: `/plugin update clouddrove@devops-skills`. On a submodule pin, checkout the new tag and re-run `scripts/install.sh`. Rule IDs are treated as a public contract: an ID's meaning never changes silently, and removals are called out in the CHANGELOG.
 
 ---
 
-## SECTION — ...
-```
+## Contributing
 
-### Steps to add
+Issues and PRs are welcome. **[CONTRIBUTING.md](CONTRIBUTING.md)** covers the maintainer paths:
 
-1. Create `skills/<name>/SKILL.md` following the format above (co-locate `evals/`, references, scripts in the same dir)
-2. Run `bash scripts/generate.sh` to refresh Cursor (`.cursor/rules/<name>.mdc`) + Codex (`AGENTS.md`) adapters
-3. Commit `skills/<name>/SKILL.md`, the new `.cursor/rules/<name>.mdc`, and updated `AGENTS.md`
-4. Teammates run `git pull && ./scripts/install.sh --all` to pick it up (the plugin auto-discovers any `skills/<name>/SKILL.md`)
+- [Add or improve a skill](CONTRIBUTING.md#add-or-improve-a-skill): skill file format, the generator step, eval cases
+- [Add a rule ID](CONTRIBUTING.md#add-a-rule-id): registry first, then the skill catalog
+- [Add a plugin](CONTRIBUTING.md#add-a-plugin) / [Add an MCP server](CONTRIBUTING.md#add-an-mcp-server)
+- [Testing](CONTRIBUTING.md#testing): the six CI gates, plus the opt-in behavioral eval harness
+- [Promote a backlog spec](CONTRIBUTING.md#promote-a-backlog-spec)
 
----
-
-## Testing
-
-CI runs on every push to `main` and every pull request via GitHub Actions (`.github/workflows/test.yml`), with six gates: Docker install harness, adapter-sync (`.cursor/rules/`, `AGENTS.md` regenerated from `skills/<name>/SKILL.md`), skill-frontmatter lint, rule-ID registry check, eval fixtures, and ShellCheck.
-
-To run the test locally (requires Docker):
+Before pushing, run the same checks CI runs:
 
 ```bash
-bash _test/test.sh
+bash scripts/check-skills.sh && bash scripts/check-rule-ids.sh \
+  && bash scripts/check-evals.sh && bash scripts/generate.sh --check
 ```
 
-The test builds `_test/Dockerfile`, which runs `install.sh` in a clean container with a stubbed `claude` CLI and `CI=true` to skip interactive MCP prompts. It verifies all skills are symlinked and all plugins install without error.
+Security issues: see [SECURITY.md](SECURITY.md).
 
-### Behavioral evals (Tier-2, opt-in)
+## License
 
-The `eval fixtures` CI gate above (Tier-1) only checks that eval docs are internally
-consistent — rule IDs in `expected.txt` exist in the catalog, `clean-*` cases expect
-nothing. It never runs a skill and checks its actual output, so a skill could regress
-silently (stop detecting a real violation) and Tier-1 would still pass.
-
-`scripts/run-behavioral-evals.sh` is the Tier-2 gate: it invokes each skill via
-`claude -p` against its fixtures and diffs the live findings against `expected.txt`.
-Opt-in — it spends API tokens and isn't wired into the free six-gate CI, so run it
-manually or on a nightly schedule:
-
-```bash
-EVALS=1 bash scripts/run-behavioral-evals.sh          # every skill with evals/
-EVALS=1 bash scripts/run-behavioral-evals.sh tf k8s    # just these skills
-```
-
----
-
-## Adding a New MCP Server
-
-1. Add a new block to `scripts/mcp.sh` following the existing pattern (check if installed → prompt → register the server):
-   - **Local/stdio** servers — `claude mcp add-json <name> '{"command":...,"args":...}' -s user`
-   - **Remote/HTTP** servers (e.g. `outline`) — `claude mcp add <name> <url> --transport http -s user` (auth via browser OAuth on first use)
-2. If the server uses AWS credentials, add it to the `AWS_MCP_SERVERS` list in `scripts/set-aws-profile.sh`
-3. Commit and push — teammates pick it up on next `./scripts/install.sh`
+MIT, see [LICENSE](LICENSE).

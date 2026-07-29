@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: checkout-prod
+  namespace: argocd
+spec:
+  project: payments
+  source:
+    repoURL: https://github.com/acme/checkout.git
+    targetRevision: HEAD
+    path: deploy/overlays/prod
+  destination:
+    server: https://prod-eks.eu-west-1.eks.amazonaws.com
+    namespace: checkout
+  syncPolicy:
+    automated:
+      prune: true
+      allowEmpty: true
+      selfHeal: false

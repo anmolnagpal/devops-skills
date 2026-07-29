@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: report-gen-alerts
+spec:
+  groups:
+    - name: report-gen
+      rules:
+        - alert: ReportGenJobFailing
+          expr: increase(report_jobs_failed_total[30m]) > 3
+          for: 10m
+          labels:
+            severity: page
+            team: data-platform
+          annotations:
+            summary: "report-gen failing repeatedly"
+            runbook_url: "docs/runbooks/report-gen.md#reportgenjobfailing"
+
+        - alert: ReportGenSlowBatch
+          expr: histogram_quantile(0.95, rate(report_batch_seconds_bucket[10m])) > 900
+          for: 20m
+          labels:
+            severity: ticket
+            team: data-platform
+          annotations:
+            summary: "batches slower than 15m at p95"

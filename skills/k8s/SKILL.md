@@ -1,6 +1,7 @@
 ---
 name: k8s
 description: "Kubernetes and Helm review and scaffolding for EKS workloads. Use when user says 'review my helm values', 'before I deploy', 'scaffold a new service', 'check values.yaml', or when working in values.yaml, Chart.yaml, or Helm template files."
+safety: read-only
 metadata:
   version: 1.5.0
   author: Anmol Nagpal
@@ -66,6 +67,11 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 | **SEC-SEC-001** | BLOCKING | Plaintext secret/password/token/apiKey inline in values |
 | **SEC-IAM-002** | BLOCKING | Static AWS credentials in env instead of IRSA |
 | **SEC-K8S-001** | ADVISORY | `securityContext` missing/incomplete (`runAsNonRoot`, `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem`) |
+| **SEC-K8S-002** | BLOCKING | `privileged: true`, a `hostPath` volume, or `hostNetwork`/`hostPID`/`hostIPC` on a normal workload |
+| **SEC-K8S-003** | BLOCKING | RBAC over-grant: `ClusterRole` with wildcard verb **and** resource, or a binding to `cluster-admin` |
+| **SEC-K8S-004** | ADVISORY | No `NetworkPolicy` for the workload's namespace, so any pod in the cluster can reach it |
+| **SEC-K8S-006** | BLOCKING | Service exposed insecurely: `NodePort` reachable from the internet, or an internet-facing `LoadBalancer` on a service with no auth |
+| **SEC-K8S-007** | ADVISORY | `automountServiceAccountToken` left enabled on a workload that never calls the API server, or a secret injected via plain `env.value` |
 | **CICD-DOCK-001** | BLOCKING | Image tag is `latest`, empty real value, or unset at deploy |
 | **COST-K8S-001** | BLOCKING | Container missing resource `requests` or `limits` |
 | **ARCH-HA-003** | ADVISORY | `readinessProbe` or `livenessProbe` missing |
@@ -75,7 +81,14 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 | **META-SUP-001** | ADVISORY | `k8s-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `SEC-SEC-001`, `SEC-IAM-002`, `CICD-DOCK-001`, `COST-K8S-001`, `COST-TAG-001`.
-**Registered in `rules/rule-ids.yaml`:** `SEC-K8S-001`, `ARCH-HA-003`, `ARCH-SPOF-002`, `COST-K8S-003`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `SEC-K8S-001` … `SEC-K8S-007`, `ARCH-HA-003`, `ARCH-SPOF-002`, `COST-K8S-003`, `META-SUP-001`.
+
+**`SEC-K8S-005` is deliberately absent from this catalog.** The registry defines it
+as missing CPU/memory limits or requests, which is the same condition as
+`COST-K8S-001` above, framed as a DoS risk rather than a cost one. Reporting both
+would double-count one line of YAML. This skill emits `COST-K8S-001`;
+`SEC-K8S-005` stays reserved for auditkit's live-cluster scan, where an unbounded
+pod is observed as a running noisy-neighbor rather than as a config default.
 
 **Output:** every finding carries its rule ID. **Suppression:** accept a known risk
 with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor
@@ -90,6 +103,11 @@ can't quote it, don't report it. Evals: [`evals/`](./evals/).
 2. Jobs and CronJobs — don't require `replicaCount >= 2` or long-lived readiness probes; they run to completion by design.
 3. A container missing its own `securityContext` when the **pod-level** `securityContext` already sets `runAsNonRoot`/`allowPrivilegeEscalation: false`/`readOnlyRootFilesystem` and the container doesn't override it — the pod-level setting applies; don't double-flag.
 4. Init containers that intentionally run as root to fix permissions (`chown`/`chmod` before handing off to the main container) — flag only if the **main** container still runs as root.
+5. `SEC-K8S-002` on a node-level agent: a `DaemonSet` whose whole job is reading the host (log shippers like fluent-bit/vector on `/var/log`, node-exporter on `/proc` and `/sys`, CSI drivers, CNI plugins). `hostPath` is how these work. Flag them only when the mount is **writable** (`readOnly` absent or false) on a sensitive path (`/`, `/etc`, `/var/run/docker.sock`, `/var/lib/kubelet`), or when the same mount appears on an ordinary Deployment.
+6. `SEC-K8S-003` on a namespace-scoped `Role` with a wildcard verb over one resource type — the blast radius is one namespace and one kind. The BLOCKING case is a `ClusterRole` with `verbs: ["*"]` **and** `resources: ["*"]`, or any binding whose `roleRef` is `cluster-admin`. Operator/controller charts that legitimately manage CRDs still need to name their API groups; a wildcard is not the only way to express that.
+7. `SEC-K8S-004` where segmentation is genuinely provided elsewhere: a service mesh enforcing mTLS plus `AuthorizationPolicy`/`ServerAuthorization` (Istio, Linkerd), a CNI-level policy the platform team owns cluster-wide (Cilium `CiliumClusterwideNetworkPolicy`), or a namespace-level default-deny already committed in this repo. Absence of a chart-local `NetworkPolicy` is not by itself the finding; absence of any enforcement is. **Only assess this rule when you can see the whole chart** (a `templates/` directory, or a repo where policy manifests would live). A standalone `values.yaml` handed to you in isolation is not evidence that no policy exists anywhere, so stay silent rather than guess.
+8. `SEC-K8S-006` on a `LoadBalancer` explicitly annotated internal (`service.beta.kubernetes.io/aws-load-balancer-internal`, `-scheme: internal`), or a `NodePort` in a dev/kind/minikube values file that never reaches a cloud environment. Also skip services fronted by an ingress that terminates auth (OIDC proxy, ALB with Cognito/OIDC) — the auth exists, one hop up.
+9. `SEC-K8S-007` on a workload that actually talks to the API server: operators, controllers, cluster-autoscaler, external-secrets, anything using in-cluster config. They need the mounted token. The finding is for an ordinary application container that never builds a Kubernetes client.
 
 Exception: the relaxation doesn't apply if these dev values are also what actually
 reaches staging/prod — whether merged in (no separate prod override exists), applied
@@ -199,6 +217,74 @@ securityContext:
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true
 ```
+
+### Workload security
+
+Beyond `securityContext`, check the four host/cluster boundaries a chart can punch through. Read `templates/` as well as values: RBAC and NetworkPolicy usually live there.
+
+**Host boundary** (`SEC-K8S-002`). None of these belong on an ordinary application workload:
+
+```yaml
+# All findings:
+securityContext:
+  privileged: true          # full host root, effectively no container boundary
+hostNetwork: true           # shares the node's network namespace, bypasses NetworkPolicy
+hostPID: true               # can see and signal every process on the node
+volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run/docker.sock   # container escape in one hop
+```
+
+Node-level agents (DaemonSet log shippers, node-exporter, CSI/CNI) are the documented exception; see exclusion 5. For them, require `readOnly: true` on every `hostPath` mount and the narrowest possible path.
+
+**RBAC** (`SEC-K8S-003`). Wildcards in a `ClusterRole` grant the cluster, not the app:
+
+```yaml
+# Finding:
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+
+# Fix: name what the workload actually uses.
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+```
+
+A `roleRef` pointing at `cluster-admin` is the same finding by another route. Namespaced `Role` wildcards are excluded (exclusion 6).
+
+**Network segmentation** (`SEC-K8S-004`). A workload with no policy covering it is reachable from every pod in the cluster. Look for a `NetworkPolicy` template, a `networkPolicy.enabled` values toggle, or mesh/CNI enforcement before reporting (exclusion 7):
+
+```yaml
+# Minimum useful shape: default-deny ingress, then allow the callers you know.
+podSelector:
+  matchLabels:
+    app: <service-name>
+policyTypes: [Ingress]
+ingress:
+  - from:
+      - podSelector:
+          matchLabels:
+            app: <caller>
+```
+
+**Exposure** (`SEC-K8S-006`). `service.type` is the check:
+
+- `ClusterIP` — default, fine.
+- `NodePort` — opens a high port on every node; in a cloud VPC with permissive node security groups that is internet-reachable. Use `ClusterIP` behind an Ingress.
+- `LoadBalancer` — fine when internal-annotated or auth-terminating upstream; a finding when internet-facing with no auth in front (exclusion 8).
+
+**Token and secret exposure** (`SEC-K8S-007`). An application that never calls the API server should not carry a credential for it:
+
+```yaml
+serviceAccount:
+  automountServiceAccountToken: false   # set this unless the app uses in-cluster config
+```
+
+Also flag any secret injected as a literal `env[].value` rather than `secretKeyRef` — that lands in `kubectl describe`, in the ReplicaSet spec, and in anyone's terminal scrollback.
 
 ### AWS access from pods
 Use IAM Roles for Service Accounts (IRSA) — never mount static AWS credentials:

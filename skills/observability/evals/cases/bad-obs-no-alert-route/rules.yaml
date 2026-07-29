@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: checkout-api-alerts
+  labels:
+    role: alert-rules
+spec:
+  groups:
+    - name: checkout-api.availability
+      rules:
+        - alert: CheckoutApiHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{service="checkout-api",code=~"5.."}[5m]))
+              / sum(rate(http_requests_total{service="checkout-api"}[5m])) > 0.02
+          for: 10m
+          labels:
+            severity: page
+            team: payments
+          annotations:
+            summary: "checkout-api 5xx rate above 2% for 10m"
+            runbook_url: "https://runbooks.example.com/checkout-api/high-error-rate"

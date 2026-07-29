@@ -6,6 +6,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Four new skills**, taking the set from 13 to 17:
+  - **`observability`** — centralized logging, log retention, metrics collection, alerting, tracing, dashboards, SLO/SLI and burn-rate alerts. Fills the seven `OBS-*` IDs that were registered but unused. Built around tracing `PrometheusRule` labels through the Alertmanager route tree to a real receiver, since rules that match only the default `null` receiver are the common way a team believes it has alerting and does not.
+  - **`tf-plan`** — reviews `terraform show -json` output rather than `.tf` source: destroys and replacements of data-bearing resources, secrets readable in plan output, out-of-band drift, blast radius, and whether apply is bound to the reviewed plan artifact. Six new `TF-PLAN-*` IDs, deliberately separate from `TF-*` because the existing rules are properties of source while these are properties of a diff against live state. Read-only with no Bash: producing a plan needs live cloud credentials, and an advisory reviewer should not hold them.
+  - **`gitops`** — Argo CD and Flux: mutable source refs, AppProject wildcard grants, unguarded auto-prune (`prune` plus `allowEmpty`, the configuration behind most "Argo deleted my namespace" incidents), sync waves, `selfHeal` drift enforcement, per-environment separation. Six new `CICD-GITOPS-*` IDs plus four reused.
+  - **`incident`** — runbooks, incident readiness audit before a rotation starts, severity and escalation model, blameless postmortems. Registers no new rule IDs: incident readiness is the existing documentation, alerting, and recovery rules asked at a different moment.
+- **Workload security checks in `k8s`** — `SEC-K8S-002`/`003`/`004`/`006`/`007`, six registered-but-unused IDs now emitted: host namespaces and `hostPath`, RBAC wildcards and `cluster-admin` bindings, namespace network segmentation, service exposure, and API-token or env-secret exposure. `SEC-K8S-005` is deliberately excluded and the reason recorded in the catalog, since it duplicates `COST-K8S-001` on the same line of YAML.
+- **Enforced `safety` frontmatter on every skill** (`read-only` / `runs-commands` / `writes-files`). `check-skills.sh` derives the correct value from `allowed-tools` and fails on a mismatch, so a skill that quietly gains `Write` cannot keep claiming read-only.
+- **`npx skills` install path documented** — `npx skills add anmolnagpal/devops-skills` already enumerates every skill against the existing layout, so this documents working behavior rather than adding an integration.
+
+### Changed
+
+- **README restructured** as a user-facing document: skills grouped into six categories (IaC, containers, CI/CD, security, cost, delivery) instead of one flat 13-row list, a Mermaid diagram documenting how skills relate (`wrapper-tf` supersedes `tf`, `deploy` aggregates artifact skills, `github`/`finops` share a waiver file, `appsec` escalates to `owasp`), five install paths (plugin, one-liner, clone, submodule pin, fork-and-customize), a table of contents, and new Versioning, Contributing, and License sections. The `templates/CLAUDE.md` project-context step moved up from the tail of the doc to its own section, since every skill reads it.
+- **Maintainer docs moved to `CONTRIBUTING.md`**: skill file format, rule-ID registration, eval cases, the six CI gates, the Tier-2 behavioral eval harness, and the add-a-plugin / add-an-MCP-server steps now live there instead of interleaved with user-facing README content.
+
+### Fixed
+
+- README rule-ID count was stale (141), actual registry holds 154 IDs across 10 domains.
+- Removed a duplicate `/skill-creator` row from the skill table and a stale GitLab-403 authentication note (the repo is on GitHub).
+
 ## [1.3.0] — 2026-07-07
 
 ### Added

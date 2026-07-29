@@ -33,6 +33,13 @@ TF:
   TF-RES-002: 'missing lifecycle rules on stateful resources'
   TF-QUAL-001: 'repetition (no locals)'
   TF-QUAL-002: 'no README'
+  # Plan-time rules: judged against `terraform show -json <planfile>`, not source.
+  TF-PLAN-001: 'plan destroys or replaces a data-bearing resource'
+  TF-PLAN-002: 'secret or credential readable in plan output'
+  TF-PLAN-003: 'out-of-band drift (resource changed outside Terraform)'
+  TF-PLAN-004: 'blast radius: oversized or cross-environment change set in one apply'
+  TF-PLAN-005: 'provider or module version bump bundled with resource changes'
+  TF-PLAN-006: 'apply not bound to the reviewed plan artifact'
 
 # ── Security ──────────────────────────────────────────────────────────────────
 SEC:
@@ -111,6 +118,13 @@ CICD:
   CICD-SCAN-001: 'no SAST/DAST'
   CICD-SCAN-002: 'no dependency scanning'
   CICD-SCAN-003: 'no image scanning'
+  # GitOps (Argo CD / Flux): continuous reconciliation from a Git source.
+  CICD-GITOPS-001: 'source ref is mutable, deployed state not reproducible'
+  CICD-GITOPS-002: 'AppProject/tenant grants wildcard repos, destinations, or cluster resources'
+  CICD-GITOPS-003: 'auto-prune can delete live resources unguarded (allowEmpty / no sync window)'
+  CICD-GITOPS-004: 'no sync waves or dependency ordering, so CRDs race their consumers'
+  CICD-GITOPS-005: 'automated sync without selfHeal, so out-of-band edits persist silently'
+  CICD-GITOPS-006: 'environments not separated (one Application or overlay serving several)'
 
 # ── Cost (static) ─────────────────────────────────────────────────────────────
 COST:

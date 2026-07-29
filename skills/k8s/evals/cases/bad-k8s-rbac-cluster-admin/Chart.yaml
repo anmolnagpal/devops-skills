@@ -1,0 +1,6 @@
+apiVersion: v2
+name: invoice-api
+description: Helm chart for invoice-api
+type: application
+version: 0.3.0
+appVersion: "1.8.2"

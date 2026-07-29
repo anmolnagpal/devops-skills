@@ -1,6 +1,7 @@
 ---
 name: ci
 description: "GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', or when working in .gitlab-ci.yml files."
+safety: read-only
 metadata:
   version: 1.3.0
   author: Anmol Nagpal
