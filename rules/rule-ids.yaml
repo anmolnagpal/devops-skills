@@ -118,6 +118,13 @@ CICD:
   CICD-SCAN-001: 'no SAST/DAST'
   CICD-SCAN-002: 'no dependency scanning'
   CICD-SCAN-003: 'no image scanning'
+  # GitOps (Argo CD / Flux): continuous reconciliation from a Git source.
+  CICD-GITOPS-001: 'source ref is mutable, deployed state not reproducible'
+  CICD-GITOPS-002: 'AppProject/tenant grants wildcard repos, destinations, or cluster resources'
+  CICD-GITOPS-003: 'auto-prune can delete live resources unguarded (allowEmpty / no sync window)'
+  CICD-GITOPS-004: 'no sync waves or dependency ordering, so CRDs race their consumers'
+  CICD-GITOPS-005: 'automated sync without selfHeal, so out-of-band edits persist silently'
+  CICD-GITOPS-006: 'environments not separated (one Application or overlay serving several)'
 
 # ── Cost (static) ─────────────────────────────────────────────────────────────
 COST:

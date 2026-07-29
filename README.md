@@ -22,7 +22,7 @@ Skills land as `/clouddrove:tf`, `/clouddrove:finops`, … with a native `(cloud
 
 ## What you get
 
-- **15 skills** that auto-trigger on file globs and answer with structured, rule-ID-tagged review output, grouped into [seven categories](#skills)
+- **16 skills** that auto-trigger on file globs and answer with structured, rule-ID-tagged review output, grouped into [seven categories](#skills)
 - **Packaged as the `clouddrove` plugin**: installed from this repo's own marketplace, so skills are namespaced `(clouddrove)` in Claude Code natively
 - **Single source** in `skills/<name>/SKILL.md`. A generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
 - **One installer** with flags: `--claude` / `--cursor` / `--codex` / `--all`, global or per-project scope
@@ -132,7 +132,7 @@ Narrower runs:
 The [open Agent Skills CLI](https://github.com/vercel-labs/skills) reads this repo directly, so tools outside Claude/Cursor/Codex can consume the same skills:
 
 ```bash
-npx skills add anmolnagpal/devops-skills --list          # show the 15 skills
+npx skills add anmolnagpal/devops-skills --list          # show the 16 skills
 npx skills add anmolnagpal/devops-skills -s tf,k8s       # install two
 npx skills add anmolnagpal/devops-skills --all           # all skills, all detected agents
 npx skills add anmolnagpal/devops-skills -g              # user-level instead of project-level
@@ -183,7 +183,7 @@ The template ships a safe DevOps allow-list (read-only kubectl/terraform/aws/git
 
 ## Skills
 
-Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles all 15; `scripts/generate.sh` emits `.cursor/rules/<name>.mdc` for Cursor and one `AGENTS.md` for Codex from the same file.
+Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles all 16; `scripts/generate.sh` emits `.cursor/rules/<name>.mdc` for Cursor and one `AGENTS.md` for Codex from the same file.
 
 Invoke with `/clouddrove:<skill>` in Claude Code. In Cursor, rules auto-attach via `globs:`. In Codex, `AGENTS.md` loads by default.
 
@@ -208,6 +208,7 @@ Invoke with `/clouddrove:<skill>` in Claude Code. In Cursor, rules auto-attach v
 |---|---|---|
 | `/clouddrove:github-actions` | GitHub Actions: workflow review, security hardening (OIDC, action pinning), scaffolds | `**/.github/workflows/*.yml` |
 | `/clouddrove:ci` | GitLab CI/CD: pipeline review, Terraform/Helm pipeline scaffolds | `**/.gitlab-ci.yml` |
+| `/clouddrove:gitops` | Argo CD and Flux: mutable source refs, AppProject wildcard grants, unguarded auto-prune, sync waves, selfHeal drift enforcement, per-environment separation | `**/argocd/**/*.yaml`, `**/flux-system/**/*.yaml`, `**/*appproject*.yaml`, `**/*applicationset*.yaml`, `**/*helmrelease*.yaml` |
 
 ### Security
 
@@ -239,11 +240,11 @@ Invoke with `/clouddrove:<skill>` in Claude Code. In Cursor, rules auto-attach v
 
 ### How the skills relate
 
-They are not 15 independent prompts. Two shared foundations sit under all of them, and several skills consume each other's output:
+They are not 16 independent prompts. Two shared foundations sit under all of them, and several skills consume each other's output:
 
 ```mermaid
 flowchart TD
-    REG["rules/rule-ids.yaml<br/>160 shared rule IDs"]
+    REG["rules/rule-ids.yaml<br/>166 shared rule IDs"]
     CTX["templates/CLAUDE.md<br/>always-on project context"]
 
     TF["tf"]
@@ -253,6 +254,7 @@ flowchart TD
     DOCK["docker"]
     GHA["github-actions"]
     CI["ci"]
+    GOP["gitops"]
     DEP["deploy<br/>readiness gate"]
     GH["github"]
     FIN["finops"]
@@ -267,6 +269,7 @@ flowchart TD
     REG --> DOCK
     REG --> GHA
     REG --> CI
+    REG --> GOP
     REG --> GH
     REG --> APP
     REG --> FIN
@@ -285,6 +288,7 @@ flowchart TD
     DOCK --> DEP
     GHA --> DEP
     CI --> DEP
+    GOP --> DEP
     OBS --> DEP
 
     GH <-->|"shared waiver file"| FIN
@@ -300,7 +304,7 @@ What that means in practice:
 
 ### Shared rule-ID vocabulary
 
-Findings are tagged with stable rule IDs (`TF-STATE-001`, `SEC-NET-001`, `CICD-DOCK-002`, …). The canonical set lives in **[`rules/rule-ids.yaml`](rules/rule-ids.yaml)** (160 IDs across 10 domains), the single source of truth. CI (`scripts/check-rule-ids.sh`) fails if a skill emits an ID not in the registry. The [auditkit](https://github.com/clouddrove-ci/auditkit) audit engine consumes the same registry, so an inline plugin finding and a deep-audit finding share the same ID, and the two cannot drift.
+Findings are tagged with stable rule IDs (`TF-STATE-001`, `SEC-NET-001`, `CICD-DOCK-002`, …). The canonical set lives in **[`rules/rule-ids.yaml`](rules/rule-ids.yaml)** (166 IDs across 10 domains), the single source of truth. CI (`scripts/check-rule-ids.sh`) fails if a skill emits an ID not in the registry. The [auditkit](https://github.com/clouddrove-ci/auditkit) audit engine consumes the same registry, so an inline plugin finding and a deep-audit finding share the same ID, and the two cannot drift.
 
 ### Severity models: three, by design
 
@@ -320,7 +324,7 @@ Every skill declares its blast radius in frontmatter, and `scripts/check-skills.
 
 | Label | Skills | Means |
 |---|---|---|
-| `read-only` | `tf`, `tf-plan`, `k8s`, `ci`, `github-actions`, `owasp`, `deploy`, `observability` | Cannot mutate anything. Reads files, reports findings. |
+| `read-only` | `tf`, `tf-plan`, `k8s`, `ci`, `github-actions`, `gitops`, `owasp`, `deploy`, `observability` | Cannot mutate anything. Reads files, reports findings. |
 | `runs-commands` | `docker`, `finops`, `github`, `appsec`, `wrapper-tf` | Shells out to real tooling (`npm audit`, `gh api`, `aws`, `docker`), writes no files. |
 | `writes-files` | `adr`, `skill-creator` | Creates or edits files in your repo. |
 

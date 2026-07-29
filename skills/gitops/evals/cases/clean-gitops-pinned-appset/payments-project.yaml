@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: payments
+  namespace: argocd
+spec:
+  description: Payments team, shared prod cluster
+  sourceRepos:
+    - https://github.com/acme/checkout.git
+    - https://github.com/acme/platform.git
+  destinations:
+    - server: https://dev-eks.eu-west-1.eks.amazonaws.com
+      namespace: checkout
+    - server: https://staging-eks.eu-west-1.eks.amazonaws.com
+      namespace: checkout
+    - server: https://prod-eks.eu-west-1.eks.amazonaws.com
+      namespace: checkout
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: apps
+      kind: Deployment
+    - group: ""
+      kind: Service
+    - group: ""
+      kind: ConfigMap
+  # Sync failures and degraded health route to the payments Slack channel and
+  # PagerDuty schedule via the argocd-notifications ConfigMap.
