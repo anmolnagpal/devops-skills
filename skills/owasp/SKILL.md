@@ -1,6 +1,7 @@
 ---
 name: owasp
 description: "Security review against OWASP Top 10:2025, ASVS 5.0, and Agentic AI risks. Use when user says 'review for security', 'is this secure', 'check for vulnerabilities', 'review auth/authorization', 'check input handling', or when writing cryptography, session management, or AI agent code."
+safety: read-only
 metadata:
   version: 1.4.0
   author: Anmol Nagpal

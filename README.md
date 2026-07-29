@@ -127,14 +127,27 @@ Narrower runs:
 
 **Updating:** re-run the same one-liner. If the repo is already installed it pulls the latest and re-runs the installer.
 
-### 3. Clone (SSH, or a custom install dir)
+### 3. `npx skills` (any of 70+ agents)
+
+The [open Agent Skills CLI](https://github.com/vercel-labs/skills) reads this repo directly, so tools outside Claude/Cursor/Codex can consume the same skills:
+
+```bash
+npx skills add anmolnagpal/devops-skills --list          # show the 13 skills
+npx skills add anmolnagpal/devops-skills -s tf,k8s       # install two
+npx skills add anmolnagpal/devops-skills --all           # all skills, all detected agents
+npx skills add anmolnagpal/devops-skills -g              # user-level instead of project-level
+```
+
+Installs the skill bodies only. Team plugins, MCP servers, and the settings template need path 2.
+
+### 4. Clone (SSH, or a custom install dir)
 
 ```bash
 git clone git@github.com:anmolnagpal/devops-skills.git ~/devops-skills
 ~/devops-skills/scripts/install.sh --all
 ```
 
-### 4. Git submodule (pin a version per project repo)
+### 5. Git submodule (pin a version per project repo)
 
 Best when a project needs a reproducible skill set that moves only when you bump it:
 
@@ -147,7 +160,7 @@ git add .gitmodules .devops-skills .cursor AGENTS.md
 
 Teammates get it with `git submodule update --init`. Bump with `git -C .devops-skills fetch --tags && git -C .devops-skills checkout <tag>`, then re-run the installer.
 
-### 5. Fork and customize (your own rule catalog)
+### 6. Fork and customize (your own rule catalog)
 
 For teams that need different severities, extra rule IDs, or company-specific skills:
 
@@ -286,6 +299,18 @@ A finding's severity means something different depending on which skill raised i
 | **HIGH / MED / LOW $-impact** | `finops` | Cost findings are opportunities ranked by savings magnitude, never merge-blockers. There is no "block the MR" concept for a cost lever. |
 
 All three carry the same stable rule-ID convention and `file:line`/resource citation; only the severity axis differs. If you script against the output (e.g. failing CI on BLOCKING), branch on the skill, not on a single global severity enum.
+
+### Safety labels
+
+Every skill declares its blast radius in frontmatter, and `scripts/check-skills.sh` fails the build if the label contradicts the skill's `allowed-tools`. So the guarantee is enforced, not asserted:
+
+| Label | Skills | Means |
+|---|---|---|
+| `read-only` | `tf`, `k8s`, `ci`, `github-actions`, `owasp`, `deploy` | Cannot mutate anything. Reads files, reports findings. |
+| `runs-commands` | `docker`, `finops`, `github`, `appsec`, `wrapper-tf` | Shells out to real tooling (`npm audit`, `gh api`, `aws`, `docker`), writes no files. |
+| `writes-files` | `adr`, `skill-creator` | Creates or edits files in your repo. |
+
+Check any skill's label with `grep '^safety:' skills/<name>/SKILL.md`. The repo also ships a `PreToolUse` bash-guard hook that blocks destructive commands regardless of which skill asked.
 
 ### Backlog specs
 

@@ -32,6 +32,7 @@ pip install pyyaml                            # other environments
 ---
 name: skill-name
 description: "Concise description: include when to use and key trigger keywords"
+safety: read-only         # read-only | runs-commands | writes-files
 metadata:
   version: 1.0.0
   author: Your Name
@@ -75,6 +76,18 @@ Summary: X blocking issue(s), Y advisory issue(s).
 ```
 
 Three severity models exist (catalog-fixed, judged-per-finding, and dollar-impact). Pick the one that matches your skill and say which in the skill body; see the table in `README.md`.
+
+### The `safety` label
+
+Every skill declares its blast radius in frontmatter. `check-skills.sh` asserts the label matches what `allowed-tools` actually permits, so it cannot drift into a comfortable lie:
+
+| Label | Means | `allowed-tools` must be |
+|---|---|---|
+| `read-only` | Cannot mutate anything. Reads files, reports findings. | `Glob` / `Read` / `Grep` only |
+| `runs-commands` | Shells out to external tooling (`npm audit`, `gh api`, `aws`), writes no files. | includes `Bash`, no `Write`/`Edit` |
+| `writes-files` | Creates or edits files in the user's repo. | includes `Write` or `Edit`, or is omitted entirely |
+
+Omitting `allowed-tools` grants every tool, so the only honest label for that case is `writes-files`. Default to `read-only` and widen only when the skill genuinely needs more: a review skill that prints a scaffold in its reply is still `read-only`.
 
 ## Add a rule ID
 

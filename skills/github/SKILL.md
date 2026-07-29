@@ -1,6 +1,7 @@
 ---
 name: github
 description: "GitHub repository operations — PRs, issues, releases, branch protection, CODEOWNERS, security settings. Use when user says 'review my PR', 'create a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', or asks about GitHub repo configuration."
+safety: runs-commands
 metadata:
   version: 0.6.0
   author: Anmol Nagpal

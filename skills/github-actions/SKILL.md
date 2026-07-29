@@ -1,6 +1,7 @@
 ---
 name: github-actions
 description: "GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files."
+safety: read-only
 metadata:
   version: 0.4.0
   author: Anmol Nagpal

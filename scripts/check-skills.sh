@@ -6,6 +6,10 @@
 #   2. frontmatter `name` is present and equals the directory name
 #      (the plugin and generators key skills by directory).
 #   3. frontmatter `description` is present and non-empty (it's the trigger text).
+#   4. frontmatter `safety` is present and one of read-only / runs-commands /
+#      writes-files, and matches what `allowed-tools` actually permits. This is
+#      the greppable blast-radius label: a skill claiming read-only must not be
+#      able to mutate anything.
 #
 # CI-runnable, no model needed. Exit non-zero on any failure.
 set -euo pipefail
@@ -48,6 +52,39 @@ for path in skills:
     if not (fm.get("description") or "").strip():
         print(f"FAIL [{d}]: frontmatter missing non-empty 'description'")
         fail = 1
+
+    # --- safety label -------------------------------------------------------
+    # read-only     : cannot mutate anything (Glob/Read/Grep only)
+    # runs-commands : may shell out to external tooling (Bash), no file writes
+    # writes-files  : may create or edit files (Write/Edit), or is unrestricted
+    LEVELS = ("read-only", "runs-commands", "writes-files")
+    MUTATING = {"Write", "Edit", "NotebookEdit", "MultiEdit"}
+
+    safety = fm.get("safety")
+    if not safety:
+        print(f"FAIL [{d}]: frontmatter missing 'safety' (one of {'/'.join(LEVELS)})")
+        fail = 1
+    elif safety not in LEVELS:
+        print(f"FAIL [{d}]: safety '{safety}' invalid, expected one of {'/'.join(LEVELS)}")
+        fail = 1
+    else:
+        tools = fm.get("allowed-tools")
+        # No allowed-tools means every tool is available, so the only honest
+        # label is writes-files.
+        if tools is None:
+            expected = "writes-files"
+        elif MUTATING & set(tools):
+            expected = "writes-files"
+        elif "Bash" in tools:
+            expected = "runs-commands"
+        else:
+            expected = "read-only"
+        if safety != expected:
+            print(
+                f"FAIL [{d}]: safety '{safety}' contradicts allowed-tools "
+                f"{tools if tools is not None else '(unrestricted)'}, expected '{expected}'"
+            )
+            fail = 1
 
 if fail:
     print("check-skills: FAILED")
