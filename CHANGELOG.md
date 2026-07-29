@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **README restructured** as a user-facing document: skills grouped into six categories (IaC, containers, CI/CD, security, cost, delivery) instead of one flat 13-row list, a Mermaid diagram documenting how skills relate (`wrapper-tf` supersedes `tf`, `deploy` aggregates artifact skills, `github`/`finops` share a waiver file, `appsec` escalates to `owasp`), five install paths (plugin, one-liner, clone, submodule pin, fork-and-customize), a table of contents, and new Versioning, Contributing, and License sections. The `templates/CLAUDE.md` project-context step moved up from the tail of the doc to its own section, since every skill reads it.
-- **Maintainer docs moved to `CONTRIBUTING.md`** — skill file format, rule-ID registration, eval cases, the six CI gates, the Tier-2 behavioral eval harness, and the add-a-plugin / add-an-MCP-server steps now live there instead of interleaved with user-facing README content.
+- **Maintainer docs moved to `CONTRIBUTING.md`**: skill file format, rule-ID registration, eval cases, the six CI gates, the Tier-2 behavioral eval harness, and the add-a-plugin / add-an-MCP-server steps now live there instead of interleaved with user-facing README content.
 
 ### Fixed
 

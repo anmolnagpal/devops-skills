@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest. This repo is a community-friendly collection of DevOps skills for AI coding tools — issues and PRs are welcome.
+Thanks for your interest. This repo is a community-friendly collection of DevOps skills for AI coding tools. Issues and PRs are welcome.
 
 **Contents:** [Add or improve a skill](#add-or-improve-a-skill) · [Skill file format](#skill-file-format) · [Add a rule ID](#add-a-rule-id) · [Eval cases](#eval-cases) · [Testing](#testing) · [Add a plugin](#add-a-plugin) · [Add an MCP server](#add-an-mcp-server) · [Promote a backlog spec](#promote-a-backlog-spec) · [Open a pull request](#open-a-pull-request)
 
@@ -21,7 +21,7 @@ pip install pyyaml                            # other environments
 4. Register any new rule IDs in `rules/rule-ids.yaml` **before** using them in the skill's Rule Catalog. See [Add a rule ID](#add-a-rule-id).
 5. Add [eval cases](#eval-cases) under `skills/<name>/evals/cases/`.
 6. Use `/clouddrove:skill-creator` (this repo) to iterate on the skill and run evals.
-7. Run `bash scripts/generate.sh` — this rebuilds `.cursor/rules/<name>.mdc` and `AGENTS.md` from your source.
+7. Run `bash scripts/generate.sh`, which rebuilds `.cursor/rules/<name>.mdc` and `AGENTS.md` from your source.
 8. Commit `skills/<name>/SKILL.md`, any registry change, the new `.cursor/rules/<name>.mdc`, and the updated `AGENTS.md`.
 9. Add the skill to the right category table in `README.md`, and to the relationship diagram if it consumes or is consumed by another skill.
 10. Add a `CHANGELOG.md` entry under `## [Unreleased]`.
@@ -31,7 +31,7 @@ pip install pyyaml                            # other environments
 ```markdown
 ---
 name: skill-name
-description: "Concise description — include when to use and key trigger keywords"
+description: "Concise description: include when to use and key trigger keywords"
 metadata:
   version: 1.0.0
   author: Your Name
@@ -149,8 +149,8 @@ Run Tier-2 for any skill whose detection logic you changed.
 
 Add a line to `config/plugins.txt`:
 
-- `name@marketplace` — for official Claude plugin marketplace installs
-- `hub:github-org/repo` — for plugins installed via `npx claudepluginhub`
+- `name@marketplace`: for official Claude plugin marketplace installs
+- `hub:github-org/repo`: for plugins installed via `npx claudepluginhub`
 
 If it comes from a new marketplace, also add that to `config/marketplaces.txt`. Add a row to the Plugins table in `README.md`, then commit. Teammates pick it up on their next `./scripts/install.sh`.
 
@@ -183,7 +183,7 @@ If it comes from a new marketplace, also add that to `config/marketplaces.txt`. 
 
 ## Writing style
 
-- No em dashes or literal double hyphens in skill content, docs, or commit messages. Use commas, periods, or parentheses.
+- No em dashes or literal double hyphens in prose you write (docs, skill body text, commit messages, PR bodies). Use commas, colons, periods, or parentheses. The one exception is the fixed output convention every skill already shares (`BLOCKING — Must fix …`, `## REVIEW — …`); leave those alone so findings stay parseable across skills.
 - No filler words (delve, leverage, robust, seamless, utilize, elevate, unlock, …). Plain direct words.
 - Check the latest stable version on GitHub releases or the official registry before pinning any dependency, tool, action, or base image. Do not guess from memory.
 
