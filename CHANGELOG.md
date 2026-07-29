@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - README rule-ID count was stale (141); the registry now holds 166 IDs across 10 domains and the README tracks it.
 - **`tf-plan` assumed a top-level `backend` key in `terraform show -json` output, which does not exist.** The skill now derives the target environment from `variables`, the workspace, resource tags, or module addresses, and says so explicitly; the five plan fixtures were corrected to match real plan output.
+- Eval fixtures used literals matching real provider secret formats (`sk_live_…`, `ghp_…`), which GitHub push protection correctly blocks. Replaced with inert values under the same revealing key names, so the fixtures still prove detection without tripping the scanner. `CONTRIBUTING.md` now states the rule.
 - Removed a duplicate `/skill-creator` row from the skill table and a stale GitLab-403 authentication note (the repo is on GitHub).
 
 ## [1.3.0] — 2026-07-07

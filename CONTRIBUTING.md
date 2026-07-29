@@ -136,6 +136,21 @@ evals/
 
 Include at least one `clean-*` case (a fixture that must produce zero findings) alongside the violation cases; that is what catches false positives.
 
+**Secret-shaped values in fixtures must not match a real scanner pattern.** A fixture
+proving a skill detects a committed credential needs something that reads as a
+credential, but GitHub push protection scans this repo and blocks the push on a literal
+matching a known provider format (`sk_live_…`, `ghp_…`, `AKIA…`, and so on). Use an
+obviously inert value under a revealing key name:
+
+```yaml
+STRIPE_SECRET_KEY: sk_live_REDACTED_FIXTURE_VALUE_NOT_A_REAL_KEY
+```
+
+The key name carries the signal the skill needs; the value carries none a scanner will
+match. Do not resolve a blocked push by clicking the bypass URL. The block is the same
+control this repo's own `appsec` and `k8s` skills exist to enforce, and a repo that
+bypasses it teaches everyone reading the history that bypassing is normal.
+
 ## Testing
 
 Run the same checks CI runs, before you push:
