@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ledger-api-alerts
+spec:
+  groups:
+    - name: ledger-api
+      rules:
+        - alert: LedgerApiWriteFailures
+          expr: increase(ledger_write_failures_total[10m]) > 5
+          for: 5m
+          labels:
+            severity: page
+            team: payments
+          annotations:
+            summary: "ledger-api write failures"
+            runbook_url: "docs/runbooks/ledger-api.md#ledgerapiwritefailures"

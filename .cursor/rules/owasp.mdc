@@ -89,7 +89,7 @@ assume from the pattern alone.
 **Suppression:** accept a known risk with `# owasp-skill:ignore <ID> -- <reason>`
 (e.g. `# owasp-skill:ignore OWASP-A05 -- input is a fixed internal enum, never
 user-supplied`) on the line above; honor it. Reason is mandatory — a suppression
-without one is itself a finding: `META-SUP-001`.
+without one is itself a finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 **Independent re-check:** before including a **BLOCKING** finding in the output,
 re-derive it a second time using only the quoted line and the false-positive list
@@ -154,3 +154,9 @@ earlier in the same review, not because the code is actually exploitable.
 For secure code patterns → read `secure-patterns.md`
 For language-specific quirks → read `languages.md`
 For agentic AI security + ASVS → read `agentic.md`
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.

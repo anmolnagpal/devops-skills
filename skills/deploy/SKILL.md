@@ -119,7 +119,7 @@ already honored its own `*-skill:ignore` comment (don't re-report what the sourc
 skill already excluded). For a deploy-specific check (rollback tested, gate present,
 resilience — the ones with no per-artifact skill owner), accept a known risk with
 `# deploy-skill:ignore <RULE-ID> -- <reason>` on the line above the relevant config;
-honor it. Reason mandatory, else `META-SUP-001`.
+honor it. Reason mandatory, else `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 Output the repo-standard format with rule IDs:
 
@@ -178,3 +178,9 @@ Rollback pre-checks (block the deploy if any fail):
 
 Flag any irreversible step (dropped column, deleted resource, data backfill) — these need
 explicit sign-off and usually a forward-fix plan, not a rollback.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.

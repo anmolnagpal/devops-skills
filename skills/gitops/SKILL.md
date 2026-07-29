@@ -204,7 +204,7 @@ spec:
 
 Format: `# gitops-skill:ignore <RULE-ID> -- <reason>` on the line above the field.
 Reason is mandatory. A suppression without one is itself an advisory finding:
-`META-SUP-001`.
+`META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For tree-level findings with no single line (`CICD-GITOPS-004`,
 `CICD-GITOPS-006`), use the tracked `.clouddrove-waivers.yml` at repo root, same
@@ -353,6 +353,20 @@ repeats; severity is the rule's, don't invent it; quote the exact field and valu
 For `CICD-GITOPS-002` and `CICD-GITOPS-006`, state the tenancy or separation
 mechanism you found (or the absence you verified) before concluding, since both
 rules turn on context the manifest alone may not carry.
+
+
+**References**, loaded on demand:
+- **[Failure modes](./references/failure-modes.md)** — diagnosing "Argo deleted my
+  resources", endless sync loops, first-apply ordering failures, and Healthy-but-broken
+  Applications, with the Flux equivalent of each and the first commands to run.
+- **[Secrets](./references/secrets.md)** — external-secrets vs SOPS vs Sealed Secrets
+  as a decision table, wiring for each, and what not to accept as a control.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.

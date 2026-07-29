@@ -362,3 +362,9 @@ Confirm with the user before tagging. Releases are visible to anyone with repo a
 - Org-level settings (SSO, IP allowlists, base permissions) live at `gh api orgs/{org}` — repo audits should mention but not modify org policy without explicit permission.
 - Fine-grained PATs are preferred over classic PATs. Suggest expiry ≤ 90 days.
 - Never paste secrets into the chat. If a secret leaks in a commit, the only safe action is rotate-then-purge (BFG / git-filter-repo), not just delete.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.

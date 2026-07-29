@@ -1,0 +1,28 @@
+stages: [validate, deploy]
+
+variables:
+  # One job serves both environments; the caller sets TARGET_ENV.
+  TARGET_ENV: staging
+  AWS_ACCESS_KEY_ID: AKIAIOSFODNN7EXAMPLE
+  AWS_SECRET_ACCESS_KEY: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+  AWS_DEFAULT_REGION: eu-west-1
+
+validate:
+  stage: validate
+  image: hashicorp/terraform:1.14.3
+  script:
+    - terraform init
+    - terraform validate
+    - helm lint ./chart
+
+deploy:
+  stage: deploy
+  image: hashicorp/terraform:1.14.3
+  when: manual
+  environment:
+    name: $TARGET_ENV
+  script:
+    - export KUBECONFIG=./kubeconfig-prod.yaml
+    - terraform init
+    - terraform apply -auto-approve
+    - helm upgrade --install api ./chart --namespace $TARGET_ENV --atomic --set image.tag=$CI_COMMIT_SHA

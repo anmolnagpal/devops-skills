@@ -8,8 +8,15 @@
       "name": "main",
       "provider_name": "registry.terraform.io/hashicorp/aws",
       "change": {
-        "actions": ["delete", "create"],
-        "replace_paths": [["availability_zone"]],
+        "actions": [
+          "delete",
+          "create"
+        ],
+        "replace_paths": [
+          [
+            "availability_zone"
+          ]
+        ],
         "before": {
           "identifier": "prod-payments-db",
           "availability_zone": "eu-west-1a",
@@ -18,7 +25,10 @@
           "engine_version": "16.4",
           "skip_final_snapshot": true,
           "final_snapshot_identifier": null,
-          "tags": { "Environment": "prod", "Team": "payments" }
+          "tags": {
+            "Environment": "prod",
+            "Team": "payments"
+          }
         },
         "after": {
           "identifier": "prod-payments-db",
@@ -28,7 +38,10 @@
           "engine_version": "16.4",
           "skip_final_snapshot": true,
           "final_snapshot_identifier": null,
-          "tags": { "Environment": "prod", "Team": "payments" }
+          "tags": {
+            "Environment": "prod",
+            "Team": "payments"
+          }
         }
       }
     },
@@ -37,9 +50,14 @@
       "type": "aws_cloudwatch_log_group",
       "name": "api",
       "change": {
-        "actions": ["create"],
+        "actions": [
+          "create"
+        ],
         "before": null,
-        "after": { "name": "/aws/eks/prod/api", "retention_in_days": 30 }
+        "after": {
+          "name": "/aws/eks/prod/api",
+          "retention_in_days": 30
+        }
       }
     },
     {
@@ -47,13 +65,17 @@
       "type": "aws_security_group_rule",
       "name": "api_ingress_legacy",
       "change": {
-        "actions": ["delete"],
+        "actions": [
+          "delete"
+        ],
         "before": {
           "type": "ingress",
           "from_port": 8080,
           "to_port": 8080,
           "protocol": "tcp",
-          "cidr_blocks": ["10.0.0.0/8"],
+          "cidr_blocks": [
+            "10.0.0.0/8"
+          ],
           "description": "added by hand during the incident on 2026-06-14"
         },
         "after": null
@@ -62,11 +84,15 @@
   ],
   "configuration": {
     "provider_config": {
-      "aws": { "name": "aws", "version_constraint": "~> 6.0" }
+      "aws": {
+        "name": "aws",
+        "version_constraint": "~> 6.0"
+      }
     }
   },
-  "backend": {
-    "type": "s3",
-    "config": { "key": "env/prod/terraform.tfstate", "bucket": "acme-tfstate" }
+  "variables": {
+    "environment": {
+      "value": "prod"
+    }
   }
 }

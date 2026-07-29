@@ -71,7 +71,7 @@ generic — the same IDs cover GitHub Actions and GitLab CI.)
 
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# ci-skill:ignore <RULE-ID> -- <reason>` on the line above (reason mandatory,
-else `META-SUP-001`). **Confidence gate:** report only findings you are >80% sure are
+else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only findings you are >80% sure are
 real; consolidate repeats; severity is the rule's, don't invent; quote the exact
 offending line — if you can't quote it, don't report it. Evals: [`evals/`](./evals/).
 
@@ -332,3 +332,9 @@ Next steps:
 2. Update CHART_DIR, NAMESPACE, and SERVICE_NAME to match your repo
 3. Run /ci review to validate before merging
 ```
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.

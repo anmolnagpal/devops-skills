@@ -1,0 +1,50 @@
+replicaCount: 3
+
+image:
+  repository: 123456789012.dkr.ecr.eu-west-1.amazonaws.com/checkout-api
+  tag: ""
+  pullPolicy: IfNotPresent
+
+commonLabels:
+  app: checkout-api
+  env: prod
+  team: payments
+
+env:
+  # k8s-skill:ignore SEC-SEC-001
+  - name: STRIPE_SECRET_KEY
+    value: "sk_live_REDACTED_FIXTURE_VALUE_NOT_A_REAL_KEY"
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "256Mi"
+  limits:
+    cpu: "1"
+    memory: "256Mi"
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+
+service:
+  type: ClusterIP
+  port: 8080
+
+serviceAccount:
+  create: true
+  automountServiceAccountToken: false

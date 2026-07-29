@@ -99,7 +99,7 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# wrapper-tf:ignore <RULE-ID> -- <reason>` on the line above; honor it
-(reason mandatory, else `META-SUP-001`). **Confidence gate:** report only findings you
+(reason mandatory, else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only findings you
 are >80% sure are real; consolidate repeats; severity is the rule's, don't invent;
 quote the exact offending line — if you can't quote it, don't report it.
 Evals: [`evals/`](./evals/).
@@ -433,3 +433,9 @@ Summary: <N> controls covered, <N> gaps.
 ```
 
 Mark `❌ MISSING` for any control where the responsible module is absent from `environments/{env}/main.tf` or the module exists but the relevant variable is disabled.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.

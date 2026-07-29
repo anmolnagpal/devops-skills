@@ -1,0 +1,29 @@
+# One Application serving staging and prod from the same path. Promotion means
+# editing this file, and there is no way to have prod on a different revision.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: checkout
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: payments
+  source:
+    repoURL: https://github.com/acme/checkout.git
+    targetRevision: v2.7.0
+    path: deploy/base
+    helm:
+      valueFiles:
+        - values-staging.yaml
+        - values-prod.yaml
+  destination:
+    server: https://shared-eks.eu-west-1.eks.amazonaws.com
+    namespace: checkout
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - PruneLast=true

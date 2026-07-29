@@ -89,7 +89,7 @@ for each is in REVIEW below.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
-it. Reason is mandatory (else `META-SUP-001`). **Confidence gate:** report only
+it. Reason is mandatory (else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
 don't invent; quote the exact offending line — if you can't quote it, don't report
 it. Evals: [`evals/`](./evals/).
@@ -362,3 +362,9 @@ Output as a unified diff or per-file edit list, never silently rewrite.
 - Reusable workflows belong in `.github/workflows/_<name>.yml` (underscore prefix is convention).
 - For self-hosted runners, prefer ephemeral (Actions Runner Controller on Kubernetes) over persistent.
 - Composite actions in `.github/actions/<name>/action.yml` need their own review pass.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.

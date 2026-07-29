@@ -1,0 +1,24 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      # gha-skill:ignore CICD-SEC-001
+      - name: Deploy
+        env:
+          DEPLOY_TOKEN: "ghp_REDACTED_FIXTURE_VALUE_NOT_A_REAL_TOKEN"
+        run: ./scripts/deploy.sh

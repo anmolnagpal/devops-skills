@@ -2,7 +2,7 @@
 
 Thanks for your interest. This repo is a community-friendly collection of DevOps skills for AI coding tools. Issues and PRs are welcome.
 
-**Contents:** [Add or improve a skill](#add-or-improve-a-skill) · [Skill file format](#skill-file-format) · [Add a rule ID](#add-a-rule-id) · [Eval cases](#eval-cases) · [Testing](#testing) · [Add a plugin](#add-a-plugin) · [Add an MCP server](#add-an-mcp-server) · [Promote a backlog spec](#promote-a-backlog-spec) · [Open a pull request](#open-a-pull-request)
+**Contents:** [Repository structure](#repository-structure) · [Add or improve a skill](#add-or-improve-a-skill) · [Skill file format](#skill-file-format) · [Add a rule ID](#add-a-rule-id) · [Eval cases](#eval-cases) · [Testing](#testing) · [Add a plugin](#add-a-plugin) · [Add an MCP server](#add-an-mcp-server) · [Promote a backlog spec](#promote-a-backlog-spec) · [Open a pull request](#open-a-pull-request)
 
 ## Setup
 
@@ -12,6 +12,50 @@ One-time dependency for the generator and checks:
 pip3 install --break-system-packages pyyaml   # macOS Homebrew Python
 pip install pyyaml                            # other environments
 ```
+
+## Repository Structure
+
+```
+devops-skills/
+  .claude-plugin/            ← plugin.json (clouddrove) + marketplace.json (repo = its own marketplace)
+  skills/                    ← Canonical skill sources, one dir per skill (edit here)
+    <name>/SKILL.md          ← the skill body (tf, k8s, ci, owasp, docker, finops, deploy, adr, wrapper-tf, …)
+    <name>/evals/            ← static eval fixtures + validate.sh (file-input skills)
+    <name>/references/*.md   ← depth-on-demand docs the skill loads when needed
+                               (docker, finops, gitops, incident, observability, tf-plan;
+                                owasp keeps its three at the skill root)
+    specs/                   ← Backlog spec docs (not active skills)
+  rules/rule-ids.yaml        ← Canonical shared rule-ID registry (single source of truth)
+  .cursor/rules/             ← Generated Cursor rules (.mdc), from scripts/generate.sh
+  AGENTS.md                  ← Generated Codex skill doc, from scripts/generate.sh
+  agents/                    ← Reserved for Claude Code agents
+  hooks/                     ← Shipped with the plugin (registered via hooks.json)
+    hooks.json               ← Plugin hook config (uses ${CLAUDE_PLUGIN_ROOT})
+    session-banner.sh        ← SessionStart: prints repo/branch/AWS/kube context
+    bash-guard.sh            ← PreToolUse(Bash): blocks destructive patterns
+  templates/
+    CLAUDE.md                ← Copy into project repos for always-on team context
+    settings.json            ← Global ~/.claude/settings.json defaults (perm allow/deny)
+  scripts/
+    bootstrap.sh             ← One-liner installer
+    install.sh               ← Flag dispatcher (--claude / --cursor / --codex / --all)
+    install-claude.sh        ← Claude adapter: skills, plugins, MCP
+    install-cursor.sh        ← Cursor adapter: links .cursor/rules
+    install-codex.sh         ← Codex adapter: links AGENTS.md
+    generate.sh              ← Build Cursor + Codex adapters from skills/<name>/SKILL.md
+    mcp.sh                   ← Interactive MCP server install (Claude only)
+    set-aws-profile.sh       ← Switch AWS profile for AWS MCP servers
+  config/
+    plugins.txt              ← Claude plugins to install
+    marketplaces.txt         ← Claude plugin marketplaces
+  _docs/
+    CHEATSHEET.md            ← Example prompts per skill and MCP server
+    REVIEW-REPORT.md         ← Persisted review-report format + path convention
+  _test/                     ← Dockerfile + test.sh for the install harness
+  CHANGELOG.md  CONTRIBUTING.md  SECURITY.md  LICENSE  README.md
+```
+
+---
 
 ## Add or improve a skill
 
@@ -77,6 +121,25 @@ Summary: X blocking issue(s), Y advisory issue(s).
 
 Three severity models exist (catalog-fixed, judged-per-finding, and dollar-impact). Pick the one that matches your skill and say which in the skill body; see the table in `README.md`.
 
+### Reference docs
+
+Keep `SKILL.md` under 500 lines and push depth into `skills/<name>/references/*.md`,
+loaded by the skill only when a task needs it. The body carries the rules and the review
+flow; a reference carries the material a reader would otherwise have to look up
+elsewhere (PromQL patterns, force-replacement attribute tables, failure-mode diagnosis).
+
+Link them inline where they are relevant, and list them once near the end of the body so
+the set is discoverable. Do not pre-load them from the body; the point is that they cost
+nothing until needed.
+
+### Persisted review reports
+
+Review skills stay `read-only`. When a review should be saved to a file, the skill
+produces the content in the format at [`_docs/REVIEW-REPORT.md`](_docs/REVIEW-REPORT.md)
+and names the path; the session performs the write. Do not add `Write` to a review skill
+to let it save its own output, because that flips it to `writes-files` and the read-only
+guarantee is worth more than the convenience.
+
 ### The `safety` label
 
 Every skill declares its blast radius in frontmatter. `check-skills.sh` asserts the label matches what `allowed-tools` actually permits, so it cannot drift into a comfortable lie:
@@ -116,6 +179,21 @@ evals/
 `validate.sh` asserts every ID in `expected.txt` exists in the skill's Rule Catalog, and that `clean-*` cases have an empty `expected.txt`. Run it with `bash skills/<name>/evals/validate.sh`.
 
 Include at least one `clean-*` case (a fixture that must produce zero findings) alongside the violation cases; that is what catches false positives.
+
+**Secret-shaped values in fixtures must not match a real scanner pattern.** A fixture
+proving a skill detects a committed credential needs something that reads as a
+credential, but GitHub push protection scans this repo and blocks the push on a literal
+matching a known provider format (`sk_live_…`, `ghp_…`, `AKIA…`, and so on). Use an
+obviously inert value under a revealing key name:
+
+```yaml
+STRIPE_SECRET_KEY: sk_live_REDACTED_FIXTURE_VALUE_NOT_A_REAL_KEY
+```
+
+The key name carries the signal the skill needs; the value carries none a scanner will
+match. Do not resolve a blocked push by clicking the bypass URL. The block is the same
+control this repo's own `appsec` and `k8s` skills exist to enforce, and a repo that
+bypasses it teaches everyone reading the history that bypassing is normal.
 
 ## Testing
 

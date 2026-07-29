@@ -150,7 +150,7 @@ report:
 ```
 
 Format: `incident-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
-suppression without one is itself an advisory finding: `META-SUP-001`.
+suppression without one is itself an advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 ---
 
@@ -225,10 +225,10 @@ with, not law:
 
 | Severity | Definition | Response | Who is woken |
 |---|---|---|---|
-| **SEV1** | Complete outage, or data loss in progress | Immediate, 24/7 | Primary on-call, incident commander, comms lead |
-| **SEV2** | Major feature broken or severe degradation for many users | Immediate during business hours, paged out of hours | Primary on-call |
-| **SEV3** | Minor or workaround-available degradation | Next business day | Nobody; ticket to the owning team |
-| **SEV4** | Cosmetic, or affects internal tooling only | Backlog | Nobody |
+| SEV1 | Complete outage, or data loss in progress | Immediate, 24/7 | Primary on-call, incident commander, comms lead |
+| SEV2 | Major feature broken or severe degradation for many users | Immediate during business hours, paged out of hours | Primary on-call |
+| SEV3 | Minor or workaround-available degradation | Next business day | Nobody; ticket to the owning team |
+| SEV4 | Cosmetic, or affects internal tooling only | Backlog | Nobody |
 
 Two rules that matter more than the table: severity is set by user impact rather
 than by technical excitement, and anyone may raise it while only the incident
@@ -344,6 +344,11 @@ escalation is documented rather than invented per finding.
 `REPO-DOC-002`, say which alerts you found and where you looked for their runbooks
 before concluding one is missing. Do not grade a runbook's prose; grade whether the
 sections that matter at 03:00 are present and specific.
+
+**References**, loaded on demand:
+- **[Writing a postmortem](./references/postmortem.md)** — the blame-to-system rewrite
+  table, why counterfactuals teach nothing, action items that are not wishes, the
+  "what we are not doing" section, and a review checklist.
 
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.

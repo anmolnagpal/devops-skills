@@ -1,0 +1,24 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: checkout-prod
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: payments
+  source:
+    repoURL: https://github.com/acme/checkout.git
+    # gitops-skill:ignore CICD-GITOPS-001
+    targetRevision: main
+    path: deploy/overlays/prod
+  destination:
+    server: https://prod-eks.eu-west-1.eks.amazonaws.com
+    namespace: checkout
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+      - PruneLast=true

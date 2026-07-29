@@ -235,7 +235,7 @@ app.use(cors({ origin: "*" }))
 
 Format: `// appsec-skill:ignore <RULE-ID> -- <reason>` (or the file's native
 comment syntax). Reason is mandatory. A suppression without one is itself an
-advisory finding: `META-SUP-001`.
+advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For `SEC-DEP-001`, where there's no line to attach a comment to (a transitive
 lockfile entry), use a tracked `.clouddrove-waivers.yml` at repo root instead,
@@ -270,6 +270,13 @@ vocabulary. IDs are an API: never renumber a shipped rule; deprecate and add.
 printed — don't infer a vulnerability from a package name/version you recognize.
 For `SEC-APP-001`/`SEC-APP-002`, quote the exact config/middleware line; if you
 can't quote it, don't report it.
+
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
@@ -348,7 +355,7 @@ generic — the same IDs cover GitHub Actions and GitLab CI.)
 
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# ci-skill:ignore <RULE-ID> -- <reason>` on the line above (reason mandatory,
-else `META-SUP-001`). **Confidence gate:** report only findings you are >80% sure are
+else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only findings you are >80% sure are
 real; consolidate repeats; severity is the rule's, don't invent; quote the exact
 offending line — if you can't quote it, don't report it. Evals: [`evals/`](./evals/).
 
@@ -610,6 +617,12 @@ Next steps:
 3. Run /ci review to validate before merging
 ```
 
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
+
 
 ## /deploy
 
@@ -722,7 +735,7 @@ already honored its own `*-skill:ignore` comment (don't re-report what the sourc
 skill already excluded). For a deploy-specific check (rollback tested, gate present,
 resilience — the ones with no per-artifact skill owner), accept a known risk with
 `# deploy-skill:ignore <RULE-ID> -- <reason>` on the line above the relevant config;
-honor it. Reason mandatory, else `META-SUP-001`.
+honor it. Reason mandatory, else `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 Output the repo-standard format with rule IDs:
 
@@ -781,6 +794,12 @@ Rollback pre-checks (block the deploy if any fail):
 
 Flag any irreversible step (dropped column, deleted resource, data backfill) — these need
 explicit sign-off and usually a forward-fix plan, not a rollback.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 
 ## /docker
@@ -885,7 +904,8 @@ USER root
 
 Format: `# docker-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
 suppression without a reason is itself an advisory finding — report it as
-`META-SUP-001 Suppression missing justification`.
+`META-SUP-001 Suppression missing justification`. A suppression missing its reason
+doesn't suppress anything: report the underlying finding as well.
 
 ---
 
@@ -921,6 +941,13 @@ listed under the table.
 
 **Reused from auditkit:** `SEC-SEC-001`, `CICD-DOCK-001`, `CICD-DOCK-002`, `CICD-DOCK-003`.
 **Registered in `rules/rule-ids.yaml`:** `CICD-DOCK-004`–`016`, `META-SUP-001`.
+
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
@@ -1510,6 +1537,12 @@ Load these as the task requires:
 | Karpenter vs Cluster Autoscaler | Read `eks.md`. |
 | Per-namespace EKS cost attribution | Read `eks.md` (Kubecost / OpenCost section). |
 
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
+
 
 ## /github-actions
 
@@ -1588,7 +1621,7 @@ for each is in REVIEW below.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
-it. Reason is mandatory (else `META-SUP-001`). **Confidence gate:** report only
+it. Reason is mandatory (else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
 don't invent; quote the exact offending line — if you can't quote it, don't report
 it. Evals: [`evals/`](./evals/).
@@ -1861,6 +1894,12 @@ Output as a unified diff or per-file edit list, never silently rewrite.
 - Reusable workflows belong in `.github/workflows/_<name>.yml` (underscore prefix is convention).
 - For self-hosted runners, prefer ephemeral (Actions Runner Controller on Kubernetes) over persistent.
 - Composite actions in `.github/actions/<name>/action.yml` need their own review pass.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 
 ## /github
@@ -2212,6 +2251,12 @@ Confirm with the user before tagging. Releases are visible to anyone with repo a
 - Fine-grained PATs are preferred over classic PATs. Suggest expiry ≤ 90 days.
 - Never paste secrets into the chat. If a secret leaks in a commit, the only safe action is rotate-then-purge (BFG / git-filter-repo), not just delete.
 
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
+
 
 ## /gitops
 
@@ -2404,7 +2449,7 @@ spec:
 
 Format: `# gitops-skill:ignore <RULE-ID> -- <reason>` on the line above the field.
 Reason is mandatory. A suppression without one is itself an advisory finding:
-`META-SUP-001`.
+`META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For tree-level findings with no single line (`CICD-GITOPS-004`,
 `CICD-GITOPS-006`), use the tracked `.clouddrove-waivers.yml` at repo root, same
@@ -2554,6 +2599,20 @@ For `CICD-GITOPS-002` and `CICD-GITOPS-006`, state the tenancy or separation
 mechanism you found (or the absence you verified) before concluding, since both
 rules turn on context the manifest alone may not carry.
 
+
+**References**, loaded on demand:
+- **[Failure modes](./references/failure-modes.md)** — diagnosing "Argo deleted my
+  resources", endless sync loops, first-apply ordering failures, and Healthy-but-broken
+  Applications, with the Flux equivalent of each and the first commands to run.
+- **[Secrets](./references/secrets.md)** — external-secrets vs SOPS vs Sealed Secrets
+  as a decision table, wiring for each, and what not to accept as a control.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
+
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
 
@@ -2696,7 +2755,7 @@ report:
 ```
 
 Format: `incident-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
-suppression without one is itself an advisory finding: `META-SUP-001`.
+suppression without one is itself an advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 ---
 
@@ -2771,10 +2830,10 @@ with, not law:
 
 | Severity | Definition | Response | Who is woken |
 |---|---|---|---|
-| **SEV1** | Complete outage, or data loss in progress | Immediate, 24/7 | Primary on-call, incident commander, comms lead |
-| **SEV2** | Major feature broken or severe degradation for many users | Immediate during business hours, paged out of hours | Primary on-call |
-| **SEV3** | Minor or workaround-available degradation | Next business day | Nobody; ticket to the owning team |
-| **SEV4** | Cosmetic, or affects internal tooling only | Backlog | Nobody |
+| SEV1 | Complete outage, or data loss in progress | Immediate, 24/7 | Primary on-call, incident commander, comms lead |
+| SEV2 | Major feature broken or severe degradation for many users | Immediate during business hours, paged out of hours | Primary on-call |
+| SEV3 | Minor or workaround-available degradation | Next business day | Nobody; ticket to the owning team |
+| SEV4 | Cosmetic, or affects internal tooling only | Backlog | Nobody |
 
 Two rules that matter more than the table: severity is set by user impact rather
 than by technical excitement, and anyone may raise it while only the incident
@@ -2891,6 +2950,11 @@ escalation is documented rather than invented per finding.
 before concluding one is missing. Do not grade a runbook's prose; grade whether the
 sections that matter at 03:00 are present and specific.
 
+**References**, loaded on demand:
+- **[Writing a postmortem](./references/postmortem.md)** — the blame-to-system rewrite
+  table, why counterfactuals teach nothing, action items that are not wishes, the
+  "what we are not doing" section, and a review checklist.
+
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
 
@@ -2975,7 +3039,7 @@ pod is observed as a running noisy-neighbor rather than as a config default.
 
 **Output:** every finding carries its rule ID. **Suppression:** accept a known risk
 with `# k8s-skill:ignore <RULE-ID> -- <reason>` on the line above the field; honor
-it. Reason mandatory (else `META-SUP-001`). **Confidence gate:** report only findings
+it. Reason mandatory (else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only findings
 you are >80% sure are real; consolidate repeats; severity is the rule's (apply the
 dev relaxation above), don't invent; quote the exact offending field/value — if you
 can't quote it, don't report it. Evals: [`evals/`](./evals/).
@@ -3316,6 +3380,12 @@ Next steps:
 5. Run /k8s review before your first deploy
 ```
 
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
+
 
 ## /observability
 
@@ -3464,7 +3534,7 @@ Accept a known gap inline; honor it and do not report:
 
 Format: `# observability-skill:ignore <RULE-ID> -- <reason>` (or the file's native
 comment syntax). Reason is mandatory. A suppression without one is itself an
-advisory finding: `META-SUP-001`.
+advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For findings with no line to attach to (`OBS-SLO-001`, `OBS-DASH-001`), use the
 tracked `.clouddrove-waivers.yml` at repo root, same format as
@@ -3633,6 +3703,22 @@ name the exact missing resource. For "absence" findings (`OBS-MON-001`,
 `OBS-DASH-001`, `OBS-SLO-001`), say **where you looked** before concluding it is
 missing, so a wrong conclusion is visible rather than authoritative.
 
+
+**References**, loaded on demand:
+- **[PromQL patterns](./references/promql.md)** — the four signals as expressions, the
+  mistakes that make a rule silently unable to fire (missing `le`, `rate` on a gauge,
+  `NaN` at zero traffic), Kubernetes workload queries, and how to review someone
+  else's alert rule.
+- **[SLO arithmetic](./references/slo-math.md)** — error budgets in minutes per target,
+  burn-rate derivation, the multi-window alert table, and what to do for a
+  low-traffic service where ratios are meaningless.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
+
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
 
@@ -3728,7 +3814,7 @@ assume from the pattern alone.
 **Suppression:** accept a known risk with `# owasp-skill:ignore <ID> -- <reason>`
 (e.g. `# owasp-skill:ignore OWASP-A05 -- input is a fixed internal enum, never
 user-supplied`) on the line above; honor it. Reason is mandatory — a suppression
-without one is itself a finding: `META-SUP-001`.
+without one is itself a finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 **Independent re-check:** before including a **BLOCKING** finding in the output,
 re-derive it a second time using only the quoted line and the false-positive list
@@ -3793,6 +3879,12 @@ earlier in the same review, not because the code is actually exploitable.
 For secure code patterns → read `secure-patterns.md`
 For language-specific quirks → read `languages.md`
 For agentic AI security + ASVS → read `agentic.md`
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 
 ## /skill-creator
@@ -4378,9 +4470,10 @@ or asks what an apply will do.
    in the conversation. If there is none, print the two commands above and stop.
    Do not review `.tf` source and call it a plan review; hand that to
    `/clouddrove:tf` or `/clouddrove:wrapper-tf` instead.
-2. **Establish the target environment** from the plan's backend config, workspace,
-   variable values, or resource tags. Say which environment you concluded and on
-   what evidence, since every severity below depends on it.
+2. **Establish the target environment** from the plan's `variables`, the workspace,
+   resource tags, or module addresses. There is **no** top-level `backend` key in
+   `terraform show -json` output, so do not look for one. Say which environment you
+   concluded and on what evidence, since every severity below depends on it.
 3. **Walk `resource_changes[]`** and bucket each entry by `change.actions`:
 
 | `actions` | Meaning |
@@ -4422,7 +4515,7 @@ or asks what an apply will do.
 7. **Report** in the repo-standard format:
 
 ```
-Plan: 4 to add, 2 to change, 1 to destroy · target: prod (backend key env/prod/terraform.tfstate)
+Plan: 4 to add, 2 to change, 1 to destroy · target: prod (variables.environment = "prod")
 
 BLOCKING — Must fix before apply
 [aws_db_instance.main] TF-PLAN-001 REPLACE destroys the instance and its 200GB volume
@@ -4497,7 +4590,7 @@ resource "aws_ebs_volume" "scratch" {
 ```
 
 Format: `# tf-plan-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
-suppression without one is itself an advisory finding: `META-SUP-001`.
+suppression without one is itself an advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For plan-level findings with no source line (`TF-PLAN-004`, `TF-PLAN-005`), use
 the tracked `.clouddrove-waivers.yml` at repo root, same format as
@@ -4577,6 +4670,21 @@ repeats; severity is the rule's, don't invent it. Quote the resource address and
 the exact attribute path from the plan. For `TF-PLAN-001`, state explicitly what
 data is lost and whether a recovery point exists; a replacement finding without
 that is not actionable. If you cannot quote the plan entry, don't report it.
+
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
+
+**References**, loaded on demand:
+- **[Force-replacement attributes](./references/force-new.md)** — which attributes are
+  immutable in the API, which only in the provider, and which are avoidable, plus how
+  `create_before_destroy`, `prevent_destroy`, and `moved` blocks change the answer.
+- **[Reading `terraform show -json`](./references/plan-json.md)** — every field a
+  finding depends on: `replace_paths`, `action_reason`, the sensitivity mirrors,
+  `resource_drift`, and what is lost when you only have text output.
 
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
@@ -4658,7 +4766,7 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 
 **Output:** every finding carries its rule ID, in the format below. **Suppression:**
 accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
-honor it (reason mandatory, else `META-SUP-001`). **Confidence gate:** report only
+honor it (reason mandatory, else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only
 findings you are >80% sure are real; consolidate repeats; severity is the rule's,
 don't invent; quote the exact offending line/value in the finding — if you can't
 quote it, don't report it. Evals: [`evals/`](./evals/).
@@ -4906,6 +5014,12 @@ Rollback
 Flag any resource that would be destroyed and recreated — these need manual sign-off.
 Do not suggest upgrading multiple major versions in one step.
 
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
+
 
 ## /wrapper-tf
 
@@ -4992,7 +5106,7 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 
 **Output:** every REVIEW finding carries its rule ID. **Suppression:** accept a known
 risk with `# wrapper-tf:ignore <RULE-ID> -- <reason>` on the line above; honor it
-(reason mandatory, else `META-SUP-001`). **Confidence gate:** report only findings you
+(reason mandatory, else `META-SUP-001`). A suppression missing its reason doesn't suppress anything: report the underlying finding as well. **Confidence gate:** report only findings you
 are >80% sure are real; consolidate repeats; severity is the rule's, don't invent;
 quote the exact offending line — if you can't quote it, don't report it.
 Evals: [`evals/`](./evals/).
@@ -5326,4 +5440,10 @@ Summary: <N> controls covered, <N> gaps.
 ```
 
 Mark `❌ MISSING` for any control where the responsible module is absent from `environments/{env}/main.tf` or the module exists but the relevant variable is disabled.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
 

@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: orders-api-alerts
+spec:
+  groups:
+    - name: orders-api
+      rules:
+        - alert: OrdersApiHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{service="orders-api",code=~"5.."}[5m]))
+              / sum(rate(http_requests_total{service="orders-api"}[5m])) > 0.05
+          for: 10m
+          labels:
+            severity: page
+            team: commerce
+          annotations:
+            summary: "orders-api 5xx rate above 5%"
+            runbook_url: "docs/runbooks/orders-api.md#ordersapihigherrorrate"

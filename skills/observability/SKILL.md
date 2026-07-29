@@ -162,7 +162,7 @@ Accept a known gap inline; honor it and do not report:
 
 Format: `# observability-skill:ignore <RULE-ID> -- <reason>` (or the file's native
 comment syntax). Reason is mandatory. A suppression without one is itself an
-advisory finding: `META-SUP-001`.
+advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For findings with no line to attach to (`OBS-SLO-001`, `OBS-DASH-001`), use the
 tracked `.clouddrove-waivers.yml` at repo root, same format as
@@ -330,6 +330,22 @@ repeats; severity is the rule's, don't invent it; quote the exact config line or
 name the exact missing resource. For "absence" findings (`OBS-MON-001`,
 `OBS-DASH-001`, `OBS-SLO-001`), say **where you looked** before concluding it is
 missing, so a wrong conclusion is visible rather than authoritative.
+
+
+**References**, loaded on demand:
+- **[PromQL patterns](./references/promql.md)** — the four signals as expressions, the
+  mistakes that make a rule silently unable to fire (missing `le`, `rate` on a gauge,
+  `NaN` at zero traffic), Kubernetes workload queries, and how to review someone
+  else's alert rule.
+- **[SLO arithmetic](./references/slo-math.md)** — error budgets in minutes per target,
+  burn-rate derivation, the multi-window alert table, and what to do for a
+  low-traffic service where ratios are meaningless.
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.

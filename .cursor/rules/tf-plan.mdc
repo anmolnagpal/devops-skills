@@ -86,9 +86,10 @@ or asks what an apply will do.
    in the conversation. If there is none, print the two commands above and stop.
    Do not review `.tf` source and call it a plan review; hand that to
    `/clouddrove:tf` or `/clouddrove:wrapper-tf` instead.
-2. **Establish the target environment** from the plan's backend config, workspace,
-   variable values, or resource tags. Say which environment you concluded and on
-   what evidence, since every severity below depends on it.
+2. **Establish the target environment** from the plan's `variables`, the workspace,
+   resource tags, or module addresses. There is **no** top-level `backend` key in
+   `terraform show -json` output, so do not look for one. Say which environment you
+   concluded and on what evidence, since every severity below depends on it.
 3. **Walk `resource_changes[]`** and bucket each entry by `change.actions`:
 
 | `actions` | Meaning |
@@ -130,7 +131,7 @@ or asks what an apply will do.
 7. **Report** in the repo-standard format:
 
 ```
-Plan: 4 to add, 2 to change, 1 to destroy · target: prod (backend key env/prod/terraform.tfstate)
+Plan: 4 to add, 2 to change, 1 to destroy · target: prod (variables.environment = "prod")
 
 BLOCKING — Must fix before apply
 [aws_db_instance.main] TF-PLAN-001 REPLACE destroys the instance and its 200GB volume
@@ -205,7 +206,7 @@ resource "aws_ebs_volume" "scratch" {
 ```
 
 Format: `# tf-plan-skill:ignore <RULE-ID> -- <reason>`. Reason is mandatory. A
-suppression without one is itself an advisory finding: `META-SUP-001`.
+suppression without one is itself an advisory finding: `META-SUP-001`. A suppression missing its reason doesn't suppress anything: report the underlying finding as well.
 
 For plan-level findings with no source line (`TF-PLAN-004`, `TF-PLAN-005`), use
 the tracked `.clouddrove-waivers.yml` at repo root, same format as
@@ -285,6 +286,21 @@ repeats; severity is the rule's, don't invent it. Quote the resource address and
 the exact attribute path from the plan. For `TF-PLAN-001`, state explicitly what
 data is lost and whether a recovery point exists; a replacement finding without
 that is not actionable. If you cannot quote the plan entry, don't report it.
+
+
+**Persisting the review.** Ask to save it and produce the report format in
+[`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
+`docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
+produces the content and the session performs the write, so the read-only
+guarantee holds. Include the suppressions-honored and not-assessed sections.
+
+**References**, loaded on demand:
+- **[Force-replacement attributes](./references/force-new.md)** — which attributes are
+  immutable in the API, which only in the provider, and which are avoidable, plus how
+  `create_before_destroy`, `prevent_destroy`, and `moved` blocks change the answer.
+- **[Reading `terraform show -json`](./references/plan-json.md)** — every field a
+  finding depends on: `replace_paths`, `action_reason`, the sensitivity mirrors,
+  `resource_drift`, and what is lost when you only have text output.
 
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.

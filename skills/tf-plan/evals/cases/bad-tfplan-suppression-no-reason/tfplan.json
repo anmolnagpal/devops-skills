@@ -1,0 +1,47 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.3",
+  "resource_changes": [
+    {
+      "address": "aws_ebs_volume.ledger_archive",
+      "type": "aws_ebs_volume",
+      "name": "ledger_archive",
+      "change": {
+        "actions": [
+          "delete",
+          "create"
+        ],
+        "replace_paths": [
+          [
+            "availability_zone"
+          ]
+        ],
+        "before": {
+          "availability_zone": "eu-west-1a",
+          "size": 500,
+          "encrypted": true,
+          "tags": {
+            "Environment": "prod",
+            "Team": "payments",
+            "Purpose": "settlement archive, 7-year retention"
+          }
+        },
+        "after": {
+          "availability_zone": "eu-west-1b",
+          "size": 500,
+          "encrypted": true,
+          "tags": {
+            "Environment": "prod",
+            "Team": "payments",
+            "Purpose": "settlement archive, 7-year retention"
+          }
+        }
+      }
+    }
+  ],
+  "variables": {
+    "environment": {
+      "value": "prod"
+    }
+  }
+}
