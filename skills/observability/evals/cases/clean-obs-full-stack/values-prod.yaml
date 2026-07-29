@@ -1,0 +1,50 @@
+# Single-process internal report generator. Fully instrumented for what it is.
+replicaCount: 2
+
+image:
+  repository: 123456789012.dkr.ecr.eu-west-1.amazonaws.com/report-gen
+  tag: ""
+
+commonLabels:
+  app: report-gen
+  env: prod
+  team: data-platform
+
+# Logs to stdout; the cluster's Fluent Bit DaemonSet ships them to CloudWatch,
+# where the log group carries a 30-day retention (see logs.tf in the infra repo).
+logging:
+  format: json
+  destination: stdout
+
+metrics:
+  enabled: true
+  port: 9090
+  path: /metrics
+
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  labels:
+    release: kube-prometheus-stack
+
+prometheusRule:
+  enabled: true
+  # Routed via team: data-platform, which alertmanager.yml sends to the
+  # data-platform Slack receiver and PagerDuty schedule.
+  labels:
+    team: data-platform
+
+grafanaDashboard:
+  enabled: true
+  configMapName: report-gen-dashboard
+
+# observability-skill:ignore OBS-TRC-001 -- single process, only outbound call is
+# its own Postgres; request IDs in structured logs cover the same ground
+tracing:
+  enabled: false
+
+slo:
+  availability:
+    target: "99.5"
+    window: 30d
+    sli: 'sum(rate(reports_generated_total{status="ok"}[5m])) / sum(rate(reports_generated_total[5m]))'

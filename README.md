@@ -22,7 +22,7 @@ Skills land as `/clouddrove:tf`, `/clouddrove:finops`, … with a native `(cloud
 
 ## What you get
 
-- **13 skills** that auto-trigger on file globs and answer with structured, rule-ID-tagged review output, grouped into [six categories](#skills)
+- **14 skills** that auto-trigger on file globs and answer with structured, rule-ID-tagged review output, grouped into [seven categories](#skills)
 - **Packaged as the `clouddrove` plugin**: installed from this repo's own marketplace, so skills are namespaced `(clouddrove)` in Claude Code natively
 - **Single source** in `skills/<name>/SKILL.md`. A generator emits Cursor `.mdc` rules and Codex `AGENTS.md` so every tool stays in sync
 - **One installer** with flags: `--claude` / `--cursor` / `--codex` / `--all`, global or per-project scope
@@ -132,7 +132,7 @@ Narrower runs:
 The [open Agent Skills CLI](https://github.com/vercel-labs/skills) reads this repo directly, so tools outside Claude/Cursor/Codex can consume the same skills:
 
 ```bash
-npx skills add anmolnagpal/devops-skills --list          # show the 13 skills
+npx skills add anmolnagpal/devops-skills --list          # show the 14 skills
 npx skills add anmolnagpal/devops-skills -s tf,k8s       # install two
 npx skills add anmolnagpal/devops-skills --all           # all skills, all detected agents
 npx skills add anmolnagpal/devops-skills -g              # user-level instead of project-level
@@ -183,7 +183,7 @@ The template ships a safe DevOps allow-list (read-only kubectl/terraform/aws/git
 
 ## Skills
 
-Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles all 13; `scripts/generate.sh` emits `.cursor/rules/<name>.mdc` for Cursor and one `AGENTS.md` for Codex from the same file.
+Single source: `skills/<name>/SKILL.md`. The `clouddrove` plugin bundles all 14; `scripts/generate.sh` emits `.cursor/rules/<name>.mdc` for Cursor and one `AGENTS.md` for Codex from the same file.
 
 Invoke with `/clouddrove:<skill>` in Claude Code. In Cursor, rules auto-attach via `globs:`. In Codex, `AGENTS.md` loads by default.
 
@@ -215,6 +215,12 @@ Invoke with `/clouddrove:<skill>` in Claude Code. In Cursor, rules auto-attach v
 | `/clouddrove:owasp` | Security review against OWASP Top 10:2025, ASVS 5.0, Agentic AI risks. Severity judged per finding by exploitability | manual |
 | `/clouddrove:appsec` | Application-level security: dependency audit (runs the ecosystem's real audit tool), missing security headers, CORS wildcards. Deterministic, catalog severity | manual |
 
+### Observability
+
+| Skill | Purpose | Auto-trigger |
+|---|---|---|
+| `/clouddrove:observability` | Centralized logging, log retention, metrics scraping, alert rules that actually page a human, tracing, dashboards, SLO/SLI and burn-rate alerts | `**/prometheus*.y*ml`, `**/alertmanager*.y*ml`, `**/*rules*.yaml`, `**/otel-collector*.yaml`, `**/servicemonitor*.yaml` |
+
 ### Cost
 
 | Skill | Purpose | Auto-trigger |
@@ -232,7 +238,7 @@ Invoke with `/clouddrove:<skill>` in Claude Code. In Cursor, rules auto-attach v
 
 ### How the skills relate
 
-They are not 13 independent prompts. Two shared foundations sit under all of them, and several skills consume each other's output:
+They are not 14 independent prompts. Two shared foundations sit under all of them, and several skills consume each other's output:
 
 ```mermaid
 flowchart TD
@@ -248,6 +254,7 @@ flowchart TD
     DEP["deploy<br/>readiness gate"]
     GH["github"]
     FIN["finops"]
+    OBS["observability"]
     OW["owasp"]
     APP["appsec"]
 
@@ -260,6 +267,7 @@ flowchart TD
     REG --> GH
     REG --> APP
     REG --> FIN
+    REG --> OBS
     CTX --> TF
     CTX --> K8S
     CTX --> FIN
@@ -272,6 +280,7 @@ flowchart TD
     DOCK --> DEP
     GHA --> DEP
     CI --> DEP
+    OBS --> DEP
 
     GH <-->|"shared waiver file"| FIN
     APP -->|"deterministic surface,<br/>escalate judgment calls"| OW
@@ -306,7 +315,7 @@ Every skill declares its blast radius in frontmatter, and `scripts/check-skills.
 
 | Label | Skills | Means |
 |---|---|---|
-| `read-only` | `tf`, `k8s`, `ci`, `github-actions`, `owasp`, `deploy` | Cannot mutate anything. Reads files, reports findings. |
+| `read-only` | `tf`, `k8s`, `ci`, `github-actions`, `owasp`, `deploy`, `observability` | Cannot mutate anything. Reads files, reports findings. |
 | `runs-commands` | `docker`, `finops`, `github`, `appsec`, `wrapper-tf` | Shells out to real tooling (`npm audit`, `gh api`, `aws`, `docker`), writes no files. |
 | `writes-files` | `adr`, `skill-creator` | Creates or edits files in your repo. |
 

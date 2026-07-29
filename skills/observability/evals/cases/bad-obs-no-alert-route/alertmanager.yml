@@ -1,0 +1,17 @@
+# Rules exist (see rules.yaml), but nothing here carries checkout-api anywhere.
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: "null"
+  group_by: [alertname, cluster]
+  routes:
+    - matchers:
+        - team = "platform"
+      receiver: platform-pagerduty
+
+receivers:
+  - name: "null"
+  - name: platform-pagerduty
+    pagerduty_configs:
+      - service_key: ${PLATFORM_PD_KEY}
