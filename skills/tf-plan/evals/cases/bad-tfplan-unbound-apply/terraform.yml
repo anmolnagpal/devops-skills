@@ -1,0 +1,34 @@
+name: terraform
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init
+      - run: terraform plan -out=tfplan
+      - run: terraform show -json tfplan > tfplan.json
+
+  apply:
+    needs: plan
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init
+      # No artifact upload/download: this re-plans against whatever state exists
+      # now and applies that, which is not what the plan job reviewed.
+      - run: terraform apply -auto-approve
