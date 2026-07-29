@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`scripts/check-versions.sh`** (new CI gate) asserts `plugin.json`, `marketplace.json`, and `CHANGELOG.md` agree on the version. This drift really happened: `plugin.json` said 1.3.0 while no `v1.3.0` tag existed and `v1.2.0` was tagged but never released, so the release badge advertised a version two releases old. The marketplace plugin entry now carries an explicit `version` so the two files cannot silently diverge.
+- **Trigger-phrase evals** (new CI gate). Fixture evals prove a skill's rules fire; nothing proved the skill gets *loaded*, and the `description` is the only text the model reads when deciding. Every skill now ships `evals/prompts.md` with at least four positive prompts in the words someone would type, plus negative prompts for skills whose scope overlaps another's (`tf` against `wrapper-tf`, `appsec` against `owasp`, `observability` against `incident`, and five more pairs). Each negative prompt names where it should go instead, so a failure says which skill over-triggered. `scripts/check-prompts.sh` enforces the shape; `run-behavioral-evals.sh --triggers` runs them against the model.
+- **`scripts/validate.sh`** runs all six free checks in CI's order, so "did I break anything" has one command instead of five.
+- **`templates/skill/`** is a copyable starting point: frontmatter with `safety`, the standard sections, the suppression and false-positive-exclusion scaffolding, and a delete-me PR checklist. Previously the format was documented in `CONTRIBUTING.md` but nothing was copyable.
+
+### Changed
+
+- **The bash-guard hook now states its own limits.** It matches command text, so a variable holding a flag, an alias, or a here-doc fed to `sh` gets past it. It prevents accidents, not attacks, and the header and README now say so rather than implying a boundary it does not provide. Claude Code's `sandbox` setting is named as the real control.
+- **README docs table is now a reader-role router** ("You are / Read") rather than a file list.
+- Plugin and marketplace descriptions refreshed: they still advertised 13 skills and omitted GitOps, observability, incident response, and plan review.
+
 ## [1.4.0] — 2026-07-29
 
 ### Added

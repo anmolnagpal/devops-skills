@@ -9,9 +9,19 @@
     {
       "name": "clouddrove",
       "source": "./",
-      "description": "Team DevOps review and scaffolding skills: Terraform, Kubernetes/Helm, GitLab CI, GitHub Actions, Docker, FinOps, OWASP security, deployment gating, and ADRs.",
+      "description": "Team DevOps review and scaffolding skills: Terraform (source and plan), Kubernetes/Helm, Docker, GitHub Actions, GitLab CI, Argo CD/Flux, AWS FinOps, OWASP and application security, observability, incident runbooks, deployment gating, and ADRs. Findings carry shared auditkit rule IDs.",
+      "version": "1.4.0",
       "category": "devops",
-      "tags": ["terraform", "kubernetes", "docker", "finops", "security", "ci-cd", "aws"]
+      "tags": [
+        "terraform",
+        "kubernetes",
+        "docker",
+        "finops",
+        "security",
+        "ci-cd",
+        "aws"
+      ]
     }
-  ]
+  ],
+  "metadata": {}
 }

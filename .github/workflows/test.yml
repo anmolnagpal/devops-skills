@@ -37,6 +37,30 @@ jobs:
       - name: Lint every skill's frontmatter (name matches dir, description present)
         run: bash scripts/check-skills.sh
 
+  versions:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0          # tags, so the tag-vs-plugin.json check can run
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with: { python-version: '3.x' }
+      - name: plugin.json, marketplace.json, and CHANGELOG agree
+        run: bash scripts/check-versions.sh
+
+  prompts:
+    name: Trigger-phrase evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with: { python-version: '3.x' }
+      - name: Every skill has trigger-phrase evals that pin its boundaries
+        run: bash scripts/check-prompts.sh
+
   rule-ids:
     name: Rule IDs
     runs-on: ubuntu-latest

@@ -59,16 +59,23 @@ devops-skills/
 
 ## Add or improve a skill
 
+Start from `templates/skill/`, which carries the frontmatter, the standard
+sections, and a delete-me checklist. Copying beats writing from empty.
+
 1. Skills live in `skills/<name>/SKILL.md` (single canonical source; one directory per skill, with `evals/` and references co-located). They ship as the `clouddrove` plugin.
 2. Frontmatter must include `name`, `description`, `metadata`, and `paths` (when the skill should auto-trigger on file globs).
 3. Body follows the [skill file format](#skill-file-format) below: a short purpose paragraph, a Keywords section, an Output Artifacts table, then one section per mode (REVIEW / NEW / …).
 4. Register any new rule IDs in `rules/rule-ids.yaml` **before** using them in the skill's Rule Catalog. See [Add a rule ID](#add-a-rule-id).
-5. Add [eval cases](#eval-cases) under `skills/<name>/evals/cases/`.
+5. Add [fixture cases](#fixture-cases) under `skills/<name>/evals/cases/` and
+   [trigger-phrase evals](#trigger-phrase-evals) in `skills/<name>/evals/prompts.md`.
 6. Use `/clouddrove:skill-creator` (this repo) to iterate on the skill and run evals.
 7. Run `bash scripts/generate.sh`, which rebuilds `.cursor/rules/<name>.mdc` and `AGENTS.md` from your source.
 8. Commit `skills/<name>/SKILL.md`, any registry change, the new `.cursor/rules/<name>.mdc`, and the updated `AGENTS.md`.
 9. Add the skill to the right category table in `README.md`, and to the relationship diagram if it consumes or is consumed by another skill.
 10. Add a `CHANGELOG.md` entry under `## [Unreleased]`.
+11. If you bump the plugin version, bump it in **both** `.claude-plugin/plugin.json`
+    and `.claude-plugin/marketplace.json`, and add the matching `## [X.Y.Z]`
+    changelog section. `check-versions.sh` fails if the three disagree.
 
 ### Skill file format
 
@@ -178,6 +185,36 @@ evals/
 
 `validate.sh` asserts every ID in `expected.txt` exists in the skill's Rule Catalog, and that `clean-*` cases have an empty `expected.txt`. Run it with `bash skills/<name>/evals/validate.sh`.
 
+### Trigger-phrase evals
+
+Fixture evals prove a skill's *rules* fire correctly. They say nothing about
+whether the skill gets **loaded**, and the `description` is the only text the
+model reads when deciding. A perfect rule catalog behind a weak description never
+runs, and no other check in this repo notices.
+
+So every skill also ships `evals/prompts.md`:
+
+```markdown
+## Should load
+- "review my terraform before I raise the MR"
+- "check my .tf files"
+
+## Should not load
+- "is this plan safe to apply?" → `tf-plan`, the plan is a different artifact
+- "review my infra" → ask which artifact, load nothing
+```
+
+Four positive prompts minimum, in words someone would actually type rather than
+slash commands. Skills whose scope overlaps another's must carry at least one
+negative prompt, and every negative prompt names where it should go instead, so a
+failure tells you which skill over-triggered rather than only that one did.
+`check-prompts.sh` enforces all of that; `run-behavioral-evals.sh --triggers`
+runs them for real.
+
+Copy `templates/skill/evals/prompts.md` to start.
+
+### Fixture cases
+
 Include at least one `clean-*` case (a fixture that must produce zero findings) alongside the violation cases; that is what catches false positives.
 
 **Secret-shaped values in fixtures must not match a real scanner pattern.** A fixture
@@ -200,20 +237,33 @@ bypasses it teaches everyone reading the history that bypassing is normal.
 Run the same checks CI runs, before you push:
 
 ```bash
-bash scripts/check-skills.sh             # lint: name/description frontmatter
-bash scripts/check-rule-ids.sh           # every rule ID in skills/ exists in the registry
-bash scripts/check-evals.sh              # eval fixtures reference only known rule IDs
-bash scripts/generate.sh --check         # .cursor/rules/ + AGENTS.md are up to date
+bash scripts/validate.sh
 ```
+
+That runs all six free checks in CI's order. Individually:
+
+```bash
+bash scripts/check-skills.sh             # frontmatter: name, description, safety
+bash scripts/check-versions.sh           # plugin.json / marketplace.json / CHANGELOG agree
+bash scripts/check-rule-ids.sh           # every rule ID exists in the registry
+bash scripts/check-evals.sh              # fixture evals match the Rule Catalog
+bash scripts/check-prompts.sh            # trigger-phrase evals pin the boundaries
+bash scripts/generate.sh --check         # .cursor/rules/ + AGENTS.md up to date
+```
+
+FAIL blocks. WARN is advice. Do not work around a failing check: fix the
+content, or change the check in its own pull request.
 
 CI runs on every push to `main` and every pull request (`.github/workflows/test.yml`), with six gates:
 
 1. Docker install harness
 2. Adapter sync (`.cursor/rules/`, `AGENTS.md` regenerated from `skills/<name>/SKILL.md`)
 3. Skill frontmatter lint
-4. Rule-ID registry check
-5. Eval fixtures (Tier-1)
-6. ShellCheck on `scripts/`
+4. Version consistency (`plugin.json`, `marketplace.json`, `CHANGELOG.md`)
+5. Rule-ID registry check
+6. Fixture evals (Tier-1)
+7. Trigger-phrase evals
+8. ShellCheck on `scripts/`
 
 The install harness locally (requires Docker):
 
