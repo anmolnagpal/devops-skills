@@ -2,7 +2,7 @@
 
 Thanks for your interest. This repo is a community-friendly collection of DevOps skills for AI coding tools. Issues and PRs are welcome.
 
-**Contents:** [Add or improve a skill](#add-or-improve-a-skill) · [Skill file format](#skill-file-format) · [Add a rule ID](#add-a-rule-id) · [Eval cases](#eval-cases) · [Testing](#testing) · [Add a plugin](#add-a-plugin) · [Add an MCP server](#add-an-mcp-server) · [Promote a backlog spec](#promote-a-backlog-spec) · [Open a pull request](#open-a-pull-request)
+**Contents:** [Repository structure](#repository-structure) · [Add or improve a skill](#add-or-improve-a-skill) · [Skill file format](#skill-file-format) · [Add a rule ID](#add-a-rule-id) · [Eval cases](#eval-cases) · [Testing](#testing) · [Add a plugin](#add-a-plugin) · [Add an MCP server](#add-an-mcp-server) · [Promote a backlog spec](#promote-a-backlog-spec) · [Open a pull request](#open-a-pull-request)
 
 ## Setup
 
@@ -12,6 +12,50 @@ One-time dependency for the generator and checks:
 pip3 install --break-system-packages pyyaml   # macOS Homebrew Python
 pip install pyyaml                            # other environments
 ```
+
+## Repository Structure
+
+```
+devops-skills/
+  .claude-plugin/            ← plugin.json (clouddrove) + marketplace.json (repo = its own marketplace)
+  skills/                    ← Canonical skill sources, one dir per skill (edit here)
+    <name>/SKILL.md          ← the skill body (tf, k8s, ci, owasp, docker, finops, deploy, adr, wrapper-tf, …)
+    <name>/evals/            ← static eval fixtures + validate.sh (file-input skills)
+    <name>/references/*.md   ← depth-on-demand docs the skill loads when needed
+                               (docker, finops, gitops, incident, observability, tf-plan;
+                                owasp keeps its three at the skill root)
+    specs/                   ← Backlog spec docs (not active skills)
+  rules/rule-ids.yaml        ← Canonical shared rule-ID registry (single source of truth)
+  .cursor/rules/             ← Generated Cursor rules (.mdc), from scripts/generate.sh
+  AGENTS.md                  ← Generated Codex skill doc, from scripts/generate.sh
+  agents/                    ← Reserved for Claude Code agents
+  hooks/                     ← Shipped with the plugin (registered via hooks.json)
+    hooks.json               ← Plugin hook config (uses ${CLAUDE_PLUGIN_ROOT})
+    session-banner.sh        ← SessionStart: prints repo/branch/AWS/kube context
+    bash-guard.sh            ← PreToolUse(Bash): blocks destructive patterns
+  templates/
+    CLAUDE.md                ← Copy into project repos for always-on team context
+    settings.json            ← Global ~/.claude/settings.json defaults (perm allow/deny)
+  scripts/
+    bootstrap.sh             ← One-liner installer
+    install.sh               ← Flag dispatcher (--claude / --cursor / --codex / --all)
+    install-claude.sh        ← Claude adapter: skills, plugins, MCP
+    install-cursor.sh        ← Cursor adapter: links .cursor/rules
+    install-codex.sh         ← Codex adapter: links AGENTS.md
+    generate.sh              ← Build Cursor + Codex adapters from skills/<name>/SKILL.md
+    mcp.sh                   ← Interactive MCP server install (Claude only)
+    set-aws-profile.sh       ← Switch AWS profile for AWS MCP servers
+  config/
+    plugins.txt              ← Claude plugins to install
+    marketplaces.txt         ← Claude plugin marketplaces
+  _docs/
+    CHEATSHEET.md            ← Example prompts per skill and MCP server
+    REVIEW-REPORT.md         ← Persisted review-report format + path convention
+  _test/                     ← Dockerfile + test.sh for the install harness
+  CHANGELOG.md  CONTRIBUTING.md  SECURITY.md  LICENSE  README.md
+```
+
+---
 
 ## Add or improve a skill
 
