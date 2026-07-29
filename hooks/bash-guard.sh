@@ -2,6 +2,17 @@
 # PreToolUse hook for Bash: warn on destructive patterns not covered by deny list.
 # Inputs: JSON on stdin with .tool_input.command
 # Exit 0: allow. Exit 2: block + stderr shown to Claude.
+#
+# BE CLEAR ABOUT WHAT THIS IS. It prevents accidents, not attacks. The patterns
+# below match command text, and anyone determined enough can phrase a command to
+# slip past one: a variable holding the flag, a shell alias, base64, a here-doc
+# fed to sh. That is acceptable, because the risk this addresses is a colleague
+# (or an agent) running something nobody read, not an adversary with shell
+# access. If you need a real boundary rather than a speed bump, use Claude
+# Code's `sandbox` setting, which isolates the filesystem and network properly,
+# or a deny list in settings.json, which the model cannot argue with.
+#
+# Adding a pattern is cheap; treating this file as a security control is not.
 set -eu
 
 input="$(cat)"

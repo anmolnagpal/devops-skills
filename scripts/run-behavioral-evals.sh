@@ -11,6 +11,15 @@
 # Usage:
 #   EVALS=1 bash scripts/run-behavioral-evals.sh              # all skills with evals/
 #   EVALS=1 bash scripts/run-behavioral-evals.sh tf k8s        # just these skills
+#   EVALS=1 bash scripts/run-behavioral-evals.sh --triggers    # trigger phrases instead
+#   EVALS=1 bash scripts/run-behavioral-evals.sh --triggers tf
+#
+# --triggers grades evals/prompts.md rather than the fixtures: does the
+# description get this skill selected for the prompts that should load it, and
+# left unselected for the ones that should not. It asks the model to route a
+# prompt and compares the answer, which is a proxy for real selection rather
+# than an observation of it. Good enough to catch a description that stopped
+# matching how people phrase things; not proof of what the harness did.
 #
 # Gate: every rule ID in a case's expected.txt must appear in the live output
 # (recall). A clean-* case fails if the live output reports ANY of the skill's
@@ -27,6 +36,18 @@ fi
 command -v claude >/dev/null 2>&1 || { echo "FAIL: 'claude' CLI not found on PATH"; exit 1; }
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
+MODE=fixtures
+args=()
+for a in "$@"; do
+  case "$a" in
+    --triggers) MODE=triggers ;;
+    --fixtures) MODE=fixtures ;;
+    -*) echo "unknown flag: $a" >&2; exit 1 ;;
+    *) args+=("$a") ;;
+  esac
+done
+set -- ${args+"${args[@]}"}
+
 SKILLS=("$@")
 if [ "${#SKILLS[@]}" -eq 0 ]; then
   SKILLS=()
@@ -44,6 +65,57 @@ id_re='[A-Z][A-Z0-9]{1,4}-[A-Z0-9]+-[0-9]+'
 
 total=0
 passed=0
+
+if [ "$MODE" = "triggers" ]; then
+  all="$(cd "$REPO" && ls -d skills/*/ | sed 's|skills/||; s|/||' | tr '\n' ' ')"
+  for skill in "${SKILLS[@]}"; do
+    prompts="$REPO/skills/$skill/evals/prompts.md"
+    [ -f "$prompts" ] || { echo "skip [$skill]: no evals/prompts.md"; continue; }
+
+    # Extract quoted prompts per section. Positive must route to this skill;
+    # negative must route anywhere else (the file records where, for the human).
+    while IFS=$'\t' read -r want phrase; do
+      [ -z "$phrase" ] && continue
+      total=$((total + 1))
+      ask="You route requests to skills. Available: $all.
+Answer with exactly one skill name from that list, or the single word none.
+No explanation.
+
+Request: $phrase"
+      got="$(printf '%s' "$ask" | claude -p 2>/dev/null | tr -d '[:space:]' | tr -cd 'a-z-' || true)"
+      if [ "$want" = "yes" ]; then
+        if [ "$got" = "$skill" ]; then
+          passed=$((passed + 1)); printf '  PASS [%s] loads: %s\n' "$skill" "$phrase"
+        else
+          printf '  FAIL [%s] should load but routed to "%s": %s\n' "$skill" "$got" "$phrase"
+        fi
+      else
+        if [ "$got" != "$skill" ]; then
+          passed=$((passed + 1)); printf '  PASS [%s] declines (went to "%s"): %s\n' "$skill" "$got" "$phrase"
+        else
+          printf '  FAIL [%s] over-triggered: %s\n' "$skill" "$phrase"
+        fi
+      fi
+    done < <(python3 - "$prompts" <<'PYEOF'
+import re, sys
+text = open(sys.argv[1], encoding='utf-8').read()
+def section(t):
+    m = re.search(rf"^##\s+{t}\s*$(.*?)(?=^##\s|\Z)", text, re.M | re.S)
+    return m.group(1) if m else ""
+for want, title in (("yes", "Should load"), ("no", "Should not load")):
+    for line in re.findall(r'^\s*[-*]\s+(.*)$', section(title), re.M):
+        q = re.search(r'"([^"]+)"', line)
+        if q:
+            print(f"{want}\t{q.group(1)}")
+PYEOF
+)
+  done
+
+  echo
+  echo "triggers: $passed/$total prompt(s) routed as declared."
+  [ "$total" -gt 0 ] && [ "$passed" -eq "$total" ] && exit 0
+  exit 1
+fi
 
 for skill in "${SKILLS[@]}"; do
   cases_dir="$REPO/skills/$skill/evals/cases"
