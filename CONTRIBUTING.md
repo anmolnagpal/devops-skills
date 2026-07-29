@@ -170,6 +170,28 @@ Omitting `allowed-tools` grants every tool, so the only honest label for that ca
 
 An ID's meaning is a public contract. Do not repurpose an existing ID for a different check; add a new one and note any removal in `CHANGELOG.md`.
 
+### Every registry ID must be emitted or declared
+
+`check-rule-ids.sh` enforces both directions. A skill cannot emit an ID that is
+not in the registry, **and** a registry ID that no skill emits must be declared
+under `_unemitted`:
+
+```yaml
+_unemitted:
+  reserved:          # not implementable from files, with the reason
+    SEC-DNS-001: 'DNSSEC state is a live zone property, not a file'
+  planned:           # implementable, names the skill that should own it
+    SEC-PUB-001: 'tf, wrapper-tf — public bucket ACL or policy in source'
+```
+
+This used to be a silent `note:` that nobody read, which let dead vocabulary
+accumulate. A registry entry with no skill behind it reads as coverage and is
+not, so the declaration forces the decision to be visible. The `planned` bucket
+doubles as the worklist: implementing one means adding the rule to that skill's
+catalog with fixtures, then deleting its line here. The check fails if an ID is
+both emitted and declared, or if a declaration names an ID that no longer
+exists.
+
 ## Eval cases
 
 Review skills ship a `skills/<name>/evals/` folder that proves correctness without running a model:

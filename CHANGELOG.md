@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`scripts/validate.sh`** runs all six free checks in CI's order, so "did I break anything" has one command instead of five.
 - **`templates/skill/`** is a copyable starting point: frontmatter with `safety`, the standard sections, the suppression and false-positive-exclusion scaffolding, and a delete-me PR checklist. Previously the format was documented in `CONTRIBUTING.md` but nothing was copyable.
 
+- **Every registry rule ID must now be emitted by a skill or declared unemitted.** `check-rule-ids.sh` previously printed a silent `note: 22 registry ID(s) not referenced by any skill` and passed. Dead vocabulary reads as coverage, so the note is now a FAIL unless the ID is declared under `_unemitted` in `rules/rule-ids.yaml`: `reserved` for the five that need a live DNS query and belong to auditkit's external-surface auditor, `planned` for the seventeen that are implementable from files and now name the skill that should own them. The check also fails if an ID is both emitted and declared, or if a declaration names an ID that no longer exists.
+
 ### Changed
 
 - **The bash-guard hook now states its own limits.** It matches command text, so a variable holding a flag, an alias, or a here-doc fed to `sh` gets past it. It prevents accidents, not attacks, and the header and README now say so rather than implying a boundary it does not provide. Claude Code's `sandbox` setting is named as the real control.
