@@ -224,39 +224,44 @@ states. A version field cannot see any of that.
 
 ---
 
-## Schedule
+## How Tier-2 gets run
 
-`.github/workflows/behavioral-evals.yml` runs both suites weekly (Mondays, 04:17 UTC)
-and on demand via workflow_dispatch, where you can pick a suite and a pass count.
+**Manually, triggers-first.** Decided 2026-07-30, and deliberate rather than an
+omission: there is no cron, nothing runs unattended, and no credential needs managing.
 
-It needs `ANTHROPIC_API_KEY` in the repository's Actions secrets. Without it the job
-warns and skips rather than failing, so a fork without the secret is not permanently
-red. A scheduled failure files an issue labelled `evals` pointing at the logs.
+The primary route is local, where the `claude` CLI is already logged in:
 
-Weekly rather than nightly because a pass costs roughly 70 calls for the fixtures and
-120 for the triggers. The point is catching decay within a week, not within a day.
+```bash
+EVALS=1 bash scripts/run-behavioral-evals.sh --triggers          # ~16 min
+EVALS=1 bash scripts/run-behavioral-evals.sh --triggers --repeat 3
+EVALS=1 bash scripts/run-behavioral-evals.sh                     # fixtures, 45-90 min
+```
 
-The workflow installs the plugin **from the checkout**, not from the published
-marketplace, because the harness refuses to run unless the installed copy matches the
-tree by version and content hash.
+Run the triggers after changing any skill `description`, and the fixtures for a skill
+whose detection logic changed. Both after adding a rule.
 
-## Trend
+`.github/workflows/behavioral-evals.yml` remains for the case where a run should be
+recorded against a commit rather than a laptop. It is `workflow_dispatch` only,
+defaults to the trigger suite, and takes either `CLAUDE_CODE_OAUTH_TOKEN` (from
+`claude setup-token`, uses a Claude subscription, no API account) or
+`ANTHROPIC_API_KEY`. Without a credential it warns and skips.
 
-A pass or fail per run says nothing about direction. A score drifting from 60/63 to
-57/63 over a month is the signal worth having, and it is invisible if each run only
-reports its own outcome.
+### Why triggers first
 
-Each scheduled run therefore posts a line to a single pinned issue titled
-**Behavioral eval trend**, one comment per run, oldest first, with both suite scores
-and a link to the run. It also writes a table to the job summary, so a run's outcome is
-legible without downloading an artifact.
+The trigger suite is 16 minutes against 45 to 90 for the fixtures, and it found **8 of
+the 14 skill defects** in the first real run. Routing is also the thing that decays
+fastest, because editing one skill's description changes which requests reach its
+neighbours.
 
-Deliberately an issue rather than a committed file. Having CI write to `main` to record
-that CI passed adds a commit per week, a permission the workflow does not otherwise
-need, and a merge conflict surface, to store data that is already chronological in the
-issue timeline.
+### The cost of manual
 
-Subtract the known-failing cases below before reading a score as a regression.
+Honest about the trade: the bad `CICD-DOCK-013` expectation sat green in CI from PR #12
+until the first Tier-2 run, because nothing forced anyone to run it. Manual means that
+class of defect is found when someone remembers, not within a week. That was accepted
+knowingly.
+
+If a cron is added later, do not treat this section as stale documentation to delete.
+The decision was made with the numbers above in hand.
 
 ## Distinguishing a flake from a regression
 
