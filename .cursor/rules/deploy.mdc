@@ -143,6 +143,24 @@ Otherwise print `INCOMPLETE`, never `READY`.
 
 ---
 
+## False-positive exclusions
+
+Don't report these unless a stated exception applies. This skill aggregates other
+skills' findings, so a false positive here is one the artifact skill already declined
+to make:
+
+1. **A readiness rule whose artifact skill was not run** (any `ARCH-*`, `CICD-*`, `SEC-*`, `OBS-*` reused ID). If `k8s` did not run, do not infer its findings from the values file yourself: return `INCOMPLETE` and say which skill is missing. The gate's value is that it reports what actually ran.
+2. **`ARCH-SPOF-002` and `ARCH-HA-003` on a batch job, cron job, or queue consumer** that is designed to run to completion or scale from zero. Replicas and long-lived readiness probes are for services that answer requests.
+3. **`CICD-FLOW-002` where the gate exists in a form this skill did not look for**: a protected GitHub environment with required reviewers, a manual GitLab job, a change-management ticket enforced outside the repo, or a deploy that only a release branch can trigger. Name the mechanism you found before concluding there is none.
+4. **`ARCH-DR-002` on a stateless service** whose recovery is redeploying the previous image, and **`ARCH-DR-001`** where backups are owned by a platform account and that account is nameable.
+5. **First-deploy findings on a service that is already in production.** If the artifact history shows prior prod deploys, this is not a first release, and the stricter first-release posture does not apply.
+
+Exception: none of these apply if the mechanism cannot be pointed at. A gate someone
+believes exists but cannot name is the finding. For exclusion 1 in particular, never
+substitute your own reading of an artifact for the skill that owns it: that is how a
+gate starts disagreeing with the skills it aggregates, at which point neither is
+trusted.
+
 ## ROLLBACK — Playbook
 
 Produce platform-specific steps + a pre-checked list. Generic shape:

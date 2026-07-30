@@ -240,21 +240,15 @@ _unemitted:
     SEC-DNS-003: 'AXFR openness can only be tested by attempting a transfer'
     SEC-EMAIL-001: 'SPF lives in a TXT record, not in the repo'
     SEC-EMAIL-002: 'DMARC lives in a TXT record, not in the repo'
+    SEC-SEC-002: 'needs a repo history; an eval fixture directory sits inside this
+      repo and cannot carry its own, so this is only checkable against a live repo'
 
   # Implementable from files, not implemented yet. Each names the skill that
   # should own it, so this doubles as the worklist. Moving one out of here means
   # adding the rule to that skill's catalog with fixtures, per CONTRIBUTING.
   planned:
-    SEC-NET-003: 'tf — no subnet tiering or security-group segmentation'
-    TF-RES-002: 'tf — stateful resource with no lifecycle block'
-    TF-QUAL-002: 'tf, wrapper-tf — module directory with no README'
-    ARCH-SPOF-001: 'tf, wrapper-tf — single-instance RDS in staging or prod'
-    SEC-SEC-002: 'github — secret present in git history, needs a log scan'
-    SEC-SEC-003: 'appsec, github — .env committed'
-    SEC-SEC-004: 'appsec, github — private key material committed'
     CICD-FLOW-001: 'ci, github-actions — deploy not gated on a passing test job'
     CICD-SCAN-002: 'github-actions — no dependency scanning configured'
     CICD-SCAN-003: 'github-actions — no image scanning before push'
     ARCH-HA-002: 'k8s, deploy — no HPA or autoscaling group'
     ARCH-SCAL-001: 'deploy — vertical-only scaling with no horizontal path'
-    COST-K8S-002: 'finops, k8s — no spot or Graviton node group where it fits'

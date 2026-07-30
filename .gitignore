@@ -13,6 +13,17 @@ override.tf.json
 # Secrets and local config
 .env
 .env.*
+
+# Private key material. This repo ships a skill (appsec, SEC-SEC-004) that flags a
+# committed private key, and had no rule against committing one itself.
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa
+id_ed25519
+id_ecdsa
 *.local
 CLAUDE.local.md
 
@@ -37,3 +48,10 @@ CLAUDE.local.md
 # behavioral eval fails with "no fixture file found" for everyone but the author.
 !skills/*/evals/cases/*/*.tfstate
 !skills/*/evals/cases/*/*.tfstate.backup
+# Same reasoning for the appsec fixtures: SEC-SEC-003 detects a committed .env and
+# SEC-SEC-004 a committed private key, so proving either needs the file present. The
+# values inside are inert placeholders, not credentials.
+!skills/*/evals/cases/*/.env
+!skills/*/evals/cases/*/.env.*
+!skills/*/evals/cases/*/*.key
+!skills/*/evals/cases/*/*.pem
