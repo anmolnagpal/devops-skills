@@ -2126,6 +2126,12 @@ checked-out repo, not live GitHub state — run these with Glob/Read, not `gh ap
 
 - **REPO-DOC-001** — no `README.md` (or `README.rst`/`README`) at repo root.
 - **REPO-DOC-002** — no `CONTRIBUTING.md` at repo root **and** no runbook (`docs/runbook*.md`, `RUNBOOK.md`, `docs/operations*.md`) anywhere in the repo.
+These three are the only rules in this catalog with fixture evals
+([`evals/`](./evals/)), because they are the only ones answerable from a checked-out
+repo. Everything else here needs live GitHub state through `gh api` (branch protection,
+rulesets, Dependabot settings, secret scanning), which no fixture can stand in for. The
+suite covers the checkable part and makes no claim about the rest.
+
 - **REPO-TEST-001** — no test directory/config for the repo's language(s) (`test/`, `tests/`, `spec/`, `__tests__/`, `*_test.go`, `*.test.ts`, `pytest.ini`, `jest.config.*`) **and** no test-running step in any `.github/workflows/*.yml`. Both must be absent — a test job that runs `go test ./...` against inline table tests, or a workflow that shells out to a test framework not matched by the glob, still counts as coverage.
 
 ### Blocking findings
