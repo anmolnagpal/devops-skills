@@ -284,7 +284,7 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 ## /ci
 
-  - **Use when**: GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments, including individual stages, jobs, and pipeline credentials. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', 'add a stage', 'add a deploy job', 'add a helm deploy stage', 'my pipeline leaks credentials', 'why does staging deploy with prod credentials', 'staging and prod share a job', or when working in .gitlab-ci.yml files. Owns what the pipeline is; /clouddrove:deploy owns rollout strategy and readiness gating.
+  - **Use when**: GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments, including individual stages, jobs, manual gates on prod stages, and pipeline credentials. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', 'is my pipeline gated before prod', 'add a stage', 'add a deploy job', 'add a helm deploy stage', 'my pipeline leaks credentials', 'why does staging deploy with prod credentials', 'staging and prod share a job', or when working in .gitlab-ci.yml files. Anything expressed as a pipeline, stage, or job belongs here.
   - **Auto-load for**: `**/.gitlab-ci.yml`, `**/.gitlab-ci.yaml`, `**/gitlab-ci*.yml`
 
 # GitLab CI/CD Skill

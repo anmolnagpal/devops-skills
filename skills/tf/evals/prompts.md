@@ -19,4 +19,3 @@ actually runs it: `EVALS=1 bash scripts/run-behavioral-evals.sh --triggers tf`.
 
 - "is this plan safe to apply?" → `tf-plan`, the plan is a different artifact
 - "review the modules under _modules/" → `wrapper-tf`, that is the wrapper pattern
-- "review my infra" → ask which artifact, load nothing

@@ -103,6 +103,81 @@ the run, and it came from running the harness rather than from any case in it.
 
 ---
 
+## 2026-07-29 — first `--triggers` run
+
+**103/119 prompts routed as declared**, then iterated. Three distinct causes, and
+only one of them was the skills.
+
+| Cause | Count |
+|---|---|
+| A bug in this harness | 5 |
+| Real description defects | 8 |
+| Bad expectations in `prompts.md` | 3 |
+
+### The harness bug
+
+`tr -cd 'a-z-'` stripped digits, so the model's correct answer `k8s` was read as
+`ks` and five correct answers were scored as failures. `k8s` went 2/7 to 7/7 on the
+one-character fix. Worth stating plainly: the largest single cause of failures in
+the first run of a new harness was the harness.
+
+### The real defects had one shape
+
+Every collision was **under-claiming by the skill that should have won**, not
+over-claiming by the one that did. `deploy` and `observability` both scored 7/7
+while absorbing traffic meant for `ci` and `incident`.
+
+| Skill | Lost to | Because |
+|---|---|---|
+| `ci` | `deploy` | never claimed stages, jobs, or credentials |
+| `incident` | `observability` | never claimed on-call readiness or alerts-without-runbooks |
+| `owasp` | `appsec` | never claimed injection or secret storage as judgment calls |
+| `github` | `none` | claimed 'create a release' but not 'cut a release' |
+| `skill-creator` | `tf` | never claimed running evals |
+
+Verified after fixing: `owasp` 5/7 to 7/7, `k8s` 2/7 to 7/7, `tf` 7/9 to 8/8,
+`incident` 5/7 to 6/7, `skill-creator` 5/7 to 7/8, `ci` 5/7 to 4/7 to 5/7.
+
+### Two lessons that cost a regression each
+
+**Naming a neighbour's territory inside your own description hands them the
+traffic.** The first `ci` fix ended with "/clouddrove:deploy owns rollout strategy
+and readiness gating", and `ci` promptly lost "is my pipeline gated before prod?",
+which it had been winning. Removing the clause recovered it. `owasp` names `appsec`
+and did not regress, because the words it attributes ("lockfile CVEs, missing
+headers, wildcard CORS") do not appear in its own trigger phrases. The rule is
+narrow: a disambiguation clause must not use vocabulary you are trying to win.
+
+**A phrase in both sections always fails.** "review my infra" ended up in `tf`'s
+Should-load and Should-not-load lists at once, because a deletion missed by three
+words. It failed both ways until removed. `check-prompts.sh` does not catch this
+and could.
+
+### Known limits of this proxy, measured not assumed
+
+Two `ci` prompts still fail with their exact phrases verbatim in the description:
+"add a helm deploy stage" and "why does staging deploy with prod credentials?".
+Both route to `deploy`. They are kept, because the expectations are right and the
+measurement is what is limited:
+
+1. **A forced pick from a flat list over-weights one salient word.** "deploy" and
+   "release" beat the rest of the sentence regardless of what the correct skill
+   claims.
+2. **No file context.** Most skills trigger partly on globs, and `ci` owns
+   `**/.gitlab-ci.yml`, which would settle both prompts in reality. The proxy
+   discards that signal.
+
+So a `--triggers` failure means "this description does not compete for its own
+vocabulary", not "the harness will not load this skill". Tuning a description past
+the point where it reads well to a human is fitting the skill to the measurement
+instead of the job, and these two cases are where that line sits.
+
+The composed per-suite figures above come from targeted re-runs after each fix, not
+from one clean pass. A single full re-run would give one comparable number and has
+not been done yet.
+
+---
+
 ## Running it yourself
 
 ```bash
