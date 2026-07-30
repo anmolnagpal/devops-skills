@@ -305,6 +305,51 @@ An earlier draft of this section claimed five prompts had regressed. That was wr
 both the count and the characterization, and it is corrected here rather than quietly
 edited, because a results file that is casual about its own history is not a record.
 
+## 2026-07-30 — clean pass@3, and the first real flake rate
+
+**112, 113, 112** out of 120. Three full passes, no edits to `skills/` during the run.
+
+Score variance is ±1 across identical passes, which is the number that makes every
+earlier single-run figure interpretable: a suite moving 112 to 113 has not improved.
+
+### Failures by determinism
+
+| Prompt | Fails | Verdict |
+|---|---|---|
+| `skill-creator` "run the evals for the tf skill" | 3/3 | deterministic |
+| `incident` "which alerts are missing runbooks" | 3/3 | deterministic |
+| `incident` "are we ready to put this service on-call?" | 3/3 | deterministic |
+| `github` "cut a release" | 3/3 | deterministic |
+| `ci` "why does staging deploy with prod credentials?" | 3/3 | deterministic |
+| `ci` "is my pipeline gated before prod?" | 3/3 | deterministic |
+| `ci` "add a helm deploy stage" | 2/3 | flaky |
+| `adr` "should we use EKS or ECS?" | 2/3 | flaky |
+| `github` "review my PR diff" (negative) | 1/3 | flaky |
+
+**Flake rate: 3 of 120 prompts (2.5%) behave non-deterministically.** Two were
+previously recorded as known-failing on the strength of single runs, and are actually
+flaky. One is a negative prompt that had never failed before and over-triggered once.
+
+### The two unclassified prompts are deterministic failures
+
+`ci` "is my pipeline gated before prod?" and `incident` "are we ready to put this
+service on-call?" both fail 3/3. Both have their exact phrase in the correct skill's
+description, so they join the other four as cases tuning cannot fix, for the reason
+already established: a forced single pick from a flat list over-weights one salient
+word, and the proxy cannot see the file globs that would settle them.
+
+### A correction about how the ci fix was verified
+
+`ci` "is my pipeline gated before prod?" was declared fixed earlier on the strength of
+**one** passing run, after the give-away clause was removed from its description. At
+3/3 failing, that single pass was the flake and the fix did not work. The clause
+removal was still correct on its own merits, and it is not what makes this prompt
+route correctly, because nothing does.
+
+Declaring a fix verified from one passing run is the same error as declaring a
+regression from one failing run. Both were made today, in the same direction, an hour
+apart.
+
 ## Known-failing cases, deliberately kept
 
 Three prompts fail `--triggers` every time and are left in place, because the
@@ -320,11 +365,14 @@ a green number by hiding the case.
 | `"run the evals for the tf skill"` | `tf` | the prompt names `tf`, so a router matching on skill names picks it over the skill that operates *on* skills |
 | `"which alerts are missing runbooks"` | `observability` | genuinely straddles the seam: observability owns alerts, incident owns runbooks, and this asks about both at once |
 
-Two more are **unclassified** rather than known-failing: `ci` "is my pipeline gated
-before prod?" and `incident` "are we ready to put this service on-call?". Both passed
-after their description fixes and failed in the single usable pass of the first pass@3.
-A clean pass@3 is needed to say whether they regressed or flaked. Do not tune either
-until that number exists.
+Both prompts previously listed as unclassified are now confirmed **deterministic**
+failures at 3/3, and are part of the six above.
+
+Two entries in this table are in fact **flaky** rather than deterministic, per the
+pass@3 above: `ci` "add a helm deploy stage" (2/3) and `adr` "should we use EKS or
+ECS?" (2/3). They stay in the table, because a prompt that fails two runs in three is
+still not routing reliably, but the distinction matters when reading a single run's
+score.
 
 ## Running it yourself
 
