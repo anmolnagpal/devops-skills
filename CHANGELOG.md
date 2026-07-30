@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-07-29
+
 ### Added
 
 - **`scripts/check-versions.sh`** (new CI gate) asserts `plugin.json`, `marketplace.json`, and `CHANGELOG.md` agree on the version. This drift really happened: `plugin.json` said 1.3.0 while no `v1.3.0` tag existed and `v1.2.0` was tagged but never released, so the release badge advertised a version two releases old. The marketplace plugin entry now carries an explicit `version` so the two files cannot silently diverge.
