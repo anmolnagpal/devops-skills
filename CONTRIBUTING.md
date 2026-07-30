@@ -302,9 +302,16 @@ The `eval fixtures` gate above (Tier-1) only checks that eval docs are internall
 `scripts/run-behavioral-evals.sh` is the Tier-2 gate: it invokes each skill via `claude -p` against its fixtures and diffs the live findings against `expected.txt`. It is opt-in because it spends API tokens, so it is not wired into the free six-gate CI. Run it manually or on a nightly schedule:
 
 ```bash
-EVALS=1 bash scripts/run-behavioral-evals.sh          # every skill with evals/
-EVALS=1 bash scripts/run-behavioral-evals.sh tf k8s   # just these skills
+EVALS=1 bash scripts/run-behavioral-evals.sh              # every skill with evals/
+EVALS=1 bash scripts/run-behavioral-evals.sh tf k8s       # just these skills
+EVALS=1 bash scripts/run-behavioral-evals.sh --triggers   # descriptions, not rules
+EVALS=1 bash scripts/run-behavioral-evals.sh --repeat 3 tf # pass@3
 ```
+
+It also runs weekly in CI (`.github/workflows/behavioral-evals.yml`) and on demand,
+so a description edit that breaks routing surfaces within a week rather than never.
+Use `--repeat` when investigating a failure: a case that fails in some passes and not
+others is a flake, one that fails every pass is a regression.
 
 Run Tier-2 for any skill whose detection logic you changed, and record the run in
 [`_docs/EVAL-RESULTS.md`](_docs/EVAL-RESULTS.md). The harness refuses to run if the

@@ -1,0 +1,4 @@
+waivers:
+  - rule_id: COST-DB-001
+  - rule_id: COST-STOR-003
+    reason: "gp2 boot volumes on a vendor appliance that does not support gp3"

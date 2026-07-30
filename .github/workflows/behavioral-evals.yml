@@ -1,0 +1,212 @@
+name: behavioral-evals
+
+# Tier-2: actually runs each skill and grades the output, unlike the six free gates
+# in test.yml which only check that the eval documents are internally consistent.
+#
+# Scheduled because everything Tier-2 verifies has a shelf life measured in commits.
+# A description edit or a rule tweak silently un-verifies it, and no other gate says
+# so. Before this existed the suite had been run exactly once, by hand.
+#
+# Costs real API tokens: roughly 70 calls for the fixtures and 120 for the triggers
+# per pass. Runs weekly rather than nightly for that reason, plus on demand.
+
+on:
+  schedule:
+    # 04:17 UTC on Mondays. Off the hour to avoid the scheduler's busiest minute.
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Which suite to run'
+        type: choice
+        default: both
+        options: [both, fixtures, triggers]
+      repeat:
+        description: 'Passes per suite (pass@N). 3 distinguishes a flake from a regression.'
+        default: '1'
+
+permissions:
+  contents: read
+  issues: write          # to file a report when a run fails
+
+concurrency:
+  group: behavioral-evals
+  cancel-in-progress: false
+
+jobs:
+  evals:
+    name: Behavioral evals (Tier-2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with: { python-version: '3.x' }
+      - run: pip install pyyaml
+
+      - name: Check the API key is configured
+        id: key
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "have_key=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ANTHROPIC_API_KEY is not set, so Tier-2 cannot run."
+            echo "Add it under Settings > Secrets and variables > Actions."
+          else
+            echo "have_key=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install the Claude CLI
+        if: steps.key.outputs.have_key == 'true'
+        run: |
+          curl -fsSL https://claude.ai/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install this repo's plugin from the working tree
+        if: steps.key.outputs.have_key == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          # The harness refuses to run unless the installed plugin matches the tree
+          # by version and by content hash, so install from this checkout rather
+          # than from the published marketplace.
+          claude plugin marketplace add "$GITHUB_WORKSPACE"
+          claude plugin install clouddrove@devops-skills
+          claude plugin list
+
+      - name: Fixtures
+        if: steps.key.outputs.have_key == 'true' && inputs.mode != 'triggers'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EVALS: '1'
+        run: |
+          set -o pipefail
+          bash scripts/run-behavioral-evals.sh --repeat "${{ inputs.repeat || 1 }}" 2>&1 | tee fixtures.log
+          rc=$?
+          # 3 means the harness refused to start, which is a setup fault rather than a
+          # skill regression. Fail loudly and differently, so the trend does not record
+          # a score for a run that measured nothing.
+          if [ "$rc" -eq 3 ]; then
+            echo "::error::The harness refused to run (exit 3). This is a setup fault, not an eval failure."
+            exit 3
+          fi
+          exit "$rc"
+
+      - name: Triggers
+        if: steps.key.outputs.have_key == 'true' && inputs.mode != 'fixtures'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EVALS: '1'
+        run: |
+          set -o pipefail
+          bash scripts/run-behavioral-evals.sh --triggers --repeat "${{ inputs.repeat || 1 }}" 2>&1 | tee triggers.log
+          rc=$?
+          if [ "$rc" -eq 3 ]; then
+            echo "::error::The harness refused to run (exit 3). This is a setup fault, not an eval failure."
+            exit 3
+          fi
+          exit "$rc"
+
+      - name: Summarise into the job summary and the trend issue
+        if: always() && steps.key.outputs.have_key == 'true'
+        id: summary
+        run: |
+          # One grep-able line per suite, so a run's outcome is legible without
+          # opening an artifact. Scores come from the harness's own summary lines.
+          fx="$(grep -hoE 'run-behavioral-evals: [0-9]+/[0-9]+ case' fixtures.log 2>/dev/null | tail -1 | grep -oE '[0-9]+/[0-9]+' || echo 'not run')"
+          tg="$(grep -hoE 'triggers: [0-9]+/[0-9]+ prompt' triggers.log 2>/dev/null | tail -1 | grep -oE '[0-9]+/[0-9]+' || echo 'not run')"
+          nfail="$(grep -hcE '^(FAIL|  FAIL)' ./*.log 2>/dev/null | paste -sd+ - | bc 2>/dev/null || echo 0)"
+          {
+            echo "| suite | score |"
+            echo "|---|---|"
+            echo "| fixtures | \`$fx\` |"
+            echo "| triggers | \`$tg\` |"
+            echo
+            echo "Failure lines: \`$nfail\`. Known-failing cases are listed in \`_docs/EVAL-RESULTS.md\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "fixtures=$fx" >> "$GITHUB_OUTPUT"
+          echo "triggers=$tg" >> "$GITHUB_OUTPUT"
+          echo "nfail=$nfail" >> "$GITHUB_OUTPUT"
+
+      - name: Append to the trend issue
+        if: always() && steps.key.outputs.have_key == 'true' && github.event_name == 'schedule'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            // A chronological record without writing to main. One pinned issue, one
+            // comment per scheduled run, so the trend is readable in one page and a
+            // slow decline is visible rather than only a hard failure.
+            const title = 'Behavioral eval trend';
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              `**${new Date().toISOString().slice(0,10)}** · fixtures \`${{ steps.summary.outputs.fixtures }}\``,
+              `· triggers \`${{ steps.summary.outputs.triggers }}\``,
+              `· failure lines \`${{ steps.summary.outputs.nfail }}\``,
+              `· [run](${run})`,
+            ].join(' ');
+            const found = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${context.repo.owner}/${context.repo.repo} is:issue in:title "${title}"`,
+            });
+            let number = found.data.items.find(i => i.title === title)?.number;
+            if (!number) {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner, repo: context.repo.repo,
+                title, labels: ['evals'],
+                body: [
+                  'One comment per scheduled behavioral-eval run, oldest first.',
+                  '',
+                  'This exists because a pass/fail per run says nothing about direction.',
+                  'A score drifting from 60/63 to 57/63 over a month is the signal worth',
+                  'having, and it is invisible if each run only reports its own outcome.',
+                  '',
+                  'Known-failing cases that are deliberately kept are listed in',
+                  '`_docs/EVAL-RESULTS.md`. Subtract those before reading a score as a',
+                  'regression.',
+                ].join('\n'),
+              });
+              number = created.data.number;
+            }
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: number, body,
+            });
+
+      - name: Keep the logs
+        if: always() && steps.key.outputs.have_key == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: eval-logs
+          path: '*.log'
+          if-no-files-found: ignore
+          retention-days: 90
+
+      - name: File an issue on failure
+        if: failure() && steps.key.outputs.have_key == 'true' && github.event_name == 'schedule'
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
+        with:
+          script: |
+            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Behavioral evals failed on ${new Date().toISOString().slice(0,10)}`,
+              labels: ['evals'],
+              body: [
+                `The scheduled Tier-2 run had failures: ${run}`,
+                '',
+                'Read the eval-logs artifact before changing anything. When a case fails,',
+                'the eval is at least as likely to be wrong as the skill: on the first real',
+                'run every single failure was a bad expectation rather than a bad skill.',
+                '',
+                'Re-run with a higher repeat count to tell a flake from a regression. A case',
+                'that fails in some passes and not others is a flake; one that fails every',
+                'pass is a regression.',
+                '',
+                'See `_docs/EVAL-RESULTS.md` for the known-failing cases that are',
+                'deliberately left in place, and why.',
+              ].join('\n'),
+            });

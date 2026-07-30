@@ -69,9 +69,12 @@ opportunities, ranked by impact, never merge-blockers. IDs are an API: never ren
 **Reused from auditkit:** all `COST-*` and `COST-LIVE-*` above except the three below.
 **Registered in `rules/rule-ids.yaml`:** `COST-COMP-004` (Graviton), `COST-STOR-003` (gp2→gp3), `COST-DB-002` (Aurora I/O-Optimized).
 
-**No `evals/`:** findings come from **live** AWS billing/optimizer data (Cost Explorer,
-CUR, Compute Optimizer), not static files, so the fixture-based eval harness does not
-apply. Tag every recommendation with its rule ID and $-impact.
+**Evals cover one rule, and that is the honest ceiling.** Almost every finding here
+comes from **live** AWS billing and optimizer data (Cost Explorer, CUR, Compute
+Optimizer) rather than static files, and no fixture can stand in for "Compute Optimizer
+says this instance is over-provisioned". The waiver mechanism is the exception, because
+it is a file in the repo, so [`evals/`](./evals/) covers `META-SUP-001` and makes no
+claim about the rest. Tag every recommendation with its rule ID and $-impact.
 
 **Waiver mechanism:** a repo may accept a known cost trade-off (e.g. Multi-AZ kept in
 non-prod for load-test parity) via a tracked `.clouddrove-waivers.yml` at repo root —
@@ -88,6 +91,29 @@ suppressed — cite the reason instead. An entry missing `reason` doesn't suppre
 anything and is itself a finding: `META-SUP-001`.
 
 ---
+
+### False-positive exclusions
+
+Don't report these unless a stated exception applies. Cost findings are opportunities
+rather than defects, so a wrong one wastes an engineer's afternoon proving the number
+is unreachable:
+
+1. **Non-prod running 24/7 that is load-testing or a shared dev cluster on purpose** (`COST-COMP-003`). A schedule saves nothing if the environment is genuinely in use overnight, and a dev cluster that everyone shares is not idle. Check for a schedule already in place, a documented reason, or usage before recommending a shutdown window.
+2. **Multi-AZ in non-prod that exists to rehearse failover** (`COST-DB-001`). Staging that mirrors prod topology is the point of staging. This applies to `staging` specifically; `dev` and `sandbox` rarely need it.
+3. **Reserved capacity or Savings Plans recommendations for a workload being decommissioned or re-platformed** within the commitment term. A one-year commitment on something with a three-month remaining life is a loss, not a saving. Ask before recommending a commitment.
+4. **Graviton migration where the image is not multi-arch** (`COST-COMP-004`). The saving is real and so is the porting work. Report it with the dependency named (a `linux/amd64`-only base image, a compiled extension, a vendor agent), not as a free win.
+5. **Orphaned resources under 30 days old** (`COST-STOR-002`). A volume detached last week may be mid-migration. Say how old it is; an unattached volume from 2023 and one from Tuesday are different findings.
+6. **gp2 volumes on an instance type that does not support gp3** or where the volume is a boot volume under a vendor-managed appliance (`COST-STOR-003`).
+
+Exception: none of these apply if you cannot point at the reason. "It is probably in
+use" is not exclusion 1, and neither is a dev environment nobody has logged into for
+a month. When the evidence is a Cost Explorer figure and nothing else, say that the
+saving is conditional on the reason being checked, and name who should check it.
+
+Every finding here is an opportunity ranked by dollar impact, never a merge blocker,
+so an unclear case should be reported **with its uncertainty stated** rather than
+suppressed. That is the opposite of the review skills, where an uncertain finding is
+better dropped.
 
 ## Where the Money Usually Goes
 

@@ -69,6 +69,7 @@ generic — the same IDs cover GitHub Actions and GitLab CI.)
 | **SEC-IAM-002** | BLOCKING | Static AWS keys for cloud auth instead of OIDC/role federation |
 | **SEC-SEC-001** | BLOCKING | Committed kubeconfig or secret file (must come from a CI variable) |
 | **CICD-FLOW-002** | BLOCKING | Production deploy/apply without a `when: manual` gate (or `-auto-approve` in prod) |
+| **CICD-FLOW-001** | BLOCKING | A deploy job that does not depend on a passing test job: no test stage before `deploy`, or `allow_failure: true` on the test job |
 | **CICD-FLOW-003** | BLOCKING | Staging and production not separate jobs (env switch via variable) |
 | **TF-STATE-001** | BLOCKING | Local Terraform state in the pipeline (no remote backend) |
 | **CICD-HELM-001** | BLOCKING | No `helm lint` before a deploy step |

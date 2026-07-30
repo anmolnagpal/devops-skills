@@ -216,7 +216,14 @@ Don't report these unless a stated exception applies:
 
 1. `SEC-DEP-001` findings scoped to `devDependencies`/dev-only tooling (linters, test runners, bundler plugins) that never ships in the production artifact — use the audit command's production-only flag (`--omit=dev`, `--prod`) rather than excluding after the fact where the tool supports it.
 2. `SEC-APP-001` on an internal-only service (no public ingress, behind a service mesh/VPN with no browser client) — security headers defend browser-rendered responses; an internal JSON API with no browser consumer has no XSS/clickjacking surface for these headers to mitigate.
-3. `SEC-APP-002` wildcard origin with no `Access-Control-Allow-Credentials: true` and no cookie/session-based auth on the same routes — a fully public, unauthenticated API returning `*` is the correct config, not a finding.
+3. `SEC-SEC-003` on a `.env.example`, `.env.sample`, `.env.template`, or `.env.dist`, and on a `.env` whose values are visibly placeholders (`changeme`, `xxx`, `your-key-here`, empty after `=`). Those files exist to be committed. The finding is a `.env` carrying values that look real.
+4. `SEC-SEC-004` on a **public** key (`*.pub`, `*.crt`, `*.cer`, a `CERTIFICATE` PEM block), on test fixtures that are visibly throwaway (a key inside a `test/`, `fixtures/`, or `testdata/` directory whose own comment or filename says so), and on an encrypted keystore whose password is not also in the repo. Public halves and disposable test keys are not the finding; a usable private key is.
+5. `SEC-APP-002` wildcard origin with no `Access-Control-Allow-Credentials: true` and no cookie/session-based auth on the same routes — a fully public, unauthenticated API returning `*` is the correct config, not a finding.
+
+Exception for 3 and 4: a file being gitignored **now** does not clear it, because
+`git log` may still carry it and the credential is compromised either way. If the file
+is tracked, report it and say the fix is rotation first, deletion second. Never treat a
+`.gitignore` entry as remediation on its own.
 
 Exception: if a "dev-only" dependency is actually imported by production code
 (check for a runtime `require`/`import` outside `test/`/`scripts/`), or the
@@ -261,9 +268,12 @@ vocabulary. IDs are an API: never renumber a shipped rule; deprecate and add.
 | **SEC-DEP-001** | BLOCKING | A production dependency has a Critical/High severity finding from the ecosystem's audit tool (Medium/Low findings from the same tool run are still reported, at ADVISORY) |
 | **SEC-APP-001** | ADVISORY | No CSP, HSTS, `X-Content-Type-Options`, or `X-Frame-Options` set on a public HTTP-facing service |
 | **SEC-APP-002** | BLOCKING | CORS `origin` wildcard (`*`) combined with `credentials: true` / cookie or session-based auth on the same route |
+| **SEC-SEC-003** | BLOCKING | A `.env` file (or `.env.<env>`) committed to the repo, holding real values rather than placeholders |
+| **SEC-SEC-004** | BLOCKING | Private key material committed: `*.pem`, `*.key`, `id_rsa`, `id_ed25519`, a `PRIVATE KEY` PEM block, or a `.p12`/`.pfx`/`.jks` keystore |
 | **META-SUP-001** | ADVISORY | `appsec-skill:ignore` suppression (or waiver entry) missing a reason |
 
-**Registered in `rules/rule-ids.yaml`:** `SEC-DEP-001`, `SEC-APP-001`, `SEC-APP-002`.
+**Registered in `rules/rule-ids.yaml`:** `SEC-DEP-001`, `SEC-APP-001`, `SEC-APP-002`,
+`SEC-SEC-003`, `SEC-SEC-004`.
 **Reused from auditkit:** `META-SUP-001`.
 
 **Confidence gate:** for `SEC-DEP-001`, only report what the audit tool actually
@@ -340,6 +350,7 @@ generic — the same IDs cover GitHub Actions and GitLab CI.)
 | **SEC-IAM-002** | BLOCKING | Static AWS keys for cloud auth instead of OIDC/role federation |
 | **SEC-SEC-001** | BLOCKING | Committed kubeconfig or secret file (must come from a CI variable) |
 | **CICD-FLOW-002** | BLOCKING | Production deploy/apply without a `when: manual` gate (or `-auto-approve` in prod) |
+| **CICD-FLOW-001** | BLOCKING | A deploy job that does not depend on a passing test job: no test stage before `deploy`, or `allow_failure: true` on the test job |
 | **CICD-FLOW-003** | BLOCKING | Staging and production not separate jobs (env switch via variable) |
 | **TF-STATE-001** | BLOCKING | Local Terraform state in the pipeline (no remote backend) |
 | **CICD-HELM-001** | BLOCKING | No `helm lint` before a deploy step |
@@ -768,6 +779,24 @@ when every detected artifact's skill actually ran (see "Show your work" above).
 Otherwise print `INCOMPLETE`, never `READY`.
 
 ---
+
+## False-positive exclusions
+
+Don't report these unless a stated exception applies. This skill aggregates other
+skills' findings, so a false positive here is one the artifact skill already declined
+to make:
+
+1. **A readiness rule whose artifact skill was not run** (any `ARCH-*`, `CICD-*`, `SEC-*`, `OBS-*` reused ID). If `k8s` did not run, do not infer its findings from the values file yourself: return `INCOMPLETE` and say which skill is missing. The gate's value is that it reports what actually ran.
+2. **`ARCH-SPOF-002` and `ARCH-HA-003` on a batch job, cron job, or queue consumer** that is designed to run to completion or scale from zero. Replicas and long-lived readiness probes are for services that answer requests.
+3. **`CICD-FLOW-002` where the gate exists in a form this skill did not look for**: a protected GitHub environment with required reviewers, a manual GitLab job, a change-management ticket enforced outside the repo, or a deploy that only a release branch can trigger. Name the mechanism you found before concluding there is none.
+4. **`ARCH-DR-002` on a stateless service** whose recovery is redeploying the previous image, and **`ARCH-DR-001`** where backups are owned by a platform account and that account is nameable.
+5. **First-deploy findings on a service that is already in production.** If the artifact history shows prior prod deploys, this is not a first release, and the stricter first-release posture does not apply.
+
+Exception: none of these apply if the mechanism cannot be pointed at. A gate someone
+believes exists but cannot name is the finding. For exclusion 1 in particular, never
+substitute your own reading of an artifact for the skill that owns it: that is how a
+gate starts disagreeing with the skills it aggregates, at which point neither is
+trusted.
 
 ## ROLLBACK — Playbook
 
@@ -1304,9 +1333,12 @@ opportunities, ranked by impact, never merge-blockers. IDs are an API: never ren
 **Reused from auditkit:** all `COST-*` and `COST-LIVE-*` above except the three below.
 **Registered in `rules/rule-ids.yaml`:** `COST-COMP-004` (Graviton), `COST-STOR-003` (gp2→gp3), `COST-DB-002` (Aurora I/O-Optimized).
 
-**No `evals/`:** findings come from **live** AWS billing/optimizer data (Cost Explorer,
-CUR, Compute Optimizer), not static files, so the fixture-based eval harness does not
-apply. Tag every recommendation with its rule ID and $-impact.
+**Evals cover one rule, and that is the honest ceiling.** Almost every finding here
+comes from **live** AWS billing and optimizer data (Cost Explorer, CUR, Compute
+Optimizer) rather than static files, and no fixture can stand in for "Compute Optimizer
+says this instance is over-provisioned". The waiver mechanism is the exception, because
+it is a file in the repo, so [`evals/`](./evals/) covers `META-SUP-001` and makes no
+claim about the rest. Tag every recommendation with its rule ID and $-impact.
 
 **Waiver mechanism:** a repo may accept a known cost trade-off (e.g. Multi-AZ kept in
 non-prod for load-test parity) via a tracked `.clouddrove-waivers.yml` at repo root —
@@ -1323,6 +1355,29 @@ suppressed — cite the reason instead. An entry missing `reason` doesn't suppre
 anything and is itself a finding: `META-SUP-001`.
 
 ---
+
+### False-positive exclusions
+
+Don't report these unless a stated exception applies. Cost findings are opportunities
+rather than defects, so a wrong one wastes an engineer's afternoon proving the number
+is unreachable:
+
+1. **Non-prod running 24/7 that is load-testing or a shared dev cluster on purpose** (`COST-COMP-003`). A schedule saves nothing if the environment is genuinely in use overnight, and a dev cluster that everyone shares is not idle. Check for a schedule already in place, a documented reason, or usage before recommending a shutdown window.
+2. **Multi-AZ in non-prod that exists to rehearse failover** (`COST-DB-001`). Staging that mirrors prod topology is the point of staging. This applies to `staging` specifically; `dev` and `sandbox` rarely need it.
+3. **Reserved capacity or Savings Plans recommendations for a workload being decommissioned or re-platformed** within the commitment term. A one-year commitment on something with a three-month remaining life is a loss, not a saving. Ask before recommending a commitment.
+4. **Graviton migration where the image is not multi-arch** (`COST-COMP-004`). The saving is real and so is the porting work. Report it with the dependency named (a `linux/amd64`-only base image, a compiled extension, a vendor agent), not as a free win.
+5. **Orphaned resources under 30 days old** (`COST-STOR-002`). A volume detached last week may be mid-migration. Say how old it is; an unattached volume from 2023 and one from Tuesday are different findings.
+6. **gp2 volumes on an instance type that does not support gp3** or where the volume is a boot volume under a vendor-managed appliance (`COST-STOR-003`).
+
+Exception: none of these apply if you cannot point at the reason. "It is probably in
+use" is not exclusion 1, and neither is a dev environment nobody has logged into for
+a month. When the evidence is a Cost Explorer figure and nothing else, say that the
+saving is conditional on the reason being checked, and name who should check it.
+
+Every finding here is an opportunity ranked by dollar impact, never a merge blocker,
+so an unclear case should be reported **with its uncertainty stated** rather than
+suppressed. That is the opposite of the review skills, where an uncertain finding is
+better dropped.
 
 ## Where the Money Usually Goes
 
@@ -1613,12 +1668,15 @@ for each is in REVIEW below.
 | **CICD-OPS-003** | ADVISORY | No caching for known tool installs |
 | **CICD-OPS-004** | ADVISORY | Matrix without `fail-fast: false` for independent combos |
 | **CICD-SCAN-001** | ADVISORY | No CodeQL / Dependabot / dependency review on an active repo |
+| **CICD-SCAN-002** | ADVISORY | No dependency scanning: no `dependency-review-action`, no `dependabot.yml`, and no audit step in any workflow |
+| **CICD-SCAN-003** | ADVISORY | A workflow builds and pushes a container image with no scan step (Trivy, Grype, `docker scout`, ECR scan-on-push) before the push |
+| **CICD-FLOW-001** | BLOCKING | A deploy job that does not depend on a passing test job: no `needs:` on a test job, or `needs:` with `if: always()` |
 | **CICD-OPS-005** | ADVISORY | Duplicated workflow logic not extracted to `workflow_call` |
 | **CICD-PERM-002** | ADVISORY | No `permissions: contents: read` baseline declared |
 | **META-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `CICD-PIN-001`, `CICD-PERM-001`, `CICD-SEC-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `SEC-IAM-002`.
-**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `CICD-SCAN-002`/`003`, `CICD-FLOW-001`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
@@ -2068,6 +2126,12 @@ checked-out repo, not live GitHub state — run these with Glob/Read, not `gh ap
 
 - **REPO-DOC-001** — no `README.md` (or `README.rst`/`README`) at repo root.
 - **REPO-DOC-002** — no `CONTRIBUTING.md` at repo root **and** no runbook (`docs/runbook*.md`, `RUNBOOK.md`, `docs/operations*.md`) anywhere in the repo.
+These three are the only rules in this catalog with fixture evals
+([`evals/`](./evals/)), because they are the only ones answerable from a checked-out
+repo. Everything else here needs live GitHub state through `gh api` (branch protection,
+rulesets, Dependabot settings, secret scanning), which no fixture can stand in for. The
+suite covers the checkable part and makes no claim about the rest.
+
 - **REPO-TEST-001** — no test directory/config for the repo's language(s) (`test/`, `tests/`, `spec/`, `__tests__/`, `*_test.go`, `*.test.ts`, `pytest.ini`, `jest.config.*`) **and** no test-running step in any `.github/workflows/*.yml`. Both must be absent — a test job that runs `go test ./...` against inline table tests, or a workflow that shells out to a test framework not matched by the glob, still counts as coverage.
 
 ### Blocking findings
@@ -3024,12 +3088,14 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 | **COST-K8S-001** | BLOCKING | Container missing resource `requests` or `limits` |
 | **ARCH-HA-003** | ADVISORY | `readinessProbe` or `livenessProbe` missing |
 | **ARCH-SPOF-002** | BLOCKING | `replicaCount < 2` for staging/prod |
+| **ARCH-HA-002** | ADVISORY | No autoscaling for a request-serving workload in staging/prod: `autoscaling.enabled: false` (or absent) with a fixed `replicaCount` |
+| **ARCH-SCAL-001** | ADVISORY | Vertical-only scaling: large per-pod `resources` with no HPA, so the only way to take more load is a bigger pod |
 | **COST-K8S-003** | ADVISORY | Memory limit less than memory request |
 | **COST-TAG-001** | ADVISORY | Required labels missing (`app`, `env`, `team`) |
 | **META-SUP-001** | ADVISORY | `k8s-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `SEC-SEC-001`, `SEC-IAM-002`, `CICD-DOCK-001`, `COST-K8S-001`, `COST-TAG-001`.
-**Registered in `rules/rule-ids.yaml`:** `SEC-K8S-001` … `SEC-K8S-007`, `ARCH-HA-003`, `ARCH-SPOF-002`, `COST-K8S-003`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `SEC-K8S-001` … `SEC-K8S-007`, `ARCH-HA-002`, `ARCH-HA-003`, `ARCH-SCAL-001`, `ARCH-SPOF-002`, `COST-K8S-003`, `META-SUP-001`.
 
 **`SEC-K8S-005` is deliberately absent from this catalog.** The registry defines it
 as missing CPU/memory limits or requests, which is the same condition as
@@ -3055,7 +3121,8 @@ can't quote it, don't report it. Evals: [`evals/`](./evals/).
 6. `SEC-K8S-003` on a namespace-scoped `Role` with a wildcard verb over one resource type — the blast radius is one namespace and one kind. The BLOCKING case is a `ClusterRole` with `verbs: ["*"]` **and** `resources: ["*"]`, or any binding whose `roleRef` is `cluster-admin`. Operator/controller charts that legitimately manage CRDs still need to name their API groups; a wildcard is not the only way to express that.
 7. `SEC-K8S-004` where segmentation is genuinely provided elsewhere: a service mesh enforcing mTLS plus `AuthorizationPolicy`/`ServerAuthorization` (Istio, Linkerd), a CNI-level policy the platform team owns cluster-wide (Cilium `CiliumClusterwideNetworkPolicy`), or a namespace-level default-deny already committed in this repo. Absence of a chart-local `NetworkPolicy` is not by itself the finding; absence of any enforcement is. **Only assess this rule when you can see the whole chart** (a `templates/` directory, or a repo where policy manifests would live). A standalone `values.yaml` handed to you in isolation is not evidence that no policy exists anywhere, so stay silent rather than guess.
 8. `SEC-K8S-006` on a `LoadBalancer` explicitly annotated internal (`service.beta.kubernetes.io/aws-load-balancer-internal`, `-scheme: internal`), or a `NodePort` in a dev/kind/minikube values file that never reaches a cloud environment. Also skip services fronted by an ingress that terminates auth (OIDC proxy, ALB with Cognito/OIDC) — the auth exists, one hop up.
-9. `SEC-K8S-007` on a workload that actually talks to the API server: operators, controllers, cluster-autoscaler, external-secrets, anything using in-cluster config. They need the mounted token. The finding is for an ordinary application container that never builds a Kubernetes client.
+9. `ARCH-HA-002` and `ARCH-SCAL-001` on anything that is not request-serving: Jobs, CronJobs, single-writer workloads, queue consumers scaled by queue depth via KEDA rather than CPU, and StatefulSets whose replica count is a quorum size (3 or 5) rather than a capacity choice. Also exclude where an HPA exists outside the chart and is nameable. `ARCH-SCAL-001` additionally needs the resources to be genuinely large: a 100m/128Mi pod with no HPA is small and fixed, not vertically scaled.
+10. `SEC-K8S-007` on a workload that actually talks to the API server: operators, controllers, cluster-autoscaler, external-secrets, anything using in-cluster config. They need the mounted token. The finding is for an ordinary application container that never builds a Kubernetes client.
 
 Exception: the relaxation doesn't apply if these dev values are also what actually
 reaches staging/prod — whether merged in (no separate prod override exists), applied
@@ -4759,6 +4826,11 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 | **SEC-LOG-001** | ADVISORY | No CloudTrail trail defined for an account this repo provisions, or a trail with `enable_logging = false` |
 | **SEC-LOG-002** | ADVISORY | A VPC defined here with no `aws_flow_log` covering it (or the module's flow-log flag off) |
 | **TF-RES-001** | BLOCKING | Missing required tags (`Name`, `Environment`, `Team`, `ManagedBy`) |
+| **TF-RES-002** | ADVISORY | Stateful resource (RDS, EBS, EFS, DynamoDB, ElastiCache, S3 with data) declared with no `lifecycle` block, so a force-new attribute change destroys it silently |
+| **TF-QUAL-002** | ADVISORY | A module directory (`modules/<name>/`, `_modules/<name>/`) with no `README.md` |
+| **ARCH-SPOF-001** | BLOCKING | Single-instance database in staging or prod: `aws_db_instance` with `multi_az = false` (or unset), or an `aws_rds_cluster` with one instance |
+| **SEC-NET-003** | ADVISORY | No network segmentation: every subnet in one tier, or a security group whose ingress is another security group's entire CIDR with no port narrowing |
+| **COST-K8S-002** | ADVISORY | EKS node group runs only on-demand (`capacity_type = "ON_DEMAND"` with no SPOT group) where the workload tolerates interruption |
 | **TF-MOD-001** | ADVISORY | Raw AWS resource where a `terraform-aws-modules` module fits |
 | **TF-MOD-002** | BLOCKING | Module `source` without a pinned `version` (git ref/branch/omitted) |
 | **TF-QUAL-001** | ADVISORY | Repetition: no `locals` block for common tags/values |
@@ -4766,7 +4838,8 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 | **SEC-IAM-003** | ADVISORY | IAM policy attached to a human user/group grants sensitive actions with no `Condition` requiring `aws:MultiFactorAuthPresent` |
 | **META-SUP-001** | ADVISORY | `tf-skill:ignore` suppression missing a `-- reason` |
 
-**Reused from auditkit:** `TF-VAR-001`, `TF-VAR-002`, `TF-PROV-001/002`, `TF-STATE-001/002/003`, `TF-RES-001`, `TF-MOD-001/002`, `TF-QUAL-001`, `SEC-IAM-001/003`, `SEC-PUB-001`, `SEC-LOG-001/002`, `META-SUP-001`.
+**Reused from auditkit:** `TF-VAR-001`, `TF-VAR-002`, `TF-PROV-001/002`, `TF-STATE-001/002/003`, `TF-RES-001`, `TF-MOD-001/002`, `TF-QUAL-001`, `SEC-IAM-001/003`, `SEC-PUB-001`, `SEC-LOG-001/002`, `SEC-NET-003`, `ARCH-SPOF-001`,
+`COST-K8S-002`, `TF-RES-002`, `TF-QUAL-002`, `META-SUP-001`.
 **Registered in `rules/rule-ids.yaml`:** `TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`.
 
 **Output:** every finding carries its rule ID, in the format below. **Suppression:**
@@ -4787,7 +4860,12 @@ quote it, don't report it. Evals: [`evals/`](./evals/).
 
 7. `SEC-PUB-001` on the mere **absence** of `aws_s3_bucket_public_access_block`. Since April 2023 AWS enables Block Public Access on new buckets by default and disallows ACLs, so a bucket with no block resource and no public grant is private. The finding requires an affirmative grant (a public ACL, a `Principal: "*"` policy) or a block resource that explicitly turns a flag off. Whether an *older* bucket predating that default is actually exposed is a live-state question, and belongs to auditkit rather than to source review. Declaring the resource with all four flags `true` is still good practice worth recommending, but it is not this finding.
 8. `SEC-PUB-001` on a bucket that is **deliberately** public and says so: a static website or public asset bucket where the intent is stated in a comment, a `tf-skill:ignore` suppression, or the bucket's own name (`*-public-assets`, `*-website`). Require the intent to be findable in the file, not inferred from the contents. A bucket holding logs, backups, state, or anything with "private", "internal", "data", or "backup" in its name is never excluded, however it is configured.
-9. `SEC-LOG-001` and `SEC-LOG-002` when you cannot see the whole configuration. Both are absence rules: "no CloudTrail anywhere" and "no flow log for this VPC" are claims about a repo, not about a file. Assess them only when reviewing a root module or a directory that would plausibly contain them, and stay silent on a single `.tf` handed over in isolation. Also exclude where the resource is owned elsewhere and that place is nameable: a separate security or landing-zone repo, an Organizations-level trail covering all accounts, or a `_modules/` wrapper that enables it. A claim that "the platform team handles it" with nothing to point at is the finding, not the exclusion.
+9. `TF-RES-002` on a resource that is genuinely disposable and says so: a scratch volume, a cache cluster whose loss is a cold start, a bucket for build artifacts. The rule protects data you cannot recreate from code, so name the data before reporting.
+10. `TF-QUAL-002` on a module directory that is one file and self-evident (a `labels` or `tags` helper), and on any directory under `examples/` or `test/`. A README earns its keep where inputs need explaining, not as a per-directory tax.
+11. `ARCH-SPOF-001` in dev and sandbox, where a single instance is the correct cost decision, and on anything explicitly not a primary datastore: a read replica declared alongside a Multi-AZ writer, a reporting instance restored from snapshot. Establish the environment before reporting, from `var.environment`, tags, or the backend key.
+12. `COST-K8S-002` where interruption is not tolerable and that is visible: a node group tainted for stateful workloads, a group named for a database or a queue consumer with in-flight state, or a group with one node. Spot is a default worth defending, not a rule to apply blindly.
+13. `SEC-NET-003` on a single-purpose module that provisions one tier by design (a module whose whole job is the public subnet layer). The finding is a VPC that declares every subnet identically, not a module that owns one layer of someone else's VPC.
+14. `SEC-LOG-001` and `SEC-LOG-002` when you cannot see the whole configuration. Both are absence rules: "no CloudTrail anywhere" and "no flow log for this VPC" are claims about a repo, not about a file. Assess them only when reviewing a root module or a directory that would plausibly contain them, and stay silent on a single `.tf` handed over in isolation. Also exclude where the resource is owned elsewhere and that place is nameable: a separate security or landing-zone repo, an Organizations-level trail covering all accounts, or a `_modules/` wrapper that enables it. A claim that "the platform team handles it" with nothing to point at is the finding, not the exclusion.
 
 Exception 6: if the statement pairs `Resource = "*"` with any mutating action that
 does accept an ARN, or carries no `Condition` and no enumerated action list, the

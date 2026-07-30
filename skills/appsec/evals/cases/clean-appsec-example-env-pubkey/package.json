@@ -1,0 +1,9 @@
+{
+  "name": "orders-api",
+  "version": "2.1.0",
+  "private": true,
+  "dependencies": {
+    "express": "5.1.0",
+    "helmet": "8.1.0"
+  }
+}

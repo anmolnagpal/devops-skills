@@ -224,6 +224,156 @@ states. A version field cannot see any of that.
 
 ---
 
+## Schedule
+
+`.github/workflows/behavioral-evals.yml` runs both suites weekly (Mondays, 04:17 UTC)
+and on demand via workflow_dispatch, where you can pick a suite and a pass count.
+
+It needs `ANTHROPIC_API_KEY` in the repository's Actions secrets. Without it the job
+warns and skips rather than failing, so a fork without the secret is not permanently
+red. A scheduled failure files an issue labelled `evals` pointing at the logs.
+
+Weekly rather than nightly because a pass costs roughly 70 calls for the fixtures and
+120 for the triggers. The point is catching decay within a week, not within a day.
+
+The workflow installs the plugin **from the checkout**, not from the published
+marketplace, because the harness refuses to run unless the installed copy matches the
+tree by version and content hash.
+
+## Trend
+
+A pass or fail per run says nothing about direction. A score drifting from 60/63 to
+57/63 over a month is the signal worth having, and it is invisible if each run only
+reports its own outcome.
+
+Each scheduled run therefore posts a line to a single pinned issue titled
+**Behavioral eval trend**, one comment per run, oldest first, with both suite scores
+and a link to the run. It also writes a table to the job summary, so a run's outcome is
+legible without downloading an artifact.
+
+Deliberately an issue rather than a committed file. Having CI write to `main` to record
+that CI passed adds a commit per week, a permission the workflow does not otherwise
+need, and a merge conflict surface, to store data that is already chronological in the
+issue timeline.
+
+Subtract the known-failing cases below before reading a score as a regression.
+
+## Distinguishing a flake from a regression
+
+Model output is non-deterministic, so a single failing run proves little:
+
+```bash
+EVALS=1 bash scripts/run-behavioral-evals.sh --repeat 3 tf
+EVALS=1 bash scripts/run-behavioral-evals.sh --triggers --repeat 3
+```
+
+A case that fails in some passes and not others is a flake. One that fails every pass
+is a regression. Two of the known-failing trigger prompts were confirmed this way:
+`adr`'s "should we use EKS or ECS?" failed in both passes of a pass@2, which
+established it as a stable proxy artifact rather than noise.
+
+## 2026-07-30 — first pass@3, and a defect in the pass@N reporting
+
+Pass 1 scored **112/120** with 8 failures. Passes 2 and 3 never ran: the tree was
+edited while pass 1 was in flight, so the content-hash guard refused them, correctly.
+
+The reporting was wrong, though. The repeat loop recorded both refusals as
+`pass N: FAILURES`, because a refusal and a failed run both exited 1 and the loop could
+not tell them apart. A pass@3 built from one real pass and two refusals is not a pass@3,
+and the weekly trend would have recorded it as a score.
+
+Fixed by giving the harness a distinct exit code: **0** all passed, **1** ran and
+something failed, **3** refused to run. The repeat loop now aborts on 3 rather than
+averaging it in, and the workflow reports it as a setup fault rather than a regression.
+Two lessons, one of them purely operational: do not edit `skills/` while a run is in
+flight.
+
+Pass 1's 8 failures, checked against the last measured state rather than asserted:
+
+- **3 documented known-failing** (`adr` EKS-or-ECS, two `ci` deploy-worded prompts).
+- **3 persistently failing but never documented**: `github` "cut a release",
+  `skill-creator` "run the evals for the tf skill", `incident` "which alerts are missing
+  runbooks". These never passed after any fix, and the known-failing table listed only
+  the first three, so the table was incomplete. Now corrected below.
+- **2 that differ from the last measured state**: `ci` "is my pipeline gated before
+  prod?" and `incident` "are we ready to put this service on-call?". Both had passed
+  after their description fixes. One pass cannot say whether they regressed or flaked,
+  which is the entire reason pass@N exists, so they are recorded as unclassified rather
+  than as regressions.
+
+An earlier draft of this section claimed five prompts had regressed. That was wrong on
+both the count and the characterization, and it is corrected here rather than quietly
+edited, because a results file that is casual about its own history is not a record.
+
+## 2026-07-30 — clean pass@3, and the first real flake rate
+
+**112, 113, 112** out of 120. Three full passes, no edits to `skills/` during the run.
+
+Score variance is ±1 across identical passes, which is the number that makes every
+earlier single-run figure interpretable: a suite moving 112 to 113 has not improved.
+
+### Failures by determinism
+
+| Prompt | Fails | Verdict |
+|---|---|---|
+| `skill-creator` "run the evals for the tf skill" | 3/3 | deterministic |
+| `incident` "which alerts are missing runbooks" | 3/3 | deterministic |
+| `incident` "are we ready to put this service on-call?" | 3/3 | deterministic |
+| `github` "cut a release" | 3/3 | deterministic |
+| `ci` "why does staging deploy with prod credentials?" | 3/3 | deterministic |
+| `ci` "is my pipeline gated before prod?" | 3/3 | deterministic |
+| `ci` "add a helm deploy stage" | 2/3 | flaky |
+| `adr` "should we use EKS or ECS?" | 2/3 | flaky |
+| `github` "review my PR diff" (negative) | 1/3 | flaky |
+
+**Flake rate: 3 of 120 prompts (2.5%) behave non-deterministically.** Two were
+previously recorded as known-failing on the strength of single runs, and are actually
+flaky. One is a negative prompt that had never failed before and over-triggered once.
+
+### The two unclassified prompts are deterministic failures
+
+`ci` "is my pipeline gated before prod?" and `incident` "are we ready to put this
+service on-call?" both fail 3/3. Both have their exact phrase in the correct skill's
+description, so they join the other four as cases tuning cannot fix, for the reason
+already established: a forced single pick from a flat list over-weights one salient
+word, and the proxy cannot see the file globs that would settle them.
+
+### A correction about how the ci fix was verified
+
+`ci` "is my pipeline gated before prod?" was declared fixed earlier on the strength of
+**one** passing run, after the give-away clause was removed from its description. At
+3/3 failing, that single pass was the flake and the fix did not work. The clause
+removal was still correct on its own merits, and it is not what makes this prompt
+route correctly, because nothing does.
+
+Declaring a fix verified from one passing run is the same error as declaring a
+regression from one failing run. Both were made today, in the same direction, an hour
+apart.
+
+## Known-failing cases, deliberately kept
+
+Three prompts fail `--triggers` every time and are left in place, because the
+expectations are right and the measurement is what is limited. Deleting them would buy
+a green number by hiding the case.
+
+| Prompt | Routes to | Why it cannot be fixed by tuning |
+|---|---|---|
+| `"add a helm deploy stage"` | `deploy` | phrase is verbatim in `ci`'s description; the word "deploy" wins a forced pick |
+| `"why does staging deploy with prod credentials?"` | `deploy` | same, and `ci` owns `**/.gitlab-ci.yml` which the proxy cannot see |
+| `"should we use EKS or ECS?"` | `adr` | `adr` says it records rather than decides; nothing among 17 skills owns "help me decide", so a forced pick lands here by elimination |
+| `"cut a release"` | `deploy` / `none` | `github` claims the phrase verbatim; "release" reads as shipping, and the proxy cannot see that `github` owns `**/CODEOWNERS` and `dependabot.yml` |
+| `"run the evals for the tf skill"` | `tf` | the prompt names `tf`, so a router matching on skill names picks it over the skill that operates *on* skills |
+| `"which alerts are missing runbooks"` | `observability` | genuinely straddles the seam: observability owns alerts, incident owns runbooks, and this asks about both at once |
+
+Both prompts previously listed as unclassified are now confirmed **deterministic**
+failures at 3/3, and are part of the six above.
+
+Two entries in this table are in fact **flaky** rather than deterministic, per the
+pass@3 above: `ci` "add a helm deploy stage" (2/3) and `adr` "should we use EKS or
+ECS?" (2/3). They stay in the table, because a prompt that fails two runs in three is
+still not routing reliably, but the distinction matters when reading a single run's
+score.
+
 ## Running it yourself
 
 ```bash

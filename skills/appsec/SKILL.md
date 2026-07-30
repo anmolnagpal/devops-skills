@@ -106,7 +106,14 @@ Don't report these unless a stated exception applies:
 
 1. `SEC-DEP-001` findings scoped to `devDependencies`/dev-only tooling (linters, test runners, bundler plugins) that never ships in the production artifact — use the audit command's production-only flag (`--omit=dev`, `--prod`) rather than excluding after the fact where the tool supports it.
 2. `SEC-APP-001` on an internal-only service (no public ingress, behind a service mesh/VPN with no browser client) — security headers defend browser-rendered responses; an internal JSON API with no browser consumer has no XSS/clickjacking surface for these headers to mitigate.
-3. `SEC-APP-002` wildcard origin with no `Access-Control-Allow-Credentials: true` and no cookie/session-based auth on the same routes — a fully public, unauthenticated API returning `*` is the correct config, not a finding.
+3. `SEC-SEC-003` on a `.env.example`, `.env.sample`, `.env.template`, or `.env.dist`, and on a `.env` whose values are visibly placeholders (`changeme`, `xxx`, `your-key-here`, empty after `=`). Those files exist to be committed. The finding is a `.env` carrying values that look real.
+4. `SEC-SEC-004` on a **public** key (`*.pub`, `*.crt`, `*.cer`, a `CERTIFICATE` PEM block), on test fixtures that are visibly throwaway (a key inside a `test/`, `fixtures/`, or `testdata/` directory whose own comment or filename says so), and on an encrypted keystore whose password is not also in the repo. Public halves and disposable test keys are not the finding; a usable private key is.
+5. `SEC-APP-002` wildcard origin with no `Access-Control-Allow-Credentials: true` and no cookie/session-based auth on the same routes — a fully public, unauthenticated API returning `*` is the correct config, not a finding.
+
+Exception for 3 and 4: a file being gitignored **now** does not clear it, because
+`git log` may still carry it and the credential is compromised either way. If the file
+is tracked, report it and say the fix is rotation first, deletion second. Never treat a
+`.gitignore` entry as remediation on its own.
 
 Exception: if a "dev-only" dependency is actually imported by production code
 (check for a runtime `require`/`import` outside `test/`/`scripts/`), or the
@@ -151,9 +158,12 @@ vocabulary. IDs are an API: never renumber a shipped rule; deprecate and add.
 | **SEC-DEP-001** | BLOCKING | A production dependency has a Critical/High severity finding from the ecosystem's audit tool (Medium/Low findings from the same tool run are still reported, at ADVISORY) |
 | **SEC-APP-001** | ADVISORY | No CSP, HSTS, `X-Content-Type-Options`, or `X-Frame-Options` set on a public HTTP-facing service |
 | **SEC-APP-002** | BLOCKING | CORS `origin` wildcard (`*`) combined with `credentials: true` / cookie or session-based auth on the same route |
+| **SEC-SEC-003** | BLOCKING | A `.env` file (or `.env.<env>`) committed to the repo, holding real values rather than placeholders |
+| **SEC-SEC-004** | BLOCKING | Private key material committed: `*.pem`, `*.key`, `id_rsa`, `id_ed25519`, a `PRIVATE KEY` PEM block, or a `.p12`/`.pfx`/`.jks` keystore |
 | **META-SUP-001** | ADVISORY | `appsec-skill:ignore` suppression (or waiver entry) missing a reason |
 
-**Registered in `rules/rule-ids.yaml`:** `SEC-DEP-001`, `SEC-APP-001`, `SEC-APP-002`.
+**Registered in `rules/rule-ids.yaml`:** `SEC-DEP-001`, `SEC-APP-001`, `SEC-APP-002`,
+`SEC-SEC-003`, `SEC-SEC-004`.
 **Reused from auditkit:** `META-SUP-001`.
 
 **Confidence gate:** for `SEC-DEP-001`, only report what the audit tool actually

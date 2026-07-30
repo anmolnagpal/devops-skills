@@ -80,12 +80,15 @@ for each is in REVIEW below.
 | **CICD-OPS-003** | ADVISORY | No caching for known tool installs |
 | **CICD-OPS-004** | ADVISORY | Matrix without `fail-fast: false` for independent combos |
 | **CICD-SCAN-001** | ADVISORY | No CodeQL / Dependabot / dependency review on an active repo |
+| **CICD-SCAN-002** | ADVISORY | No dependency scanning: no `dependency-review-action`, no `dependabot.yml`, and no audit step in any workflow |
+| **CICD-SCAN-003** | ADVISORY | A workflow builds and pushes a container image with no scan step (Trivy, Grype, `docker scout`, ECR scan-on-push) before the push |
+| **CICD-FLOW-001** | BLOCKING | A deploy job that does not depend on a passing test job: no `needs:` on a test job, or `needs:` with `if: always()` |
 | **CICD-OPS-005** | ADVISORY | Duplicated workflow logic not extracted to `workflow_call` |
 | **CICD-PERM-002** | ADVISORY | No `permissions: contents: read` baseline declared |
 | **META-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `CICD-PIN-001`, `CICD-PERM-001`, `CICD-SEC-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `SEC-IAM-002`.
-**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `CICD-SCAN-002`/`003`, `CICD-FLOW-001`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
