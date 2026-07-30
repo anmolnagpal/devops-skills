@@ -47,17 +47,31 @@ jobs:
         with: { python-version: '3.x' }
       - run: pip install pyyaml
 
-      - name: Check the API key is configured
+      - name: Check a credential is configured
         id: key
         env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-            echo "have_key=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::ANTHROPIC_API_KEY is not set, so Tier-2 cannot run."
-            echo "Add it under Settings > Secrets and variables > Actions."
-          else
+          # A runner has no interactive login, so `claude -p` needs a credential.
+          # Either works, and they bill differently:
+          #
+          #   CLAUDE_CODE_OAUTH_TOKEN  a long-lived token from `claude setup-token`,
+          #                            tied to a Claude subscription. No API account
+          #                            needed. Preferred if you already pay for Claude.
+          #   ANTHROPIC_API_KEY        a console.anthropic.com key, billed per token.
+          #
+          # Preferring the OAuth token because it needs nothing beyond a subscription
+          # the team already has.
+          if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
             echo "have_key=true" >> "$GITHUB_OUTPUT"
+            echo "auth=subscription token" >> "$GITHUB_OUTPUT"
+          elif [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "have_key=true" >> "$GITHUB_OUTPUT"
+            echo "auth=api key" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_key=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No credential set, so Tier-2 cannot run. Add either CLAUDE_CODE_OAUTH_TOKEN (run 'claude setup-token' locally, no API account needed) or ANTHROPIC_API_KEY under Settings > Secrets and variables > Actions."
           fi
 
       - name: Install the Claude CLI
@@ -69,6 +83,7 @@ jobs:
       - name: Install this repo's plugin from the working tree
         if: steps.key.outputs.have_key == 'true'
         env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           # The harness refuses to run unless the installed plugin matches the tree
@@ -81,6 +96,7 @@ jobs:
       - name: Fixtures
         if: steps.key.outputs.have_key == 'true' && inputs.mode != 'triggers'
         env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           EVALS: '1'
         run: |
@@ -99,6 +115,7 @@ jobs:
       - name: Triggers
         if: steps.key.outputs.have_key == 'true' && inputs.mode != 'fixtures'
         env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           EVALS: '1'
         run: |

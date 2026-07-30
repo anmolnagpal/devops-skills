@@ -229,9 +229,22 @@ states. A version field cannot see any of that.
 `.github/workflows/behavioral-evals.yml` runs both suites weekly (Mondays, 04:17 UTC)
 and on demand via workflow_dispatch, where you can pick a suite and a pass count.
 
-It needs `ANTHROPIC_API_KEY` in the repository's Actions secrets. Without it the job
-warns and skips rather than failing, so a fork without the secret is not permanently
-red. A scheduled failure files an issue labelled `evals` pointing at the logs.
+### Credentials
+
+A CI runner has no interactive login, so `claude -p` needs a credential. Either of
+these works, and they bill differently:
+
+| Secret | What it is |
+|---|---|
+| `CLAUDE_CODE_OAUTH_TOKEN` | a long-lived token from `claude setup-token`, tied to a Claude subscription. **No API account needed.** Preferred. |
+| `ANTHROPIC_API_KEY` | a console.anthropic.com key, billed per token. |
+
+Set one under **Settings → Secrets and variables → Actions**. To use the subscription
+route, run `claude setup-token` locally and paste the result.
+
+Without either, the job warns and skips rather than failing, so a fork without the
+secret is not permanently red. A scheduled failure files an issue labelled `evals`
+pointing at the logs.
 
 Weekly rather than nightly because a pass costs roughly 70 calls for the fixtures and
 120 for the triggers. The point is catching decay within a week, not within a day.

@@ -310,6 +310,9 @@ EVALS=1 bash scripts/run-behavioral-evals.sh --repeat 3 tf # pass@3
 
 It also runs weekly in CI (`.github/workflows/behavioral-evals.yml`) and on demand,
 so a description edit that breaks routing surfaces within a week rather than never.
+CI needs one credential secret, either `CLAUDE_CODE_OAUTH_TOKEN` from
+`claude setup-token` (uses a Claude subscription, no API account) or
+`ANTHROPIC_API_KEY`. Locally you need neither: your `claude` CLI is already logged in.
 Use `--repeat` when investigating a failure: a case that fails in some passes and not
 others is a flake, one that fails every pass is a regression.
 
