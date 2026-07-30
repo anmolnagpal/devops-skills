@@ -13,8 +13,9 @@ actually runs it: `EVALS=1 bash scripts/run-behavioral-evals.sh --triggers skill
 - "run the evals for the tf skill"
 - "my skill is not triggering, fix the description"
 - "improve this skill's rule catalog"
+- "add a rule ID"
 
 ## Should not load
 
 - "review my terraform" → `tf`, this builds skills rather than using them
-- "add a rule ID" → still this skill, but say the registry comes first
+- "review my helm values" → `k8s`, same boundary

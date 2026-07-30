@@ -1,5 +1,5 @@
 ---
-description: Capture architectural decisions as structured ADRs (Architecture Decision Records). Use when user says 'record this decision', 'ADR this', 'why did we choose X', 'document this trade-off', 'we decided to...', or when a significant choice is made between alternatives (framework, database, pattern, API design, infra approach).
+description: Capture architectural decisions that have already been made, as structured ADRs (Architecture Decision Records). Use when user says 'record this decision', 'ADR this', 'why did we choose X', 'document this trade-off', 'we decided to...', or when a choice between alternatives has been settled and needs writing down. This records a decision; it does not make one. A question of the form 'should we use X or Y' is a design discussion, not an ADR request.
 globs: **/docs/adr/*.md, **/docs/adr/**/*.md
 alwaysApply: false
 ---

@@ -1,5 +1,5 @@
 ---
-description: Security review against OWASP Top 10:2025, ASVS 5.0, and Agentic AI risks. Use when user says 'review for security', 'is this secure', 'check for vulnerabilities', 'review auth/authorization', 'check input handling', or when writing cryptography, session management, or AI agent code.
+description: Security review requiring judgment about exploitability: injection and input handling, authentication and session management, authorization, secret storage and cryptography, and Agentic AI risks, against OWASP Top 10:2025 and ASVS 5.0. Use when user says 'review for security', 'is this secure', 'review this endpoint for injection', 'check for SQL injection or XSS', 'review auth/authorization', 'how are we storing secrets', 'check how we store secrets in this service', 'is this crypto correct', or when writing cryptography, session management, or AI agent code. Judges reachability and impact in this codebase; /clouddrove:appsec owns the deterministic checks a tool can answer (lockfile CVEs, missing headers, wildcard CORS).
 alwaysApply: true
 ---
 # OWASP Security Skill

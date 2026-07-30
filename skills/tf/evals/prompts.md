@@ -10,6 +10,7 @@ actually runs it: `EVALS=1 bash scripts/run-behavioral-evals.sh --triggers tf`.
 
 - "review my terraform before I raise the MR"
 - "check my .tf files"
+- "review my infra" (in a repo of .tf files)
 - "scaffold an RDS instance with encryption"
 - "upgrade the aws provider, what breaks?"
 - "is my backend configured properly?"

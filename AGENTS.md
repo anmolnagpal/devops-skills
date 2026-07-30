@@ -6,7 +6,7 @@ Codex (and other AGENTS-aware tools) read this file for skill guidance.
 
 ## /adr
 
-  - **Use when**: Capture architectural decisions as structured ADRs (Architecture Decision Records). Use when user says 'record this decision', 'ADR this', 'why did we choose X', 'document this trade-off', 'we decided to...', or when a significant choice is made between alternatives (framework, database, pattern, API design, infra approach).
+  - **Use when**: Capture architectural decisions that have already been made, as structured ADRs (Architecture Decision Records). Use when user says 'record this decision', 'ADR this', 'why did we choose X', 'document this trade-off', 'we decided to...', or when a choice between alternatives has been settled and needs writing down. This records a decision; it does not make one. A question of the form 'should we use X or Y' is a design discussion, not an ADR request.
   - **Auto-load for**: `**/docs/adr/*.md`, `**/docs/adr/**/*.md`
 
 # ADR Skill
@@ -284,7 +284,7 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 ## /ci
 
-  - **Use when**: GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', or when working in .gitlab-ci.yml files.
+  - **Use when**: GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments, including individual stages, jobs, and pipeline credentials. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', 'add a stage', 'add a deploy job', 'add a helm deploy stage', 'my pipeline leaks credentials', 'why does staging deploy with prod credentials', 'staging and prod share a job', or when working in .gitlab-ci.yml files. Owns what the pipeline is; /clouddrove:deploy owns rollout strategy and readiness gating.
   - **Auto-load for**: `**/.gitlab-ci.yml`, `**/.gitlab-ci.yaml`, `**/gitlab-ci*.yml`
 
 # GitLab CI/CD Skill
@@ -1905,7 +1905,7 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 ## /github
 
-  - **Use when**: GitHub repository operations — PRs, issues, releases, branch protection, CODEOWNERS, security settings. Use when user says 'review my PR', 'create a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', or asks about GitHub repo configuration.
+  - **Use when**: GitHub repository operations: PRs, issues, releases, branch protection, CODEOWNERS, Dependabot, and repo settings audits. Use when user says 'review my PR', 'create a release', 'cut a release', 'tag a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', 'is Dependabot configured', or asks about GitHub repo configuration. Repo settings and metadata, not workflow files; /clouddrove:github-actions owns .github/workflows.
   - **Auto-load for**: `**/.github/CODEOWNERS`, `**/CODEOWNERS`, `**/.github/pull_request_template.md`, `**/.github/ISSUE_TEMPLATE/**`, `**/.github/dependabot.yml`
 
 # GitHub Skill
@@ -2620,7 +2620,7 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 ## /incident
 
-  - **Use when**: Runbooks, incident response, and blameless postmortems: write a runbook for a service, audit incident readiness before an on-call rotation starts, run a severity and escalation model, and turn an incident timeline into a postmortem with real action items. Use when user says 'write a runbook', 'review my runbooks', 'are we ready for on-call', 'set up incident response', 'define severity levels', 'write a postmortem', 'incident retro', or when working in docs/runbooks/ or docs/incidents/.
+  - **Use when**: Runbooks, on-call readiness, incident response, and blameless postmortems: write a runbook for a service, audit whether a service can be operated at 03:00 before a rotation starts, find alerts that have no runbook, run a severity and escalation model, and turn an incident timeline into a postmortem. Use when user says 'write a runbook', 'review my runbooks', 'are we ready for on-call', 'are we ready to put this service on-call', 'which alerts are missing runbooks', 'set up incident response', 'define severity levels', 'write a postmortem', 'incident retro', or when working in docs/runbooks/ or docs/incidents/. Owns the response side; /clouddrove:observability owns whether a signal exists and reaches anyone, this owns whether the human it wakes knows what to do.
   - **Auto-load for**: `**/docs/runbooks/*.md`, `**/docs/incidents/*.md`, `**/RUNBOOK.md`
 
 # Incident Response Skill
@@ -3726,7 +3726,7 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 ## /owasp
 
-  - **Use when**: Security review against OWASP Top 10:2025, ASVS 5.0, and Agentic AI risks. Use when user says 'review for security', 'is this secure', 'check for vulnerabilities', 'review auth/authorization', 'check input handling', or when writing cryptography, session management, or AI agent code.
+  - **Use when**: Security review requiring judgment about exploitability: injection and input handling, authentication and session management, authorization, secret storage and cryptography, and Agentic AI risks, against OWASP Top 10:2025 and ASVS 5.0. Use when user says 'review for security', 'is this secure', 'review this endpoint for injection', 'check for SQL injection or XSS', 'review auth/authorization', 'how are we storing secrets', 'check how we store secrets in this service', 'is this crypto correct', or when writing cryptography, session management, or AI agent code. Judges reachability and impact in this codebase; /clouddrove:appsec owns the deterministic checks a tool can answer (lockfile CVEs, missing headers, wildcard CORS).
 
 # OWASP Security Skill
 
@@ -3890,7 +3890,7 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 ## /skill-creator
 
-  - **Use when**: Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
+  - **Use when**: Create, edit, evaluate, and debug the skills in this repo, including running their evals and fixing a description that fails to trigger. Use when user says 'help me build a new skill', 'add a skill for X', 'run the evals for the tf skill', 'run the behavioral evals', 'my skill is not triggering', 'fix this skill's description', 'improve this skill's rule catalog', 'add a rule ID', or 'benchmark a skill'. Operates on the skills themselves rather than on infrastructure: a request to review actual Terraform or Kubernetes belongs to that domain skill.
 
 # Skill Creator
 

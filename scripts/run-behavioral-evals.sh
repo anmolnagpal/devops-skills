@@ -104,7 +104,9 @@ Answer with exactly one skill name from that list, or the single word none.
 No explanation.
 
 Request: $phrase"
-      got="$(printf '%s' "$ask" | claude -p 2>/dev/null | tr -d '[:space:]' | tr -cd 'a-z-' || true)"
+      # Keep digits: 'k8s' is a real skill name and 'a-z-' silently made it 'ks',
+      # which failed five correct answers on the first run of this mode.
+      got="$(printf '%s' "$ask" | claude -p 2>/dev/null | tr -d '[:space:]' | tr -cd 'a-z0-9-' || true)"
       if [ "$want" = "yes" ]; then
         if [ "$got" = "$skill" ]; then
           passed=$((passed + 1)); printf '  PASS [%s] loads: %s\n' "$skill" "$phrase"

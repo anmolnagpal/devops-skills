@@ -1,6 +1,6 @@
 ---
 name: github
-description: "GitHub repository operations — PRs, issues, releases, branch protection, CODEOWNERS, security settings. Use when user says 'review my PR', 'create a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', or asks about GitHub repo configuration."
+description: "GitHub repository operations: PRs, issues, releases, branch protection, CODEOWNERS, Dependabot, and repo settings audits. Use when user says 'review my PR', 'create a release', 'cut a release', 'tag a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', 'is Dependabot configured', or asks about GitHub repo configuration. Repo settings and metadata, not workflow files; /clouddrove:github-actions owns .github/workflows."
 safety: runs-commands
 metadata:
   version: 0.6.0
