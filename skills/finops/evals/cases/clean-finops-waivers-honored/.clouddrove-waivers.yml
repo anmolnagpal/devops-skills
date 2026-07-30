@@ -1,0 +1,5 @@
+waivers:
+  - rule_id: COST-DB-001
+    reason: "non-prod Multi-AZ kept for load-test parity, reviewed 2026-Q3"
+  - rule_id: COST-COMP-003
+    reason: "the dev cluster is shared across three timezones and is genuinely in use overnight"

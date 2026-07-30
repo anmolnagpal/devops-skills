@@ -1,0 +1,54 @@
+replicaCount: 3
+
+image:
+  repository: 123456789012.dkr.ecr.eu-west-1.amazonaws.com/payments-api
+  tag: ""
+
+commonLabels:
+  app: payments-api
+  env: prod
+  team: payments
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "1"
+    memory: "1Gi"
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 10
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 12
+  targetCPUUtilizationPercentage: 70
+
+envFrom:
+  - secretRef:
+      name: payments-api-secrets
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+
+serviceAccount:
+  create: true
+  automountServiceAccountToken: false

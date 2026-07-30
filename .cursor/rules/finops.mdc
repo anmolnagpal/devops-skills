@@ -56,9 +56,12 @@ opportunities, ranked by impact, never merge-blockers. IDs are an API: never ren
 **Reused from auditkit:** all `COST-*` and `COST-LIVE-*` above except the three below.
 **Registered in `rules/rule-ids.yaml`:** `COST-COMP-004` (Graviton), `COST-STOR-003` (gp2→gp3), `COST-DB-002` (Aurora I/O-Optimized).
 
-**No `evals/`:** findings come from **live** AWS billing/optimizer data (Cost Explorer,
-CUR, Compute Optimizer), not static files, so the fixture-based eval harness does not
-apply. Tag every recommendation with its rule ID and $-impact.
+**Evals cover one rule, and that is the honest ceiling.** Almost every finding here
+comes from **live** AWS billing and optimizer data (Cost Explorer, CUR, Compute
+Optimizer) rather than static files, and no fixture can stand in for "Compute Optimizer
+says this instance is over-provisioned". The waiver mechanism is the exception, because
+it is a file in the repo, so [`evals/`](./evals/) covers `META-SUP-001` and makes no
+claim about the rest. Tag every recommendation with its rule ID and $-impact.
 
 **Waiver mechanism:** a repo may accept a known cost trade-off (e.g. Multi-AZ kept in
 non-prod for load-test parity) via a tracked `.clouddrove-waivers.yml` at repo root —

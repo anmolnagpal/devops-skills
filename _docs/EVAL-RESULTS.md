@@ -240,6 +240,24 @@ The workflow installs the plugin **from the checkout**, not from the published
 marketplace, because the harness refuses to run unless the installed copy matches the
 tree by version and content hash.
 
+## Trend
+
+A pass or fail per run says nothing about direction. A score drifting from 60/63 to
+57/63 over a month is the signal worth having, and it is invisible if each run only
+reports its own outcome.
+
+Each scheduled run therefore posts a line to a single pinned issue titled
+**Behavioral eval trend**, one comment per run, oldest first, with both suite scores
+and a link to the run. It also writes a table to the job summary, so a run's outcome is
+legible without downloading an artifact.
+
+Deliberately an issue rather than a committed file. Having CI write to `main` to record
+that CI passed adds a commit per week, a permission the workflow does not otherwise
+need, and a merge conflict surface, to store data that is already chronological in the
+issue timeline.
+
+Subtract the known-failing cases below before reading a score as a regression.
+
 ## Distinguishing a flake from a regression
 
 Model output is non-deterministic, so a single failing run proves little:
