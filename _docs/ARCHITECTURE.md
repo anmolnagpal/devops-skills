@@ -196,4 +196,3 @@ Upgrading:
 Same command as install; it pulls the latest and re-runs. In Claude Code alone: `/plugin update clouddrove@devops-skills`. On a submodule pin, checkout the new tag and re-run `scripts/install.sh`. Rule IDs are treated as a public contract: an ID's meaning never changes silently, and removals are called out in the CHANGELOG.
 
 ---
-

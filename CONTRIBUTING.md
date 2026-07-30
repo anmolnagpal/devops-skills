@@ -6,6 +6,17 @@ Thanks for your interest. This repo is a community-friendly collection of DevOps
 
 ## Setup
 
+```bash
+pip install pre-commit && pre-commit install
+```
+
+That runs the six free gates on every commit, in about six seconds, with no credential
+of any kind. It is the same `validate.sh` CI runs.
+
+The behavioral evals are deliberately **not** a commit hook. They take 45 to 90 minutes
+and 2.5% of their prompts are non-deterministic, so as a hook they would waste an hour
+per commit and block commits at random. They run weekly in CI and on demand instead.
+
 One-time dependency for the generator and checks:
 
 ```bash
