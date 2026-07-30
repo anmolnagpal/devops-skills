@@ -99,6 +99,19 @@ for path in skills:
         bad(f"[{name}] {nneg} 'Should not load' prompt(s), need {need_neg}: "
             f"its scope overlaps {OVERLAPPING[name]}, so the boundary needs pinning")
 
+    # A phrase cannot be in both lists. It fails one way or the other no matter
+    # what the model does, so the suite can never go green and the failure looks
+    # like a skill defect. This happened during the first --triggers run: a
+    # deletion missed by three words and left "review my infra" in both of tf's
+    # sections, costing a real debugging detour.
+    def quoted(block):
+        return {q for line in prompts(block)
+                for q in re.findall(r'"([^"]+)"', line)}
+    both = quoted(pos) & quoted(neg)
+    for phrase in sorted(both):
+        bad(f"[{name}] \"{phrase}\" is in both 'Should load' and 'Should not load'. "
+            f"It fails whichever way the model answers; pick one.")
+
     # A negative prompt has to say where it should go instead, otherwise a
     # failure tells you nothing about what went wrong.
     for line in prompts(neg):
