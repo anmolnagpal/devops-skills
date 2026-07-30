@@ -224,6 +224,48 @@ states. A version field cannot see any of that.
 
 ---
 
+## Schedule
+
+`.github/workflows/behavioral-evals.yml` runs both suites weekly (Mondays, 04:17 UTC)
+and on demand via workflow_dispatch, where you can pick a suite and a pass count.
+
+It needs `ANTHROPIC_API_KEY` in the repository's Actions secrets. Without it the job
+warns and skips rather than failing, so a fork without the secret is not permanently
+red. A scheduled failure files an issue labelled `evals` pointing at the logs.
+
+Weekly rather than nightly because a pass costs roughly 70 calls for the fixtures and
+120 for the triggers. The point is catching decay within a week, not within a day.
+
+The workflow installs the plugin **from the checkout**, not from the published
+marketplace, because the harness refuses to run unless the installed copy matches the
+tree by version and content hash.
+
+## Distinguishing a flake from a regression
+
+Model output is non-deterministic, so a single failing run proves little:
+
+```bash
+EVALS=1 bash scripts/run-behavioral-evals.sh --repeat 3 tf
+EVALS=1 bash scripts/run-behavioral-evals.sh --triggers --repeat 3
+```
+
+A case that fails in some passes and not others is a flake. One that fails every pass
+is a regression. Two of the known-failing trigger prompts were confirmed this way:
+`adr`'s "should we use EKS or ECS?" failed in both passes of a pass@2, which
+established it as a stable proxy artifact rather than noise.
+
+## Known-failing cases, deliberately kept
+
+Three prompts fail `--triggers` every time and are left in place, because the
+expectations are right and the measurement is what is limited. Deleting them would buy
+a green number by hiding the case.
+
+| Prompt | Routes to | Why it cannot be fixed by tuning |
+|---|---|---|
+| `"add a helm deploy stage"` | `deploy` | phrase is verbatim in `ci`'s description; the word "deploy" wins a forced pick |
+| `"why does staging deploy with prod credentials?"` | `deploy` | same, and `ci` owns `**/.gitlab-ci.yml` which the proxy cannot see |
+| `"should we use EKS or ECS?"` | `adr` | `adr` says it records rather than decides; nothing among 17 skills owns "help me decide", so a forced pick lands here by elimination |
+
 ## Running it yourself
 
 ```bash

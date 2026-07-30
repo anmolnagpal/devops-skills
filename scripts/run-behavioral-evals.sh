@@ -73,7 +73,10 @@ else
 import hashlib, glob, os, sys
 root = sys.argv[1]
 h = hashlib.sha256()
-for p in sorted(glob.glob(os.path.join(root, 'skills', '*', 'SKILL.md'))):
+paths = sorted(glob.glob(os.path.join(root, 'skills', '*', 'SKILL.md'))
+               + glob.glob(os.path.join(root, 'skills', '*', 'references', '*.md'))
+               + glob.glob(os.path.join(root, 'skills', '*', '*.md')))
+for p in paths:
     h.update(os.path.relpath(p, root).encode())
     h.update(open(p, 'rb').read())
 print(h.hexdigest()[:12])
@@ -94,16 +97,49 @@ fi
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 MODE=fixtures
+REPEAT="${EVAL_REPEAT:-1}"
 args=()
-for a in "$@"; do
-  case "$a" in
+while [ $# -gt 0 ]; do
+  case "$1" in
     --triggers) MODE=triggers ;;
     --fixtures) MODE=fixtures ;;
-    -*) echo "unknown flag: $a" >&2; exit 1 ;;
-    *) args+=("$a") ;;
+    --repeat)   REPEAT="${2:?--repeat needs a count}"; shift ;;
+    -*) echo "unknown flag: $1" >&2; exit 1 ;;
+    *) args+=("$1") ;;
   esac
+  shift
 done
 set -- ${args+"${args[@]}"}
+
+case "$REPEAT" in
+  ''|*[!0-9]*) echo "FAIL: --repeat must be a positive integer, got '$REPEAT'" >&2; exit 1 ;;
+esac
+[ "$REPEAT" -lt 1 ] && { echo "FAIL: --repeat must be at least 1" >&2; exit 1; }
+
+# Model output is non-deterministic, so one run cannot distinguish a flake from a
+# regression. --repeat N runs the whole selection N times and reports pass@N per
+# pass, which is the number worth tracking over time.
+if [ "$REPEAT" -gt 1 ]; then
+  echo "harness: running $REPEAT passes for pass@$REPEAT"
+  pass_results=()
+  overall=0
+  for run in $(seq 1 "$REPEAT"); do
+    echo
+    echo "───────── pass $run of $REPEAT"
+    if EVAL_REPEAT=1 bash "$0" ${MODE:+--$MODE} ${args+"${args[@]}"}; then
+      pass_results+=("pass $run: all passed")
+    else
+      pass_results+=("pass $run: FAILURES")
+      overall=1
+    fi
+  done
+  echo
+  echo "───────── pass@$REPEAT summary"
+  printf '  %s
+' "${pass_results[@]}"
+  [ "$overall" -eq 0 ] && echo "pass@$REPEAT: every pass green." || echo "pass@$REPEAT: at least one pass had failures. A case failing in some passes and not others is a flake; one failing every pass is a regression."
+  exit "$overall"
+fi
 
 SKILLS=("$@")
 if [ "${#SKILLS[@]}" -eq 0 ]; then
