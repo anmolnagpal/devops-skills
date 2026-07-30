@@ -245,11 +245,7 @@ _unemitted:
   # should own it, so this doubles as the worklist. Moving one out of here means
   # adding the rule to that skill's catalog with fixtures, per CONTRIBUTING.
   planned:
-    SEC-PUB-001: 'tf, wrapper-tf — public bucket ACL or policy in source'
-    SEC-LOG-001: 'tf — CloudTrail trail absent or logging disabled'
-    SEC-LOG-002: 'tf — VPC flow logs not enabled'
     SEC-NET-003: 'tf — no subnet tiering or security-group segmentation'
-    TF-STATE-003: 'tf — a .tfstate file committed to the repo'
     TF-RES-002: 'tf — stateful resource with no lifecycle block'
     TF-QUAL-002: 'tf, wrapper-tf — module directory with no README'
     ARCH-SPOF-001: 'tf, wrapper-tf — single-instance RDS in staging or prod'
