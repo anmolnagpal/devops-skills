@@ -35,6 +35,28 @@ fi
 
 command -v claude >/dev/null 2>&1 || { echo "FAIL: 'claude' CLI not found on PATH"; exit 1; }
 
+# The harness invokes `claude -p`, which loads the *installed* plugin, not this
+# working tree. Those can differ, and a green run against a stale install is
+# worse than no run: it reports the repo as verified while testing code that is
+# not in it. The first real run of this harness hit exactly that, with 1.3.0
+# installed against a 1.4.0 tree, which would have silently skipped every skill
+# added in 1.4.0 while appearing to pass.
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+want="$(python3 -c "import json;print(json.load(open('$REPO_ROOT/.claude-plugin/plugin.json'))['version'])" 2>/dev/null || echo '')"
+have="$(claude plugin list 2>/dev/null | awk '/clouddrove@devops-skills/{f=1;next} f&&/Version:/{print $2;exit}')"
+if [ -z "$have" ]; then
+  echo "FAIL: the clouddrove plugin is not installed, so 'claude -p' cannot load any skill." >&2
+  echo "      Install it:  claude plugin install clouddrove@devops-skills" >&2
+  exit 1
+fi
+if [ -n "$want" ] && [ "$have" != "$want" ]; then
+  echo "FAIL: installed plugin is $have but this tree is $want." >&2
+  echo "      Testing a stale install would report results for code that is not here." >&2
+  echo "      Update it:  claude plugin marketplace update devops-skills && claude plugin update clouddrove@devops-skills" >&2
+  exit 1
+fi
+echo "harness: plugin $have matches the working tree, skills under test are this repo's."
+
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 MODE=fixtures
 args=()

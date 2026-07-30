@@ -97,7 +97,7 @@ Ask to save a review and you get a [diffable markdown report](_docs/REVIEW-REPOR
 
 **Every skill declares what it can touch.** `read-only`, `runs-commands`, or `writes-files` in frontmatter, and CI fails if the label disagrees with the skill's tool list. Nine of the seventeen cannot modify your repo at all. The bundled bash-guard hook blocks destructive commands too, though it stops accidents rather than attacks: it matches command text, so it is a speed bump, not a boundary.
 
-**Findings are tested, not asserted.** 63 fixtures cover 100% of catalog rules, so a skill that stops detecting something turns a test red. Each skill also ships trigger-phrase evals, because a skill with a weak description never loads at all and no rule test would notice.
+**Findings are tested, not asserted.** 64 fixtures cover 100% of catalog rules, and the last live run scored [60/63 with every failure being a bad expectation rather than a bad skill](_docs/EVAL-RESULTS.md). Each skill also ships trigger-phrase evals, because a skill with a weak description never loads at all and no rule test would notice.
 
 ## Also in the box
 
@@ -112,6 +112,7 @@ Six team plugins (HashiCorp Terraform generation, claude-mem, superpowers, cavem
 | Wondering why a finding says what it says | [ARCHITECTURE.md](_docs/ARCHITECTURE.md) — rule IDs, severity models, safety labels |
 | Saving reviews as files | [REVIEW-REPORT.md](_docs/REVIEW-REPORT.md) — the report format and path convention |
 | Adding a skill or a rule | [CONTRIBUTING.md](CONTRIBUTING.md) — repo layout, evals, the CI gates |
+| Wondering whether the skills actually work | [EVAL-RESULTS.md](_docs/EVAL-RESULTS.md) — the last live run, and what it found |
 | Upgrading | [CHANGELOG.md](CHANGELOG.md) — every release, semver |
 | Reporting a vulnerability | [SECURITY.md](SECURITY.md) |
 

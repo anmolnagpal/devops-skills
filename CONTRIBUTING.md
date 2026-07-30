@@ -306,7 +306,13 @@ EVALS=1 bash scripts/run-behavioral-evals.sh          # every skill with evals/
 EVALS=1 bash scripts/run-behavioral-evals.sh tf k8s   # just these skills
 ```
 
-Run Tier-2 for any skill whose detection logic you changed.
+Run Tier-2 for any skill whose detection logic you changed, and record the run in
+[`_docs/EVAL-RESULTS.md`](_docs/EVAL-RESULTS.md). The harness refuses to run if the
+installed plugin version does not match `plugin.json`, because a green run against
+a stale install reports the repo as verified while testing code that is not in it.
+
+When a case fails, the eval is at least as likely to be wrong as the skill. The
+first real run produced three failures and all three were bad expectations.
 
 ## Add a plugin
 

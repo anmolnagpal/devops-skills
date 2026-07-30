@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Every registry rule ID must now be emitted by a skill or declared unemitted.** `check-rule-ids.sh` previously printed a silent `note: 22 registry ID(s) not referenced by any skill` and passed. Dead vocabulary reads as coverage, so the note is now a FAIL unless the ID is declared under `_unemitted` in `rules/rule-ids.yaml`: `reserved` for the five that need a live DNS query and belong to auditkit's external-surface auditor, `planned` for the seventeen that are implementable from files and now name the skill that should own them. The check also fails if an ID is both emitted and declared, or if a declaration names an ID that no longer exists.
 
+- **First Tier-2 behavioral eval run, recorded in `_docs/EVAL-RESULTS.md`.** 60/63 cases passed, and all three failures were defects in the evals or the skills rather than model misbehavior: an expectation that was impossible to satisfy (an absence-finding from a single-file fixture, green in CI since PR #12 because Tier-1 never runs a skill), and two false positives where the model was right and the fixture encoded an assumption the skill never stated. Zero false positives across the 22 `clean-*` cases once corrected.
+- **`run-behavioral-evals.sh` now asserts the installed plugin version matches `plugin.json`.** The first run started with 1.3.0 installed against a 1.4.0 tree, which would have silently skipped every skill added in 1.4.0 while appearing to pass. A green run against a stale install is worse than no run.
+
 ### Changed
 
 - **The bash-guard hook now states its own limits.** It matches command text, so a variable holding a flag, an alias, or a here-doc fed to `sh` gets past it. It prevents accidents, not attacks, and the header and README now say so rather than implying a boundary it does not provide. Claude Code's `sandbox` setting is named as the real control.
