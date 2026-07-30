@@ -21,6 +21,10 @@
 # than an observation of it. Good enough to catch a description that stopped
 # matching how people phrase things; not proof of what the harness did.
 #
+# Exit codes: 0 all passed, 1 ran and something failed, 3 refused to run (no plugin,
+# version mismatch, content mismatch). Callers must distinguish 1 from 3, because a
+# refusal measures nothing and averaging it into a score is worse than no score.
+#
 # Gate: every rule ID in a case's expected.txt must appear in the live output
 # (recall). A clean-* case fails if the live output reports ANY of the skill's
 # own rule IDs at all (false positive). Extra defensible findings beyond
@@ -47,13 +51,13 @@ have="$(claude plugin list 2>/dev/null | awk '/clouddrove@devops-skills/{f=1;nex
 if [ -z "$have" ]; then
   echo "FAIL: the clouddrove plugin is not installed, so 'claude -p' cannot load any skill." >&2
   echo "      Install it:  claude plugin install clouddrove@devops-skills" >&2
-  exit 1
+  exit 3
 fi
 if [ -n "$want" ] && [ "$have" != "$want" ]; then
   echo "FAIL: installed plugin is $have but this tree is $want." >&2
   echo "      Testing a stale install would report results for code that is not here." >&2
   echo "      Update it:  claude plugin marketplace update devops-skills && claude plugin update clouddrove@devops-skills" >&2
-  exit 1
+  exit 3
 fi
 # A matching version is necessary but not sufficient. `claude plugin update` is a
 # no-op when the version is unchanged, so an edited skill body can sit in the tree
@@ -90,7 +94,7 @@ PYEOF
     echo "      'claude plugin update' will not fix this: it compares versions, and they match." >&2
     echo "      Force it:  claude plugin uninstall clouddrove@devops-skills \\" >&2
     echo "                 && claude plugin install clouddrove@devops-skills" >&2
-    exit 1
+    exit 3
   fi
   echo "harness: plugin $have matches the working tree, content hash $want_hash, skills under test are this repo's."
 fi
@@ -126,12 +130,20 @@ if [ "$REPEAT" -gt 1 ]; then
   for run in $(seq 1 "$REPEAT"); do
     echo
     echo "───────── pass $run of $REPEAT"
-    if EVAL_REPEAT=1 bash "$0" ${MODE:+--$MODE} ${args+"${args[@]}"}; then
-      pass_results+=("pass $run: all passed")
-    else
-      pass_results+=("pass $run: FAILURES")
-      overall=1
-    fi
+    EVAL_REPEAT=1 bash "$0" ${MODE:+--$MODE} ${args+"${args[@]}"}
+    rc=$?
+    case "$rc" in
+      0) pass_results+=("pass $run: all passed") ;;
+      # Exit 3 is the harness refusing to start, not cases failing. Scoring it as a
+      # failed pass is how a pass@N number silently becomes meaningless: it happened
+      # on the first real pass@3, when the tree was edited mid-run and passes 2 and 3
+      # were refused but recorded as FAILURES. Abort instead: a partial pass@N is not
+      # a pass@N.
+      3) echo "aborting pass@$REPEAT: the harness refused to run, so passes $run..$REPEAT would measure nothing." >&2
+         echo "  Fix the cause above and start again. Do not edit skills/ while a run is in flight." >&2
+         exit 3 ;;
+      *) pass_results+=("pass $run: FAILURES"); overall=1 ;;
+    esac
   done
   echo
   echo "───────── pass@$REPEAT summary"

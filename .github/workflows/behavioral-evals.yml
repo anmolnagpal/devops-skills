@@ -83,14 +83,33 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           EVALS: '1'
-        run: bash scripts/run-behavioral-evals.sh --repeat "${{ inputs.repeat || 1 }}" 2>&1 | tee fixtures.log
+        run: |
+          set -o pipefail
+          bash scripts/run-behavioral-evals.sh --repeat "${{ inputs.repeat || 1 }}" 2>&1 | tee fixtures.log
+          rc=$?
+          # 3 means the harness refused to start, which is a setup fault rather than a
+          # skill regression. Fail loudly and differently, so the trend does not record
+          # a score for a run that measured nothing.
+          if [ "$rc" -eq 3 ]; then
+            echo "::error::The harness refused to run (exit 3). This is a setup fault, not an eval failure."
+            exit 3
+          fi
+          exit "$rc"
 
       - name: Triggers
         if: steps.key.outputs.have_key == 'true' && inputs.mode != 'fixtures'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           EVALS: '1'
-        run: bash scripts/run-behavioral-evals.sh --triggers --repeat "${{ inputs.repeat || 1 }}" 2>&1 | tee triggers.log
+        run: |
+          set -o pipefail
+          bash scripts/run-behavioral-evals.sh --triggers --repeat "${{ inputs.repeat || 1 }}" 2>&1 | tee triggers.log
+          rc=$?
+          if [ "$rc" -eq 3 ]; then
+            echo "::error::The harness refused to run (exit 3). This is a setup fault, not an eval failure."
+            exit 3
+          fi
+          exit "$rc"
 
       - name: Summarise into the job summary and the trend issue
         if: always() && steps.key.outputs.have_key == 'true'

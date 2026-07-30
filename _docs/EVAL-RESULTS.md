@@ -272,6 +272,39 @@ is a regression. Two of the known-failing trigger prompts were confirmed this wa
 `adr`'s "should we use EKS or ECS?" failed in both passes of a pass@2, which
 established it as a stable proxy artifact rather than noise.
 
+## 2026-07-30 — first pass@3, and a defect in the pass@N reporting
+
+Pass 1 scored **112/120** with 8 failures. Passes 2 and 3 never ran: the tree was
+edited while pass 1 was in flight, so the content-hash guard refused them, correctly.
+
+The reporting was wrong, though. The repeat loop recorded both refusals as
+`pass N: FAILURES`, because a refusal and a failed run both exited 1 and the loop could
+not tell them apart. A pass@3 built from one real pass and two refusals is not a pass@3,
+and the weekly trend would have recorded it as a score.
+
+Fixed by giving the harness a distinct exit code: **0** all passed, **1** ran and
+something failed, **3** refused to run. The repeat loop now aborts on 3 rather than
+averaging it in, and the workflow reports it as a setup fault rather than a regression.
+Two lessons, one of them purely operational: do not edit `skills/` while a run is in
+flight.
+
+Pass 1's 8 failures, checked against the last measured state rather than asserted:
+
+- **3 documented known-failing** (`adr` EKS-or-ECS, two `ci` deploy-worded prompts).
+- **3 persistently failing but never documented**: `github` "cut a release",
+  `skill-creator` "run the evals for the tf skill", `incident` "which alerts are missing
+  runbooks". These never passed after any fix, and the known-failing table listed only
+  the first three, so the table was incomplete. Now corrected below.
+- **2 that differ from the last measured state**: `ci` "is my pipeline gated before
+  prod?" and `incident` "are we ready to put this service on-call?". Both had passed
+  after their description fixes. One pass cannot say whether they regressed or flaked,
+  which is the entire reason pass@N exists, so they are recorded as unclassified rather
+  than as regressions.
+
+An earlier draft of this section claimed five prompts had regressed. That was wrong on
+both the count and the characterization, and it is corrected here rather than quietly
+edited, because a results file that is casual about its own history is not a record.
+
 ## Known-failing cases, deliberately kept
 
 Three prompts fail `--triggers` every time and are left in place, because the
@@ -283,6 +316,15 @@ a green number by hiding the case.
 | `"add a helm deploy stage"` | `deploy` | phrase is verbatim in `ci`'s description; the word "deploy" wins a forced pick |
 | `"why does staging deploy with prod credentials?"` | `deploy` | same, and `ci` owns `**/.gitlab-ci.yml` which the proxy cannot see |
 | `"should we use EKS or ECS?"` | `adr` | `adr` says it records rather than decides; nothing among 17 skills owns "help me decide", so a forced pick lands here by elimination |
+| `"cut a release"` | `deploy` / `none` | `github` claims the phrase verbatim; "release" reads as shipping, and the proxy cannot see that `github` owns `**/CODEOWNERS` and `dependabot.yml` |
+| `"run the evals for the tf skill"` | `tf` | the prompt names `tf`, so a router matching on skill names picks it over the skill that operates *on* skills |
+| `"which alerts are missing runbooks"` | `observability` | genuinely straddles the seam: observability owns alerts, incident owns runbooks, and this asks about both at once |
+
+Two more are **unclassified** rather than known-failing: `ci` "is my pipeline gated
+before prod?" and `incident` "are we ready to put this service on-call?". Both passed
+after their description fixes and failed in the single usable pass of the first pass@3.
+A clean pass@3 is needed to say whether they regressed or flaked. Do not tune either
+until that number exists.
 
 ## Running it yourself
 
