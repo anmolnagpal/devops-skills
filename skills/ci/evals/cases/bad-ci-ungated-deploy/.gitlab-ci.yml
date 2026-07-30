@@ -1,0 +1,29 @@
+stages: [test, build, deploy]
+
+variables:
+  IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+
+unit_tests:
+  stage: test
+  image: node:24.11.0-alpine
+  allow_failure: true
+  script:
+    - npm ci
+    - npm test
+
+build_image:
+  stage: build
+  image: docker:28.5.1
+  script:
+    - docker build -t "$IMAGE" .
+    - docker push "$IMAGE"
+
+deploy_prod:
+  stage: deploy
+  image: alpine/helm:3.19.0
+  when: manual
+  environment:
+    name: production
+  script:
+    - helm lint ./chart
+    - helm upgrade --install orders ./chart --namespace prod --atomic --set image.tag=$CI_COMMIT_SHA

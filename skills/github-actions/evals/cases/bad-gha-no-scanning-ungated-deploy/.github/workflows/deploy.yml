@@ -1,0 +1,52 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903  # v6.0.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d181db  # v4.0.2
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/gha-ecr-push
+          aws-region: eu-west-1
+      - uses: aws-actions/amazon-ecr-login@062b18b96a7aff071d4dc91bc00c4c1a7945b076  # v2.0.1
+      - name: Build and push
+        run: |
+          docker build -t "$ECR/orders-api:${{ github.sha }}" .
+          docker push "$ECR/orders-api:${{ github.sha }}"
+        env:
+          ECR: 123456789012.dkr.ecr.eu-west-1.amazonaws.com
+
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [image]
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - run: ./scripts/deploy.sh "${{ github.sha }}"

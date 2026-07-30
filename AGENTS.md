@@ -350,6 +350,7 @@ generic — the same IDs cover GitHub Actions and GitLab CI.)
 | **SEC-IAM-002** | BLOCKING | Static AWS keys for cloud auth instead of OIDC/role federation |
 | **SEC-SEC-001** | BLOCKING | Committed kubeconfig or secret file (must come from a CI variable) |
 | **CICD-FLOW-002** | BLOCKING | Production deploy/apply without a `when: manual` gate (or `-auto-approve` in prod) |
+| **CICD-FLOW-001** | BLOCKING | A deploy job that does not depend on a passing test job: no test stage before `deploy`, or `allow_failure: true` on the test job |
 | **CICD-FLOW-003** | BLOCKING | Staging and production not separate jobs (env switch via variable) |
 | **TF-STATE-001** | BLOCKING | Local Terraform state in the pipeline (no remote backend) |
 | **CICD-HELM-001** | BLOCKING | No `helm lint` before a deploy step |
@@ -1664,12 +1665,15 @@ for each is in REVIEW below.
 | **CICD-OPS-003** | ADVISORY | No caching for known tool installs |
 | **CICD-OPS-004** | ADVISORY | Matrix without `fail-fast: false` for independent combos |
 | **CICD-SCAN-001** | ADVISORY | No CodeQL / Dependabot / dependency review on an active repo |
+| **CICD-SCAN-002** | ADVISORY | No dependency scanning: no `dependency-review-action`, no `dependabot.yml`, and no audit step in any workflow |
+| **CICD-SCAN-003** | ADVISORY | A workflow builds and pushes a container image with no scan step (Trivy, Grype, `docker scout`, ECR scan-on-push) before the push |
+| **CICD-FLOW-001** | BLOCKING | A deploy job that does not depend on a passing test job: no `needs:` on a test job, or `needs:` with `if: always()` |
 | **CICD-OPS-005** | ADVISORY | Duplicated workflow logic not extracted to `workflow_call` |
 | **CICD-PERM-002** | ADVISORY | No `permissions: contents: read` baseline declared |
 | **META-SUP-001** | ADVISORY | `gha-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `CICD-PIN-001`, `CICD-PERM-001`, `CICD-SEC-001`, `CICD-FLOW-002`, `CICD-SCAN-001`, `SEC-IAM-002`.
-**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `CICD-SEC-002`/`003`/`004`, `CICD-OPS-001`–`005`, `CICD-PERM-002`, `CICD-SCAN-002`/`003`, `CICD-FLOW-001`, `META-SUP-001`.
 
 **Output:** every finding carries its rule ID. **Suppression:** a repo may accept a
 known risk with `# gha-skill:ignore <RULE-ID> -- <reason>` on the line above; honor
@@ -3075,12 +3079,14 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 | **COST-K8S-001** | BLOCKING | Container missing resource `requests` or `limits` |
 | **ARCH-HA-003** | ADVISORY | `readinessProbe` or `livenessProbe` missing |
 | **ARCH-SPOF-002** | BLOCKING | `replicaCount < 2` for staging/prod |
+| **ARCH-HA-002** | ADVISORY | No autoscaling for a request-serving workload in staging/prod: `autoscaling.enabled: false` (or absent) with a fixed `replicaCount` |
+| **ARCH-SCAL-001** | ADVISORY | Vertical-only scaling: large per-pod `resources` with no HPA, so the only way to take more load is a bigger pod |
 | **COST-K8S-003** | ADVISORY | Memory limit less than memory request |
 | **COST-TAG-001** | ADVISORY | Required labels missing (`app`, `env`, `team`) |
 | **META-SUP-001** | ADVISORY | `k8s-skill:ignore` suppression missing a `-- reason` |
 
 **Reused from auditkit:** `SEC-SEC-001`, `SEC-IAM-002`, `CICD-DOCK-001`, `COST-K8S-001`, `COST-TAG-001`.
-**Registered in `rules/rule-ids.yaml`:** `SEC-K8S-001` … `SEC-K8S-007`, `ARCH-HA-003`, `ARCH-SPOF-002`, `COST-K8S-003`, `META-SUP-001`.
+**Registered in `rules/rule-ids.yaml`:** `SEC-K8S-001` … `SEC-K8S-007`, `ARCH-HA-002`, `ARCH-HA-003`, `ARCH-SCAL-001`, `ARCH-SPOF-002`, `COST-K8S-003`, `META-SUP-001`.
 
 **`SEC-K8S-005` is deliberately absent from this catalog.** The registry defines it
 as missing CPU/memory limits or requests, which is the same condition as
@@ -3106,7 +3112,8 @@ can't quote it, don't report it. Evals: [`evals/`](./evals/).
 6. `SEC-K8S-003` on a namespace-scoped `Role` with a wildcard verb over one resource type — the blast radius is one namespace and one kind. The BLOCKING case is a `ClusterRole` with `verbs: ["*"]` **and** `resources: ["*"]`, or any binding whose `roleRef` is `cluster-admin`. Operator/controller charts that legitimately manage CRDs still need to name their API groups; a wildcard is not the only way to express that.
 7. `SEC-K8S-004` where segmentation is genuinely provided elsewhere: a service mesh enforcing mTLS plus `AuthorizationPolicy`/`ServerAuthorization` (Istio, Linkerd), a CNI-level policy the platform team owns cluster-wide (Cilium `CiliumClusterwideNetworkPolicy`), or a namespace-level default-deny already committed in this repo. Absence of a chart-local `NetworkPolicy` is not by itself the finding; absence of any enforcement is. **Only assess this rule when you can see the whole chart** (a `templates/` directory, or a repo where policy manifests would live). A standalone `values.yaml` handed to you in isolation is not evidence that no policy exists anywhere, so stay silent rather than guess.
 8. `SEC-K8S-006` on a `LoadBalancer` explicitly annotated internal (`service.beta.kubernetes.io/aws-load-balancer-internal`, `-scheme: internal`), or a `NodePort` in a dev/kind/minikube values file that never reaches a cloud environment. Also skip services fronted by an ingress that terminates auth (OIDC proxy, ALB with Cognito/OIDC) — the auth exists, one hop up.
-9. `SEC-K8S-007` on a workload that actually talks to the API server: operators, controllers, cluster-autoscaler, external-secrets, anything using in-cluster config. They need the mounted token. The finding is for an ordinary application container that never builds a Kubernetes client.
+9. `ARCH-HA-002` and `ARCH-SCAL-001` on anything that is not request-serving: Jobs, CronJobs, single-writer workloads, queue consumers scaled by queue depth via KEDA rather than CPU, and StatefulSets whose replica count is a quorum size (3 or 5) rather than a capacity choice. Also exclude where an HPA exists outside the chart and is nameable. `ARCH-SCAL-001` additionally needs the resources to be genuinely large: a 100m/128Mi pod with no HPA is small and fixed, not vertically scaled.
+10. `SEC-K8S-007` on a workload that actually talks to the API server: operators, controllers, cluster-autoscaler, external-secrets, anything using in-cluster config. They need the mounted token. The finding is for an ordinary application container that never builds a Kubernetes client.
 
 Exception: the relaxation doesn't apply if these dev values are also what actually
 reaches staging/prod — whether merged in (no separate prod override exists), applied

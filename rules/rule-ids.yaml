@@ -246,9 +246,8 @@ _unemitted:
   # Implementable from files, not implemented yet. Each names the skill that
   # should own it, so this doubles as the worklist. Moving one out of here means
   # adding the rule to that skill's catalog with fixtures, per CONTRIBUTING.
-  planned:
-    CICD-FLOW-001: 'ci, github-actions — deploy not gated on a passing test job'
-    CICD-SCAN-002: 'github-actions — no dependency scanning configured'
-    CICD-SCAN-003: 'github-actions — no image scanning before push'
-    ARCH-HA-002: 'k8s, deploy — no HPA or autoscaling group'
-    ARCH-SCAL-001: 'deploy — vertical-only scaling with no horizontal path'
+  #
+  # Empty as of 1.4.2: every registry ID is either emitted by a skill or reserved
+  # because it cannot be checked from files. Add entries here rather than letting
+  # an unused ID sit undeclared, which check-rule-ids.sh rejects.
+  planned: {}
