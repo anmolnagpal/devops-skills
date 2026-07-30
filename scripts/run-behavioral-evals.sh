@@ -55,7 +55,42 @@ if [ -n "$want" ] && [ "$have" != "$want" ]; then
   echo "      Update it:  claude plugin marketplace update devops-skills && claude plugin update clouddrove@devops-skills" >&2
   exit 1
 fi
-echo "harness: plugin $have matches the working tree, skills under test are this repo's."
+# A matching version is necessary but not sufficient. `claude plugin update` is a
+# no-op when the version is unchanged, so an edited skill body can sit in the tree
+# while the installed copy still serves the old text. That happened during the
+# first --triggers run: five descriptions were fixed, the version stayed 1.4.1, the
+# update did nothing, and a re-run would have measured the unfixed skills and
+# reported the fixes as failures. A version field cannot see this; a content hash
+# can.
+tree_root="$REPO_ROOT"
+inst_root="$(ls -d "$HOME"/.claude/plugins/cache/*/clouddrove/"$have" 2>/dev/null | head -1)"
+if [ -z "$inst_root" ] || [ ! -d "$inst_root/skills" ]; then
+  echo "harness: plugin $have matches the working tree by version; could not locate the" >&2
+  echo "         installed copy on disk to compare content, so proceeding unverified." >&2
+else
+  hash_of() {
+    python3 - "$1" <<'PYEOF'
+import hashlib, glob, os, sys
+root = sys.argv[1]
+h = hashlib.sha256()
+for p in sorted(glob.glob(os.path.join(root, 'skills', '*', 'SKILL.md'))):
+    h.update(os.path.relpath(p, root).encode())
+    h.update(open(p, 'rb').read())
+print(h.hexdigest()[:12])
+PYEOF
+  }
+  want_hash="$(hash_of "$tree_root")"
+  have_hash="$(hash_of "$inst_root")"
+  if [ "$want_hash" != "$have_hash" ]; then
+    echo "FAIL: installed plugin is version $have, same as this tree, but its skill" >&2
+    echo "      bodies differ (tree $want_hash, installed $have_hash)." >&2
+    echo "      'claude plugin update' will not fix this: it compares versions, and they match." >&2
+    echo "      Force it:  claude plugin uninstall clouddrove@devops-skills \\" >&2
+    echo "                 && claude plugin install clouddrove@devops-skills" >&2
+    exit 1
+  fi
+  echo "harness: plugin $have matches the working tree, content hash $want_hash, skills under test are this repo's."
+fi
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 MODE=fixtures

@@ -30,3 +30,10 @@ CLAUDE.local.md
 !.cursor/
 !.cursor/rules/
 !.cursor/rules/*.mdc
+
+# Eval fixtures are the exception: the tf skill's TF-STATE-003 rule detects a
+# committed .tfstate, so proving it needs a committed .tfstate. Without this
+# negation the fixture is ignored, the case ships without its input, and the
+# behavioral eval fails with "no fixture file found" for everyone but the author.
+!skills/*/evals/cases/*/*.tfstate
+!skills/*/evals/cases/*/*.tfstate.backup
