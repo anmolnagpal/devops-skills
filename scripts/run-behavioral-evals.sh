@@ -130,8 +130,11 @@ if [ "$REPEAT" -gt 1 ]; then
   for run in $(seq 1 "$REPEAT"); do
     echo
     echo "───────── pass $run of $REPEAT"
-    EVAL_REPEAT=1 bash "$0" ${MODE:+--$MODE} ${args+"${args[@]}"}
-    rc=$?
+    # `&& rc=0 || rc=$?` keeps this in a condition context, so `set -e` at the top
+    # does not abort the loop when a pass legitimately fails. A bare call followed by
+    # `rc=$?` looks equivalent and is not: it killed the script after pass 1 on the
+    # first clean pass@3, which is how this comment came to exist.
+    EVAL_REPEAT=1 bash "$0" ${MODE:+--$MODE} ${args+"${args[@]}"} && rc=0 || rc=$?
     case "$rc" in
       0) pass_results+=("pass $run: all passed") ;;
       # Exit 3 is the harness refusing to start, not cases failing. Scoring it as a
