@@ -5,7 +5,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
   backend "s3" {
@@ -32,6 +32,7 @@ locals {
 }
 
 # tf-skill:ignore TF-VAR-004 -- this service is contractually single-region (data residency); region will never vary by environment
+# tf-skill:ignore TF-MOD-001 -- one plain private bucket with no policy, logging, or replication; the module wraps 30 inputs we would all set to defaults
 resource "aws_s3_bucket" "archive" {
   bucket = "acme-single-region-archive"
   region = "eu-west-1"

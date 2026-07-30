@@ -170,6 +170,28 @@ Omitting `allowed-tools` grants every tool, so the only honest label for that ca
 
 An ID's meaning is a public contract. Do not repurpose an existing ID for a different check; add a new one and note any removal in `CHANGELOG.md`.
 
+### Every registry ID must be emitted or declared
+
+`check-rule-ids.sh` enforces both directions. A skill cannot emit an ID that is
+not in the registry, **and** a registry ID that no skill emits must be declared
+under `_unemitted`:
+
+```yaml
+_unemitted:
+  reserved:          # not implementable from files, with the reason
+    SEC-DNS-001: 'DNSSEC state is a live zone property, not a file'
+  planned:           # implementable, names the skill that should own it
+    SEC-PUB-001: 'tf, wrapper-tf — public bucket ACL or policy in source'
+```
+
+This used to be a silent `note:` that nobody read, which let dead vocabulary
+accumulate. A registry entry with no skill behind it reads as coverage and is
+not, so the declaration forces the decision to be visible. The `planned` bucket
+doubles as the worklist: implementing one means adding the rule to that skill's
+catalog with fixtures, then deleting its line here. The check fails if an ID is
+both emitted and declared, or if a declaration names an ID that no longer
+exists.
+
 ## Eval cases
 
 Review skills ship a `skills/<name>/evals/` folder that proves correctness without running a model:
@@ -284,7 +306,13 @@ EVALS=1 bash scripts/run-behavioral-evals.sh          # every skill with evals/
 EVALS=1 bash scripts/run-behavioral-evals.sh tf k8s   # just these skills
 ```
 
-Run Tier-2 for any skill whose detection logic you changed.
+Run Tier-2 for any skill whose detection logic you changed, and record the run in
+[`_docs/EVAL-RESULTS.md`](_docs/EVAL-RESULTS.md). The harness refuses to run if the
+installed plugin version does not match `plugin.json`, because a green run against
+a stale install reports the repo as verified while testing code that is not in it.
+
+When a case fails, the eval is at least as likely to be wrong as the skill. The
+first real run produced three failures and all three were bad expectations.
 
 ## Add a plugin
 

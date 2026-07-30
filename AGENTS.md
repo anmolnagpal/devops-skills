@@ -6,7 +6,7 @@ Codex (and other AGENTS-aware tools) read this file for skill guidance.
 
 ## /adr
 
-  - **Use when**: Capture architectural decisions as structured ADRs (Architecture Decision Records). Use when user says 'record this decision', 'ADR this', 'why did we choose X', 'document this trade-off', 'we decided to...', or when a significant choice is made between alternatives (framework, database, pattern, API design, infra approach).
+  - **Use when**: Capture architectural decisions that have already been made, as structured ADRs (Architecture Decision Records). Use when user says 'record this decision', 'ADR this', 'why did we choose X', 'document this trade-off', 'we decided to...', or when a choice between alternatives has been settled and needs writing down. This records a decision; it does not make one. A question of the form 'should we use X or Y' is a design discussion, not an ADR request.
   - **Auto-load for**: `**/docs/adr/*.md`, `**/docs/adr/**/*.md`
 
 # ADR Skill
@@ -284,7 +284,7 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 ## /ci
 
-  - **Use when**: GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', or when working in .gitlab-ci.yml files.
+  - **Use when**: GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments, including individual stages, jobs, manual gates on prod stages, and pipeline credentials. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', 'is my pipeline gated before prod', 'add a stage', 'add a deploy job', 'add a helm deploy stage', 'my pipeline leaks credentials', 'why does staging deploy with prod credentials', 'staging and prod share a job', or when working in .gitlab-ci.yml files. Anything expressed as a pipeline, stage, or job belongs here.
   - **Auto-load for**: `**/.gitlab-ci.yml`, `**/.gitlab-ci.yaml`, `**/gitlab-ci*.yml`
 
 # GitLab CI/CD Skill
@@ -886,7 +886,8 @@ Don't report these unless a stated exception applies:
 1. Root/no-`USER` in a **build stage** that is never the final runtime stage in a multi-stage `Dockerfile` — `CICD-DOCK-002` targets the stage that actually ships and runs.
 2. A base image that is already non-root by construction (e.g. `gcr.io/distroless/*-nonroot`, `chainguard/*`) even without an explicit `USER` line — verify the base's default UID isn't 0 before excluding.
 3. `ADD` used for local, checksum-verified tar extraction (not a remote URL) — only a remote-URL `ADD` is `CICD-DOCK-004`.
-4. Compose `privileged: true` in a documented local-dev-only override file (e.g. `docker-compose.override.yml`) that no CI/CD pipeline or deploy config in this repo references — `CICD-DOCK-014` targets what actually deploys, not a file nothing ships with. Severity stays BLOCKING wherever it does apply; this excludes the finding entirely, it doesn't invent a lower severity for it.
+4. `CICD-DOCK-013` when you cannot see the **build context root**. The rule is about a `.dockerignore` missing from the directory Docker will actually send to the daemon, and a `Dockerfile` handed to you on its own is not evidence about that directory. Report the *absence* of a `.dockerignore` only when the context root is visible (a `package.json`, `go.mod`, `src/`, `.git/`, or the repo root itself alongside the Dockerfile). An **incomplete** `.dockerignore` needs no such caveat: if the file is there and omits `.git`, `node_modules`, or `.env`, that is `CICD-DOCK-013` on sight.
+5. Compose `privileged: true` in a documented local-dev-only override file (e.g. `docker-compose.override.yml`) that no CI/CD pipeline or deploy config in this repo references — `CICD-DOCK-014` targets what actually deploys, not a file nothing ships with. Severity stays BLOCKING wherever it does apply; this excludes the finding entirely, it doesn't invent a lower severity for it.
 
 Exception: if the "build-only" stage is still `COPY`'d into the final image (not just
 its artifacts), or the override file is referenced by any CI/CD workflow, Compose
@@ -1904,7 +1905,7 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 ## /github
 
-  - **Use when**: GitHub repository operations — PRs, issues, releases, branch protection, CODEOWNERS, security settings. Use when user says 'review my PR', 'create a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', or asks about GitHub repo configuration.
+  - **Use when**: GitHub repository operations: PRs, issues, releases, branch protection, CODEOWNERS, Dependabot, and repo settings audits. Use when user says 'review my PR', 'create a release', 'cut a release', 'tag a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', 'is Dependabot configured', or asks about GitHub repo configuration. Repo settings and metadata, not workflow files; /clouddrove:github-actions owns .github/workflows.
   - **Auto-load for**: `**/.github/CODEOWNERS`, `**/CODEOWNERS`, `**/.github/pull_request_template.md`, `**/.github/ISSUE_TEMPLATE/**`, `**/.github/dependabot.yml`
 
 # GitHub Skill
@@ -2619,7 +2620,7 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 ## /incident
 
-  - **Use when**: Runbooks, incident response, and blameless postmortems: write a runbook for a service, audit incident readiness before an on-call rotation starts, run a severity and escalation model, and turn an incident timeline into a postmortem with real action items. Use when user says 'write a runbook', 'review my runbooks', 'are we ready for on-call', 'set up incident response', 'define severity levels', 'write a postmortem', 'incident retro', or when working in docs/runbooks/ or docs/incidents/.
+  - **Use when**: Runbooks, on-call readiness, incident response, and blameless postmortems: write a runbook for a service, audit whether a service can be operated at 03:00 before a rotation starts, find alerts that have no runbook, run a severity and escalation model, and turn an incident timeline into a postmortem. Use when user says 'write a runbook', 'review my runbooks', 'are we ready for on-call', 'are we ready to put this service on-call', 'which alerts are missing runbooks', 'set up incident response', 'define severity levels', 'write a postmortem', 'incident retro', or when working in docs/runbooks/ or docs/incidents/. Owns the response side; /clouddrove:observability owns whether a signal exists and reaches anyone, this owns whether the human it wakes knows what to do.
   - **Auto-load for**: `**/docs/runbooks/*.md`, `**/docs/incidents/*.md`, `**/RUNBOOK.md`
 
 # Incident Response Skill
@@ -3725,7 +3726,7 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 ## /owasp
 
-  - **Use when**: Security review against OWASP Top 10:2025, ASVS 5.0, and Agentic AI risks. Use when user says 'review for security', 'is this secure', 'check for vulnerabilities', 'review auth/authorization', 'check input handling', or when writing cryptography, session management, or AI agent code.
+  - **Use when**: Security review requiring judgment about exploitability: injection and input handling, authentication and session management, authorization, secret storage and cryptography, and Agentic AI risks, against OWASP Top 10:2025 and ASVS 5.0. Use when user says 'review for security', 'is this secure', 'review this endpoint for injection', 'check for SQL injection or XSS', 'review auth/authorization', 'how are we storing secrets', 'check how we store secrets in this service', 'is this crypto correct', or when writing cryptography, session management, or AI agent code. Judges reachability and impact in this codebase; /clouddrove:appsec owns the deterministic checks a tool can answer (lockfile CVEs, missing headers, wildcard CORS).
 
 # OWASP Security Skill
 
@@ -3889,7 +3890,7 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 ## /skill-creator
 
-  - **Use when**: Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
+  - **Use when**: Create, edit, evaluate, and debug the skills in this repo, including running their evals and fixing a description that fails to trigger. Use when user says 'help me build a new skill', 'add a skill for X', 'run the evals for the tf skill', 'run the behavioral evals', 'my skill is not triggering', 'fix this skill's description', 'improve this skill's rule catalog', 'add a rule ID', or 'benchmark a skill'. Operates on the skills themselves rather than on infrastructure: a request to review actual Terraform or Kubernetes belongs to that domain skill.
 
 # Skill Creator
 
@@ -4778,6 +4779,13 @@ quote it, don't report it. Evals: [`evals/`](./evals/).
 3. `.terraform.lock.hcl` and other generated/vendored files — never review these for style rules.
 4. A `backend` block's own literal values (bucket/region/key) — these cannot interpolate variables by design; this is the documented exception to Principle 1, not a `TF-VAR-004` finding.
 5. `SEC-IAM-003` on a policy attached to a service role (`aws_iam_role` assumed by an AWS service principal, e.g. `ec2.amazonaws.com`, `lambda.amazonaws.com`) or a CI/CD OIDC role — MFA presence only applies to a human's interactive session, not a service credential.
+6. `SEC-IAM-001` for `Resource = "*"` where the action **cannot** be resource-scoped and the statement is constrained another way. Some AWS actions accept no resource ARN at all: `aws-portal:*`, `ce:*`, `budgets:View*`, `organizations:Describe*`, most `*:List*` and `*:Describe*` calls, `iam:ListRoles`, `sts:GetCallerIdentity`. For those, `Resource = "*"` is the only policy AWS will accept, so it is not over-permission, it is the correct spelling. Require a real constraint elsewhere in the statement before excluding: a `Condition` (`aws:MultiFactorAuthPresent`, `aws:PrincipalOrgID`, `aws:SourceIp`, `aws:RequestedRegion`) or a narrow, explicitly enumerated `Action` list. `Action = "*"` is never excluded by this, and neither is `Resource = "*"` paired with a mutating action that does support ARNs (`s3:PutObject`, `kms:Decrypt`, `secretsmanager:GetSecretValue`).
+
+Exception 6: if the statement pairs `Resource = "*"` with any mutating action that
+does accept an ARN, or carries no `Condition` and no enumerated action list, the
+exclusion doesn't apply — report `SEC-IAM-001`. "It is read-only" is not a
+constraint unless you can name the actions and they are all genuinely
+non-resource-scoped.
 
 Exception: if a "placeholder" file is actually referenced by a real `terraform apply` (e.g. `terraform.tfvars` symlinked to the `.example`), the exclusion doesn't apply — verify the file isn't live before excluding. For `SEC-IAM-003`, if the policy is attached to an `aws_iam_user` or `aws_iam_group` (human-facing) rather than a service role, the exclusion doesn't apply — report it.
 

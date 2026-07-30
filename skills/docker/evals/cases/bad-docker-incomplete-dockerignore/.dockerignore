@@ -1,0 +1,5 @@
+# Excludes the build noise but not the things that matter.
+dist
+coverage
+*.log
+.DS_Store

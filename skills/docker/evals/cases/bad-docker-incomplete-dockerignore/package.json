@@ -1,0 +1,6 @@
+{
+  "name": "checkout-web",
+  "version": "1.4.2",
+  "private": true,
+  "scripts": { "build": "tsc -p .", "start": "node dist/server.js" }
+}

@@ -1,6 +1,6 @@
 ---
 name: incident
-description: "Runbooks, incident response, and blameless postmortems: write a runbook for a service, audit incident readiness before an on-call rotation starts, run a severity and escalation model, and turn an incident timeline into a postmortem with real action items. Use when user says 'write a runbook', 'review my runbooks', 'are we ready for on-call', 'set up incident response', 'define severity levels', 'write a postmortem', 'incident retro', or when working in docs/runbooks/ or docs/incidents/."
+description: "Runbooks, on-call readiness, incident response, and blameless postmortems: write a runbook for a service, audit whether a service can be operated at 03:00 before a rotation starts, find alerts that have no runbook, run a severity and escalation model, and turn an incident timeline into a postmortem. Use when user says 'write a runbook', 'review my runbooks', 'are we ready for on-call', 'are we ready to put this service on-call', 'which alerts are missing runbooks', 'set up incident response', 'define severity levels', 'write a postmortem', 'incident retro', or when working in docs/runbooks/ or docs/incidents/. Owns the response side; /clouddrove:observability owns whether a signal exists and reaches anyone, this owns whether the human it wakes knows what to do."
 safety: writes-files
 metadata:
   version: 0.1.0

@@ -99,6 +99,13 @@ quote it, don't report it. Evals: [`evals/`](./evals/).
 3. `.terraform.lock.hcl` and other generated/vendored files — never review these for style rules.
 4. A `backend` block's own literal values (bucket/region/key) — these cannot interpolate variables by design; this is the documented exception to Principle 1, not a `TF-VAR-004` finding.
 5. `SEC-IAM-003` on a policy attached to a service role (`aws_iam_role` assumed by an AWS service principal, e.g. `ec2.amazonaws.com`, `lambda.amazonaws.com`) or a CI/CD OIDC role — MFA presence only applies to a human's interactive session, not a service credential.
+6. `SEC-IAM-001` for `Resource = "*"` where the action **cannot** be resource-scoped and the statement is constrained another way. Some AWS actions accept no resource ARN at all: `aws-portal:*`, `ce:*`, `budgets:View*`, `organizations:Describe*`, most `*:List*` and `*:Describe*` calls, `iam:ListRoles`, `sts:GetCallerIdentity`. For those, `Resource = "*"` is the only policy AWS will accept, so it is not over-permission, it is the correct spelling. Require a real constraint elsewhere in the statement before excluding: a `Condition` (`aws:MultiFactorAuthPresent`, `aws:PrincipalOrgID`, `aws:SourceIp`, `aws:RequestedRegion`) or a narrow, explicitly enumerated `Action` list. `Action = "*"` is never excluded by this, and neither is `Resource = "*"` paired with a mutating action that does support ARNs (`s3:PutObject`, `kms:Decrypt`, `secretsmanager:GetSecretValue`).
+
+Exception 6: if the statement pairs `Resource = "*"` with any mutating action that
+does accept an ARN, or carries no `Condition` and no enumerated action list, the
+exclusion doesn't apply — report `SEC-IAM-001`. "It is read-only" is not a
+constraint unless you can name the actions and they are all genuinely
+non-resource-scoped.
 
 Exception: if a "placeholder" file is actually referenced by a real `terraform apply` (e.g. `terraform.tfvars` symlinked to the `.example`), the exclusion doesn't apply — verify the file isn't live before excluding. For `SEC-IAM-003`, if the policy is attached to an `aws_iam_user` or `aws_iam_group` (human-facing) rather than a service role, the exclusion doesn't apply — report it.
 

@@ -1,6 +1,6 @@
 ---
 name: skill-creator
-description: Create new skills, modify and improve existing skills, and measure skill performance. Use when users want to create a skill from scratch, edit, or optimize an existing skill, run evals to test a skill, benchmark skill performance with variance analysis, or optimize a skill's description for better triggering accuracy.
+description: "Create, edit, evaluate, and debug the skills in this repo, including running their evals and fixing a description that fails to trigger. Use when user says 'help me build a new skill', 'add a skill for X', 'run the evals for the tf skill', 'run the behavioral evals', 'my skill is not triggering', 'fix this skill's description', 'improve this skill's rule catalog', 'add a rule ID', or 'benchmark a skill'. Operates on the skills themselves rather than on infrastructure: a request to review actual Terraform or Kubernetes belongs to that domain skill."
 safety: writes-files
 metadata:
   version: 1.0.0

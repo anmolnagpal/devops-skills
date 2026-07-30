@@ -6,12 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.1] — 2026-07-29
+
 ### Added
 
 - **`scripts/check-versions.sh`** (new CI gate) asserts `plugin.json`, `marketplace.json`, and `CHANGELOG.md` agree on the version. This drift really happened: `plugin.json` said 1.3.0 while no `v1.3.0` tag existed and `v1.2.0` was tagged but never released, so the release badge advertised a version two releases old. The marketplace plugin entry now carries an explicit `version` so the two files cannot silently diverge.
 - **Trigger-phrase evals** (new CI gate). Fixture evals prove a skill's rules fire; nothing proved the skill gets *loaded*, and the `description` is the only text the model reads when deciding. Every skill now ships `evals/prompts.md` with at least four positive prompts in the words someone would type, plus negative prompts for skills whose scope overlaps another's (`tf` against `wrapper-tf`, `appsec` against `owasp`, `observability` against `incident`, and five more pairs). Each negative prompt names where it should go instead, so a failure says which skill over-triggered. `scripts/check-prompts.sh` enforces the shape; `run-behavioral-evals.sh --triggers` runs them against the model.
 - **`scripts/validate.sh`** runs all six free checks in CI's order, so "did I break anything" has one command instead of five.
 - **`templates/skill/`** is a copyable starting point: frontmatter with `safety`, the standard sections, the suppression and false-positive-exclusion scaffolding, and a delete-me PR checklist. Previously the format was documented in `CONTRIBUTING.md` but nothing was copyable.
+
+- **Every registry rule ID must now be emitted by a skill or declared unemitted.** `check-rule-ids.sh` previously printed a silent `note: 22 registry ID(s) not referenced by any skill` and passed. Dead vocabulary reads as coverage, so the note is now a FAIL unless the ID is declared under `_unemitted` in `rules/rule-ids.yaml`: `reserved` for the five that need a live DNS query and belong to auditkit's external-surface auditor, `planned` for the seventeen that are implementable from files and now name the skill that should own them. The check also fails if an ID is both emitted and declared, or if a declaration names an ID that no longer exists.
+
+- **First Tier-2 behavioral eval run, recorded in `_docs/EVAL-RESULTS.md`.** 60/63 cases passed, and all three failures were defects in the evals or the skills rather than model misbehavior: an expectation that was impossible to satisfy (an absence-finding from a single-file fixture, green in CI since PR #12 because Tier-1 never runs a skill), and two false positives where the model was right and the fixture encoded an assumption the skill never stated. Zero false positives across the 22 `clean-*` cases once corrected.
+- **`run-behavioral-evals.sh` now asserts the installed plugin version matches `plugin.json`.** The first run started with 1.3.0 installed against a 1.4.0 tree, which would have silently skipped every skill added in 1.4.0 while appearing to pass. A green run against a stale install is worse than no run.
 
 ### Changed
 
