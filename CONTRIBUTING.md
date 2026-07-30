@@ -15,7 +15,7 @@ of any kind. It is the same `validate.sh` CI runs.
 
 The behavioral evals are deliberately **not** a commit hook. They take 45 to 90 minutes
 and 2.5% of their prompts are non-deterministic, so as a hook they would waste an hour
-per commit and block commits at random. They run weekly in CI and on demand instead.
+per commit and block commits at random. They are run manually instead.
 
 One-time dependency for the generator and checks:
 
@@ -319,11 +319,15 @@ EVALS=1 bash scripts/run-behavioral-evals.sh --triggers   # descriptions, not ru
 EVALS=1 bash scripts/run-behavioral-evals.sh --repeat 3 tf # pass@3
 ```
 
-It also runs weekly in CI (`.github/workflows/behavioral-evals.yml`) and on demand,
-so a description edit that breaks routing surfaces within a week rather than never.
-CI needs one credential secret, either `CLAUDE_CODE_OAUTH_TOKEN` from
-`claude setup-token` (uses a Claude subscription, no API account) or
-`ANTHROPIC_API_KEY`. Locally you need neither: your `claude` CLI is already logged in.
+There is no schedule: Tier-2 is run manually, triggers-first. Run `--triggers` after
+changing any skill `description`, the fixtures for a skill whose detection logic
+changed, and both after adding a rule. Locally you need no credential, since your
+`claude` CLI is already logged in.
+
+`.github/workflows/behavioral-evals.yml` is `workflow_dispatch` only, for when a run
+should be recorded against a commit. See
+[`_docs/EVAL-RESULTS.md`](_docs/EVAL-RESULTS.md) for why it is not scheduled, and the
+cost that choice accepts.
 Use `--repeat` when investigating a failure: a case that fails in some passes and not
 others is a flake, one that fails every pass is a regression.
 

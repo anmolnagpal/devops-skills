@@ -3,24 +3,30 @@ name: behavioral-evals
 # Tier-2: actually runs each skill and grades the output, unlike the six free gates
 # in test.yml which only check that the eval documents are internally consistent.
 #
-# Scheduled because everything Tier-2 verifies has a shelf life measured in commits.
-# A description edit or a rule tweak silently un-verifies it, and no other gate says
-# so. Before this existed the suite had been run exactly once, by hand.
+# Manual only, by decision on 2026-07-30. There is no cron, so nothing runs unattended
+# and no credential is required unless someone chooses to dispatch this.
 #
-# Costs real API tokens: roughly 70 calls for the fixtures and 120 for the triggers
-# per pass. Runs weekly rather than nightly for that reason, plus on demand.
+# The primary way to run Tier-2 is locally, where the claude CLI is already logged in
+# and no secret exists to manage:
+#
+#   EVALS=1 bash scripts/run-behavioral-evals.sh --triggers
+#
+# This workflow exists for the case where you want a run recorded against a commit
+# rather than on a laptop. It defaults to the trigger suite, which takes about 16
+# minutes against 45 to 90 for the fixtures, and which caught 8 of the 14 skill defects
+# found the first time these evals were run.
+#
+# If a cron is ever added back, read _docs/EVAL-RESULTS.md first: the decision not to
+# schedule was deliberate, not an omission.
 
 on:
-  schedule:
-    # 04:17 UTC on Mondays. Off the hour to avoid the scheduler's busiest minute.
-    - cron: '17 4 * * 1'
   workflow_dispatch:
     inputs:
       mode:
         description: 'Which suite to run'
         type: choice
-        default: both
-        options: [both, fixtures, triggers]
+        default: triggers
+        options: [triggers, fixtures, both]
       repeat:
         description: 'Passes per suite (pass@N). 3 distinguishes a flake from a regression.'
         default: '1'
@@ -150,7 +156,7 @@ jobs:
           echo "nfail=$nfail" >> "$GITHUB_OUTPUT"
 
       - name: Append to the trend issue
-        if: always() && steps.key.outputs.have_key == 'true' && github.event_name == 'schedule'
+        if: always() && steps.key.outputs.have_key == 'true'
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
         with:
           script: |
@@ -200,30 +206,3 @@ jobs:
           path: '*.log'
           if-no-files-found: ignore
           retention-days: 90
-
-      - name: File an issue on failure
-        if: failure() && steps.key.outputs.have_key == 'true' && github.event_name == 'schedule'
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea  # v7.0.1
-        with:
-          script: |
-            const run = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `Behavioral evals failed on ${new Date().toISOString().slice(0,10)}`,
-              labels: ['evals'],
-              body: [
-                `The scheduled Tier-2 run had failures: ${run}`,
-                '',
-                'Read the eval-logs artifact before changing anything. When a case fails,',
-                'the eval is at least as likely to be wrong as the skill: on the first real',
-                'run every single failure was a bad expectation rather than a bad skill.',
-                '',
-                'Re-run with a higher repeat count to tell a flake from a regression. A case',
-                'that fails in some passes and not others is a flake; one that fails every',
-                'pass is a regression.',
-                '',
-                'See `_docs/EVAL-RESULTS.md` for the known-failing cases that are',
-                'deliberately left in place, and why.',
-              ].join('\n'),
-            });
