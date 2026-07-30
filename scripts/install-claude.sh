@@ -139,17 +139,39 @@ if [ -f "$KNOWN_MARKETPLACES" ] && python3 -c "
 import json, sys
 sys.exit(0 if 'devops-skills' in json.load(open('$KNOWN_MARKETPLACES')) else 1)
 " 2>/dev/null; then
-  echo "  marketplace devops-skills — already added, skipping"
+  # Refresh rather than skip. The marketplace caches the plugin manifest, so an
+  # already-added marketplace serves whatever version it last saw, and the plugin
+  # update below would find nothing new.
+  echo "  marketplace devops-skills — refreshing ..."
+  claude plugin marketplace update devops-skills >/dev/null 2>&1 \
+    || echo "  (marketplace refresh failed, continuing)"
 else
   echo "  adding marketplace (this repo) ..."
   claude plugin marketplace add "$REPO"
 fi
 
+# Keys in installed_plugins.json are "<name>@<marketplace>", so an exact match on
+# 'clouddrove' never fired and this branch was dead: every run fell through to
+# `plugin install`, which no-ops when already installed and never updates. That is
+# why re-running the installer never moved anyone off an older version.
 if [ -f "$INSTALLED_PLUGINS" ] && python3 -c "
 import json, sys
-sys.exit(0 if 'clouddrove' in json.load(open('$INSTALLED_PLUGINS')).get('plugins', {}) else 1)
+plugins = json.load(open('$INSTALLED_PLUGINS')).get('plugins', {})
+sys.exit(0 if any(k == 'clouddrove' or k.startswith('clouddrove@') for k in plugins) else 1)
 " 2>/dev/null; then
-  echo "  clouddrove plugin — already installed, skipping"
+  # Update rather than skip. Skipping meant an existing install never moved: a
+  # teammate on 1.3.0 re-running the installer stayed on 1.3.0, while the README
+  # promised that re-running is how you update. That made every release invisible
+  # to everyone who already had the plugin, which is most of the team.
+  before="$(claude plugin list 2>/dev/null | awk '/clouddrove@devops-skills/{f=1;next} f&&/Version:/{print $2;exit}')"
+  echo "  clouddrove plugin — installed at ${before:-unknown}, updating ..."
+  claude plugin update clouddrove@devops-skills || echo "  (update failed, continuing)"
+  after="$(claude plugin list 2>/dev/null | awk '/clouddrove@devops-skills/{f=1;next} f&&/Version:/{print $2;exit}')"
+  if [ -n "$before" ] && [ -n "$after" ] && [ "$before" = "$after" ]; then
+    echo "  already at $after"
+  elif [ -n "$after" ]; then
+    echo "  now at $after"
+  fi
 else
   echo "  installing clouddrove@devops-skills ..."
   claude plugin install clouddrove@devops-skills
