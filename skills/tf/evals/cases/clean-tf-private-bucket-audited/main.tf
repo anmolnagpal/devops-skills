@@ -19,17 +19,20 @@ provider "aws" {
   region = var.region
 }
 
+# tf-skill:ignore TF-MOD-001 -- audit primitives deliberately declared directly:
+# the community modules for trail and flow-log wrap two resources each and add a
+# version to track for no abstraction we use
 locals {
   tags = {
-    Name        = "acme-prod-platform"
-    Environment = "prod"
+    Name        = "${var.client}-${var.environment}-platform"
+    Environment = var.environment
     Team        = "platform"
     ManagedBy   = "terraform"
   }
 }
 
 resource "aws_s3_bucket" "customer_documents" {
-  bucket = "acme-prod-customer-documents"
+  bucket = "${var.client}-${var.environment}-customer-documents"
   tags   = local.tags
 }
 
@@ -42,7 +45,7 @@ resource "aws_s3_bucket_public_access_block" "customer_documents" {
 }
 
 resource "aws_cloudtrail" "account" {
-  name                          = "acme-prod-account-trail"
+  name                          = "${var.client}-${var.environment}-account-trail"
   s3_bucket_name                = var.audit_log_bucket
   include_global_service_events = true
   is_multi_region_trail         = true

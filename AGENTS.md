@@ -4755,7 +4755,7 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 | **TF-STATE-001** | BLOCKING | No remote backend (local state in a shared repo) |
 | **TF-STATE-002** | ADVISORY | Remote backend without state locking (`dynamodb_table`) |
 | **TF-STATE-003** | BLOCKING | A `.tfstate` or `.tfstate.backup` file committed to the repo |
-| **SEC-PUB-001** | BLOCKING | S3 bucket reachable by the public: a public-read/write ACL, a bucket policy with `Principal: "*"`, or `aws_s3_bucket_public_access_block` absent or with any of its four flags `false` |
+| **SEC-PUB-001** | BLOCKING | S3 bucket affirmatively exposed: a public-read/write ACL, a bucket policy granting `Principal: "*"`, or an `aws_s3_bucket_public_access_block` that sets any of its four flags to `false` |
 | **SEC-LOG-001** | ADVISORY | No CloudTrail trail defined for an account this repo provisions, or a trail with `enable_logging = false` |
 | **SEC-LOG-002** | ADVISORY | A VPC defined here with no `aws_flow_log` covering it (or the module's flow-log flag off) |
 | **TF-RES-001** | BLOCKING | Missing required tags (`Name`, `Environment`, `Team`, `ManagedBy`) |
@@ -4785,8 +4785,9 @@ quote it, don't report it. Evals: [`evals/`](./evals/).
 5. `SEC-IAM-003` on a policy attached to a service role (`aws_iam_role` assumed by an AWS service principal, e.g. `ec2.amazonaws.com`, `lambda.amazonaws.com`) or a CI/CD OIDC role — MFA presence only applies to a human's interactive session, not a service credential.
 6. `SEC-IAM-001` for `Resource = "*"` where the action **cannot** be resource-scoped and the statement is constrained another way. Some AWS actions accept no resource ARN at all: `aws-portal:*`, `ce:*`, `budgets:View*`, `organizations:Describe*`, most `*:List*` and `*:Describe*` calls, `iam:ListRoles`, `sts:GetCallerIdentity`. For those, `Resource = "*"` is the only policy AWS will accept, so it is not over-permission, it is the correct spelling. Require a real constraint elsewhere in the statement before excluding: a `Condition` (`aws:MultiFactorAuthPresent`, `aws:PrincipalOrgID`, `aws:SourceIp`, `aws:RequestedRegion`) or a narrow, explicitly enumerated `Action` list. `Action = "*"` is never excluded by this, and neither is `Resource = "*"` paired with a mutating action that does support ARNs (`s3:PutObject`, `kms:Decrypt`, `secretsmanager:GetSecretValue`).
 
-7. `SEC-PUB-001` on a bucket that is **deliberately** public and says so: a static website or public asset bucket where the intent is stated in a comment, a `tf-skill:ignore` suppression, or the bucket's own name (`*-public-assets`, `*-website`). Require the intent to be findable in the file, not inferred from the contents. A bucket holding logs, backups, state, or anything with "private", "internal", "data", or "backup" in its name is never excluded, however it is configured.
-8. `SEC-LOG-001` and `SEC-LOG-002` when you cannot see the whole configuration. Both are absence rules: "no CloudTrail anywhere" and "no flow log for this VPC" are claims about a repo, not about a file. Assess them only when reviewing a root module or a directory that would plausibly contain them, and stay silent on a single `.tf` handed over in isolation. Also exclude where the resource is owned elsewhere and that place is nameable: a separate security or landing-zone repo, an Organizations-level trail covering all accounts, or a `_modules/` wrapper that enables it. A claim that "the platform team handles it" with nothing to point at is the finding, not the exclusion.
+7. `SEC-PUB-001` on the mere **absence** of `aws_s3_bucket_public_access_block`. Since April 2023 AWS enables Block Public Access on new buckets by default and disallows ACLs, so a bucket with no block resource and no public grant is private. The finding requires an affirmative grant (a public ACL, a `Principal: "*"` policy) or a block resource that explicitly turns a flag off. Whether an *older* bucket predating that default is actually exposed is a live-state question, and belongs to auditkit rather than to source review. Declaring the resource with all four flags `true` is still good practice worth recommending, but it is not this finding.
+8. `SEC-PUB-001` on a bucket that is **deliberately** public and says so: a static website or public asset bucket where the intent is stated in a comment, a `tf-skill:ignore` suppression, or the bucket's own name (`*-public-assets`, `*-website`). Require the intent to be findable in the file, not inferred from the contents. A bucket holding logs, backups, state, or anything with "private", "internal", "data", or "backup" in its name is never excluded, however it is configured.
+9. `SEC-LOG-001` and `SEC-LOG-002` when you cannot see the whole configuration. Both are absence rules: "no CloudTrail anywhere" and "no flow log for this VPC" are claims about a repo, not about a file. Assess them only when reviewing a root module or a directory that would plausibly contain them, and stay silent on a single `.tf` handed over in isolation. Also exclude where the resource is owned elsewhere and that place is nameable: a separate security or landing-zone repo, an Organizations-level trail covering all accounts, or a `_modules/` wrapper that enables it. A claim that "the platform team handles it" with nothing to point at is the finding, not the exclusion.
 
 Exception 6: if the statement pairs `Resource = "*"` with any mutating action that
 does accept an ARN, or carries no `Condition` and no enumerated action list, the
@@ -4794,10 +4795,10 @@ exclusion doesn't apply — report `SEC-IAM-001`. "It is read-only" is not a
 constraint unless you can name the actions and they are all genuinely
 non-resource-scoped.
 
-Exception 7: a bucket policy granting `s3:GetObject` to `Principal: "*"` is still
-`SEC-PUB-001` if the same bucket also grants any write or list action publicly, or if
-`aws_s3_bucket_public_access_block` is missing entirely, since then the ACL path is
-open regardless of the policy.
+Exception 8: a bucket policy granting `s3:GetObject` to `Principal: "*"` is still
+`SEC-PUB-001` if the same bucket also grants any write or list action publicly. A
+bucket whose stated public purpose is reading assets does not get to be publicly
+writable.
 
 Exception: if a "placeholder" file is actually referenced by a real `terraform apply` (e.g. `terraform.tfvars` symlinked to the `.example`), the exclusion doesn't apply — verify the file isn't live before excluding. For `SEC-IAM-003`, if the policy is attached to an `aws_iam_user` or `aws_iam_group` (human-facing) rather than a service role, the exclusion doesn't apply — report it.
 

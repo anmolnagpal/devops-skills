@@ -178,6 +178,52 @@ not been done yet.
 
 ---
 
+## 2026-07-29 — verifying four new tf rules
+
+`tf` suite only, run twice. First pass 9/11, second 11/11.
+
+Both bad cases passed on the first attempt: `SEC-PUB-001`, `SEC-LOG-001`,
+`SEC-LOG-002`, and `TF-STATE-003` all fired where expected, including the two
+absence rules under their new visibility scoping and `TF-STATE-003` on a committed
+state file. Both failures were in **clean** cases, and both were mine.
+
+### The rule was wrong, not the fixture
+
+`SEC-PUB-001` was written to fire when `aws_s3_bucket_public_access_block` is
+absent. That is factually wrong: since April 2023 AWS enables Block Public Access on
+new buckets by default and disallows ACLs, so a bucket with no block resource and no
+public grant is private. As written the rule would have flagged every plain private
+bucket in every repo as a BLOCKING public-exposure finding, and it immediately broke
+`clean-suppressed-hardcoded-region`, a case that had passed all day.
+
+Narrowed to affirmative exposure: a public ACL, a `Principal: "*"` policy, or a block
+resource that explicitly sets a flag `false`. Whether an older pre-2023 bucket is
+genuinely exposed is a live-state question and belongs to auditkit.
+
+A false-positive generator, caught by a ten-minute run before it shipped.
+
+### The clean fixture was not clean
+
+`clean-tf-private-bucket-audited` fired `TF-MOD-001` and `TF-VAR-004`, both true
+positives: every resource name hardcoded `acme-prod-`, and the trail, flow log, and
+bucket were declared directly rather than through modules. Names now interpolate
+`var.client` and `var.environment`, and `TF-MOD-001` is suppressed with a reason.
+
+This is the same defect corrected in an older fixture earlier the same day,
+committed again hours later by the person who fixed it. Writing a clean case that is
+not clean is easy, invisible to Tier-1, and only a live run finds it. It is the
+strongest argument for running Tier-2 on any change that adds a rule.
+
+### The content-hash guard earned itself twice
+
+Both runs above were initially refused: the version stayed 1.4.1 while the skill
+body changed, so `claude plugin update` was a no-op and the suite would have tested
+the previous rules. The guard named the reinstall, the reinstall fixed it, and the
+hash moved `f1065df7050c` to `ce480a797dcc` to `74e2969c544f` across the three
+states. A version field cannot see any of that.
+
+---
+
 ## Running it yourself
 
 ```bash

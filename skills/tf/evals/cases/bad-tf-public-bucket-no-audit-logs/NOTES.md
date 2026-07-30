@@ -6,10 +6,12 @@ otherwise careful: remote backend with locking and encryption, pinned versions,
 A reviewer checking style passes this and the customer documents are world-readable.
 
 - `SEC-PUB-001` — `aws_s3_bucket_acl` sets `acl = "public-read"` on a bucket named
-  `acme-prod-customer-documents`, and no `aws_s3_bucket_public_access_block` exists
-  to override it. Exclusion 7 explicitly cannot rescue this: nothing in the file
-  states public intent, and a bucket holding customer documents is never excluded
-  however it is configured.
+  `acme-prod-customer-documents`. That is an affirmative public grant, which is what
+  the rule requires: the *absence* of `aws_s3_bucket_public_access_block` is
+  deliberately not a finding (exclusion 7), because AWS has blocked public access by
+  default since April 2023. Exclusion 8 cannot rescue this either: nothing states
+  public intent, and a bucket holding customer documents is never excluded however it
+  is configured.
 - `SEC-LOG-001` — no `aws_cloudtrail` anywhere in the module, so there is no record
   of who did what in this account. This is a root module with `variables.tf` and
   `outputs.tf` present, which is what makes the absence assessable under exclusion 8;

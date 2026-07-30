@@ -1,3 +1,13 @@
+variable "client" {
+  type        = string
+  description = "Client slug used as the resource name prefix."
+}
+
+variable "environment" {
+  type        = string
+  description = "Deployment environment (dev/staging/prod)."
+}
+
 variable "region" {
   type        = string
   description = "AWS region for this environment."

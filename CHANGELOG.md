@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`SEC-PUB-001` no longer fires on the absence of `aws_s3_bucket_public_access_block`.** As first written it did, which is factually wrong: AWS has enabled Block Public Access on new buckets by default since April 2023, so a bucket with no block resource and no public grant is private. The rule would have flagged every plain private bucket as a BLOCKING public-exposure finding. It now requires affirmative exposure (a public ACL, a `Principal: "*"` policy, or a block resource explicitly setting a flag `false`). Caught by a Tier-2 run before release.
 - **The eval harness now compares content, not just versions.** `claude plugin update` is a no-op when the version has not moved, so an edited skill body can sit in the tree while the installed copy serves the old text. That happened during the first `--triggers` run and a re-run would have measured the unfixed skills. The guard hashes every `skills/*/SKILL.md` in both places and names the reinstall that actually fixes it.
 - **`check-prompts.sh` rejects a phrase present in both prompt sections.** It fails whichever way the model answers, so the suite can never go green and the failure reads as a skill defect. Cost a real debugging detour when a deletion missed by three words left `"review my infra"` in both of `tf`'s lists.
 
