@@ -7,6 +7,23 @@ metadata:
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
+frameworks:
+  mitre_attack:
+    - T1610
+    - T1611
+    - T1613
+    - T1078
+    - T1552
+  nist_csf:
+    - PR.AA-01
+    - PR.AA-05
+    - PR.PS-01
+    - PR.IR-01
+    - PR.IR-04
+  d3fend:
+    - Application Configuration Hardening
+    - Network Traffic Filtering
+    - System Configuration Permissions
 paths:
   - "**/values*.yaml"
   - "**/Chart.yaml"

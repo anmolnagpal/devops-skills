@@ -7,6 +7,18 @@ metadata:
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-29
+frameworks:
+  mitre_attack:
+    - T1562.008
+    - T1070
+  nist_csf:
+    - PR.PS-04
+    - DE.CM-09
+    - DE.AE-02
+    - DE.AE-03
+    - DE.AE-06
+  d3fend:
+    - Platform Monitoring
 paths:
   - "**/prometheus*.yml"
   - "**/prometheus*.yaml"

@@ -84,14 +84,21 @@ print(f"  codex:  {AGENTS}")
 print(f"  total:  {count} skill(s)")
 PY
 
+# Machine-readable catalog (index.json) + framework coverage doc (FRAMEWORKS.md).
+if [ "$CHECK" -eq 1 ]; then
+  python3 "$REPO/scripts/generate-index.py" --check
+else
+  python3 "$REPO/scripts/generate-index.py"
+fi
+
 if [ "$CHECK" -eq 1 ]; then
   # Fail if committed adapters are stale relative to skills/*.md sources.
-  if ! git -C "$REPO" diff --quiet -- .cursor/rules AGENTS.md; then
-    echo "ERROR: generated adapters are out of date. Run scripts/generate.sh and commit:" >&2
-    git -C "$REPO" --no-pager diff --stat -- .cursor/rules AGENTS.md >&2
+  if ! git -C "$REPO" diff --quiet -- .cursor/rules AGENTS.md index.json FRAMEWORKS.md; then
+    echo "ERROR: generated artifacts are out of date. Run scripts/generate.sh and commit:" >&2
+    git -C "$REPO" --no-pager diff --stat -- .cursor/rules AGENTS.md index.json FRAMEWORKS.md >&2
     exit 1
   fi
-  echo "check: adapters up to date."
+  echo "check: adapters + index up to date."
 fi
 
 echo "done."

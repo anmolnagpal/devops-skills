@@ -7,6 +7,18 @@ metadata:
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-29
+frameworks:
+  mitre_attack:
+    - T1485
+    - T1578
+  nist_csf:
+    - PR.PS-06
+    - PR.DS-11
+    - ID.RA-01
+    - DE.CM-09
+  d3fend:
+    - Configuration Inventory
+    - System Configuration Permissions
 paths:
   - "**/tfplan*.json"
   - "**/*.tfplan.json"
