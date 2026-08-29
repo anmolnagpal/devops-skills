@@ -8,6 +8,20 @@ metadata:
   category: devops
   updated: 2026-07-05
   upstream: clouddrove/claude-skills (docker-skills)
+frameworks:
+  mitre_attack:
+    - T1610
+    - T1612
+    - T1525
+    - T1552
+  nist_csf:
+    - PR.PS-01
+    - PR.PS-02
+    - ID.RA-01
+    - PR.AA-01
+  d3fend:
+    - Application Configuration Hardening
+    - Platform Hardening
 paths:
   - "**/Dockerfile"
   - "**/Dockerfile.*"

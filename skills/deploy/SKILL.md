@@ -7,6 +7,14 @@ metadata:
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
+frameworks:
+  nist_csf:
+    - PR.PS-01
+    - PR.PS-06
+    - RC.RP-01
+    - ID.IM-04
+  d3fend:
+    - Restore Software
 allowed-tools:
   - Glob
   - Read

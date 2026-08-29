@@ -7,6 +7,19 @@ metadata:
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
+frameworks:
+  mitre_attack:
+    - T1195.002
+    - T1078.004
+    - T1552.004
+    - T1059
+  nist_csf:
+    - GV.SC-07
+    - ID.RA-09
+    - PR.AA-01
+    - PR.AA-05
+  d3fend:
+    - Application Configuration Hardening
 paths:
   - "**/.github/workflows/*.yml"
   - "**/.github/workflows/*.yaml"

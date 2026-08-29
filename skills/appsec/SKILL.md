@@ -7,6 +7,21 @@ metadata:
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-07
+frameworks:
+  mitre_attack:
+    - T1195
+    - T1195.001
+    - T1190
+    - T1552
+    - T1552.001
+  nist_csf:
+    - ID.RA-01
+    - GV.SC-07
+    - PR.PS-02
+    - PR.PS-06
+  d3fend:
+    - Application Configuration Hardening
+    - Software Update
 allowed-tools:
   - Glob
   - Read

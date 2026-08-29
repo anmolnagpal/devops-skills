@@ -7,6 +7,25 @@ metadata:
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
+frameworks:
+  mitre_attack:
+    - T1190
+    - T1059
+    - T1552
+    - T1078
+    - T1110
+    - T1557
+  nist_csf:
+    - ID.RA-01
+    - PR.AA-01
+    - PR.AA-05
+    - PR.DS-02
+    - PR.PS-06
+  d3fend:
+    - Input Validation
+    - Multi-factor Authentication
+    - Application Configuration Hardening
+    - Message Encryption
 allowed-tools:
   - Glob
   - Read
