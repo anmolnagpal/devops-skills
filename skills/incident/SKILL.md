@@ -7,6 +7,14 @@ metadata:
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-29
+frameworks:
+  nist_csf:
+    - RS.MA-01
+    - RS.AN-03
+    - RS.MI-01
+    - RS.CO-02
+    - RC.RP-01
+    - ID.IM-03
 paths:
   - "**/docs/runbooks/*.md"
   - "**/docs/incidents/*.md"

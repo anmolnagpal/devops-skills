@@ -7,6 +7,20 @@ metadata:
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-29
+frameworks:
+  mitre_attack:
+    - T1195
+    - T1078
+    - T1525
+  nist_csf:
+    - PR.PS-06
+    - PR.AA-05
+    - GV.SC-07
+    - DE.CM-09
+    - ID.RA-01
+  d3fend:
+    - Configuration Inventory
+    - System Configuration Permissions
 paths:
   - "**/argocd/**/*.yaml"
   - "**/flux-system/**/*.yaml"
