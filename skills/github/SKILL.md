@@ -7,6 +7,20 @@ metadata:
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-07
+frameworks:
+  mitre_attack:
+    - T1195
+    - T1078
+    - T1199
+    - T1552.001
+  nist_csf:
+    - PR.AA-05
+    - GV.SC-07
+    - PR.PS-06
+    - ID.RA-01
+  d3fend:
+    - User Account Permissions
+    - Software Component Inventory
 paths:
   - "**/.github/CODEOWNERS"
   - "**/CODEOWNERS"

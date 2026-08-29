@@ -1,0 +1,540 @@
+{
+  "schema": "clouddrove-skills-index/v1",
+  "count": 17,
+  "skills": [
+    {
+      "name": "adr",
+      "description": "Capture architectural decisions that have already been made, as structured ADRs (Architecture Decision Records). Use when user says 'record this decision', 'ADR this', 'why did we choose X', 'document this trade-off', 'we decided to...', or when a choice between alternatives has been settled and needs writing down. This records a decision; it does not make one. A question of the form 'should we use X or Y' is a design discussion, not an ADR request.",
+      "safety": "writes-files",
+      "category": "devops",
+      "version": "0.1.0",
+      "updated": "2026-06-10",
+      "paths": [
+        "**/docs/adr/*.md",
+        "**/docs/adr/**/*.md"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read",
+        "Write"
+      ],
+      "frameworks": {}
+    },
+    {
+      "name": "appsec",
+      "description": "Application-level security review: dependency manifests for known-vulnerable packages, missing HTTP security headers, permissive CORS configuration. Use when user says 'review my dependencies', 'check for vulnerable packages', 'run a dependency audit', 'audit security headers', 'review CORS config', or when working in package.json/package-lock.json, go.mod/go.sum, requirements.txt/poetry.lock, Gemfile.lock, Cargo.toml/Cargo.lock, pom.xml, or server/app config with CORS or header middleware.",
+      "safety": "runs-commands",
+      "category": "devops",
+      "version": "0.1.0",
+      "updated": "2026-07-07",
+      "paths": [],
+      "allowed_tools": [
+        "Glob",
+        "Read",
+        "Bash"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1195",
+          "T1195.001",
+          "T1190",
+          "T1552",
+          "T1552.001"
+        ],
+        "nist_csf": [
+          "ID.RA-01",
+          "GV.SC-07",
+          "PR.PS-02",
+          "PR.PS-06"
+        ],
+        "d3fend": [
+          "Application Configuration Hardening",
+          "Software Update"
+        ]
+      }
+    },
+    {
+      "name": "ci",
+      "description": "GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments, including individual stages, jobs, manual gates on prod stages, and pipeline credentials. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', 'is my pipeline gated before prod', 'add a stage', 'add a deploy job', 'add a helm deploy stage', 'my pipeline leaks credentials', 'why does staging deploy with prod credentials', 'staging and prod share a job', or when working in .gitlab-ci.yml files. Anything expressed as a pipeline, stage, or job belongs here.",
+      "safety": "read-only",
+      "category": "devops",
+      "version": "1.3.0",
+      "updated": "2026-07-05",
+      "paths": [
+        "**/.gitlab-ci.yml",
+        "**/.gitlab-ci.yaml",
+        "**/gitlab-ci*.yml"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1195",
+          "T1552",
+          "T1552.001",
+          "T1078.004"
+        ],
+        "nist_csf": [
+          "PR.AA-01",
+          "PR.AA-05",
+          "GV.SC-07",
+          "ID.RA-09"
+        ],
+        "d3fend": [
+          "Application Configuration Hardening"
+        ]
+      }
+    },
+    {
+      "name": "deploy",
+      "description": "Deployment strategy, production-readiness gating, and rollback planning for AWS/EKS services. Use when user says 'how should I deploy this', 'blue-green or canary', 'are we ready to ship', 'production readiness', 'plan a rollback', 'pre-deploy check', or before a first production release. Pairs with /k8s, /ci, /github-actions, /tf which own the per-artifact checks.",
+      "safety": "read-only",
+      "category": "devops",
+      "version": "0.4.0",
+      "updated": "2026-07-05",
+      "paths": [],
+      "allowed_tools": [
+        "Glob",
+        "Read"
+      ],
+      "frameworks": {
+        "nist_csf": [
+          "PR.PS-01",
+          "PR.PS-06",
+          "RC.RP-01",
+          "ID.IM-04"
+        ],
+        "d3fend": [
+          "Restore Software"
+        ]
+      }
+    },
+    {
+      "name": "docker",
+      "description": "Docker operations, Dockerfile best practices, Compose, image optimization, and registry workflows. Use when user says 'review my Dockerfile', 'optimize my image', 'reduce image size', 'container won't start', 'set up compose', 'multi-stage build', or when working in Dockerfile, docker-compose*.yml, or .dockerignore files.",
+      "safety": "runs-commands",
+      "category": "devops",
+      "version": "0.5.0",
+      "updated": "2026-07-05",
+      "paths": [
+        "**/Dockerfile",
+        "**/Dockerfile.*",
+        "**/docker-compose*.yml",
+        "**/docker-compose*.yaml",
+        "**/compose*.yml",
+        "**/compose*.yaml",
+        "**/.dockerignore"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read",
+        "Bash"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1610",
+          "T1612",
+          "T1525",
+          "T1552"
+        ],
+        "nist_csf": [
+          "PR.PS-01",
+          "PR.PS-02",
+          "ID.RA-01",
+          "PR.AA-01"
+        ],
+        "d3fend": [
+          "Application Configuration Hardening",
+          "Platform Hardening"
+        ]
+      }
+    },
+    {
+      "name": "finops",
+      "description": "AWS cost optimization — waste detection, right-sizing, Savings Plans, RIs, EKS cost, multi-account governance. Use when user says 'reduce AWS bill', 'find waste', 'right-size this', 'should I buy SP or RI', 'gp2 vs gp3', 'EKS is expensive', 'NAT gateway cost', or asks about AWS cost optimization.",
+      "safety": "runs-commands",
+      "category": "devops",
+      "version": "0.3.0",
+      "updated": "2026-07-05",
+      "paths": [],
+      "allowed_tools": [
+        "Glob",
+        "Read",
+        "Bash"
+      ],
+      "frameworks": {}
+    },
+    {
+      "name": "github",
+      "description": "GitHub repository operations: PRs, issues, releases, branch protection, CODEOWNERS, Dependabot, and repo settings audits. Use when user says 'review my PR', 'create a release', 'cut a release', 'tag a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', 'is Dependabot configured', or asks about GitHub repo configuration. Repo settings and metadata, not workflow files; /clouddrove:github-actions owns .github/workflows.",
+      "safety": "runs-commands",
+      "category": "devops",
+      "version": "0.6.0",
+      "updated": "2026-07-07",
+      "paths": [
+        "**/.github/CODEOWNERS",
+        "**/CODEOWNERS",
+        "**/.github/pull_request_template.md",
+        "**/.github/ISSUE_TEMPLATE/**",
+        "**/.github/dependabot.yml"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read",
+        "Bash"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1195",
+          "T1078",
+          "T1199",
+          "T1552.001"
+        ],
+        "nist_csf": [
+          "PR.AA-05",
+          "GV.SC-07",
+          "PR.PS-06",
+          "ID.RA-01"
+        ],
+        "d3fend": [
+          "User Account Permissions",
+          "Software Component Inventory"
+        ]
+      }
+    },
+    {
+      "name": "github-actions",
+      "description": "GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files.",
+      "safety": "read-only",
+      "category": "devops",
+      "version": "0.4.0",
+      "updated": "2026-07-05",
+      "paths": [
+        "**/.github/workflows/*.yml",
+        "**/.github/workflows/*.yaml",
+        "**/.github/actions/**/*.yml",
+        "**/.github/actions/**/*.yaml"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1195.002",
+          "T1078.004",
+          "T1552.004",
+          "T1059"
+        ],
+        "nist_csf": [
+          "GV.SC-07",
+          "ID.RA-09",
+          "PR.AA-01",
+          "PR.AA-05"
+        ],
+        "d3fend": [
+          "Application Configuration Hardening"
+        ]
+      }
+    },
+    {
+      "name": "gitops",
+      "description": "Argo CD and Flux review and scaffolding: mutable source refs, AppProject wildcard grants, unguarded auto-prune, sync waves and dependency ordering, selfHeal drift enforcement, and per-environment separation. Use when user says 'review my argocd', 'review my Application', 'check my flux config', 'set up gitops', 'why did argo delete my resources', 'app of apps', 'review my Kustomization', or when working in argocd/, flux-system/, AppProject, ApplicationSet, or Flux GitRepository/Kustomization/HelmRelease manifests.",
+      "safety": "read-only",
+      "category": "devops",
+      "version": "0.1.0",
+      "updated": "2026-07-29",
+      "paths": [
+        "**/argocd/**/*.yaml",
+        "**/flux-system/**/*.yaml",
+        "**/*appproject*.yaml",
+        "**/*applicationset*.yaml",
+        "**/*helmrelease*.yaml"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1195",
+          "T1078",
+          "T1525"
+        ],
+        "nist_csf": [
+          "PR.PS-06",
+          "PR.AA-05",
+          "GV.SC-07",
+          "DE.CM-09",
+          "ID.RA-01"
+        ],
+        "d3fend": [
+          "Configuration Inventory",
+          "System Configuration Permissions"
+        ]
+      }
+    },
+    {
+      "name": "incident",
+      "description": "Runbooks, on-call readiness, incident response, and blameless postmortems: write a runbook for a service, audit whether a service can be operated at 03:00 before a rotation starts, find alerts that have no runbook, run a severity and escalation model, and turn an incident timeline into a postmortem. Use when user says 'write a runbook', 'review my runbooks', 'are we ready for on-call', 'are we ready to put this service on-call', 'which alerts are missing runbooks', 'set up incident response', 'define severity levels', 'write a postmortem', 'incident retro', or when working in docs/runbooks/ or docs/incidents/. Owns the response side; /clouddrove:observability owns whether a signal exists and reaches anyone, this owns whether the human it wakes knows what to do.",
+      "safety": "writes-files",
+      "category": "devops",
+      "version": "0.1.0",
+      "updated": "2026-07-29",
+      "paths": [
+        "**/docs/runbooks/*.md",
+        "**/docs/incidents/*.md",
+        "**/RUNBOOK.md"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read",
+        "Write"
+      ],
+      "frameworks": {
+        "nist_csf": [
+          "RS.MA-01",
+          "RS.AN-03",
+          "RS.MI-01",
+          "RS.CO-02",
+          "RC.RP-01",
+          "ID.IM-03"
+        ]
+      }
+    },
+    {
+      "name": "k8s",
+      "description": "Kubernetes and Helm review and scaffolding for EKS workloads. Use when user says 'review my helm values', 'before I deploy', 'scaffold a new service', 'check values.yaml', or when working in values.yaml, Chart.yaml, or Helm template files.",
+      "safety": "read-only",
+      "category": "devops",
+      "version": "1.5.0",
+      "updated": "2026-07-05",
+      "paths": [
+        "**/values*.yaml",
+        "**/Chart.yaml",
+        "**/templates/*.yaml",
+        "**/templates/*.yml"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1610",
+          "T1611",
+          "T1613",
+          "T1078",
+          "T1552"
+        ],
+        "nist_csf": [
+          "PR.AA-01",
+          "PR.AA-05",
+          "PR.PS-01",
+          "PR.IR-01",
+          "PR.IR-04"
+        ],
+        "d3fend": [
+          "Application Configuration Hardening",
+          "Network Traffic Filtering",
+          "System Configuration Permissions"
+        ]
+      }
+    },
+    {
+      "name": "observability",
+      "description": "Observability review and scaffolding: centralized logging, log retention, metrics scraping, alert rules that page a human, distributed tracing, dashboards, and SLO/SLI definition. Use when user says 'review my monitoring', 'do we have enough observability', 'am I flying blind', 'set up alerts', 'write alert rules', 'define an SLO', 'review my prometheus config', 'check log retention', or when working in prometheus/alertmanager/otel-collector config, ServiceMonitor manifests, or CloudWatch log-group and alarm Terraform.",
+      "safety": "read-only",
+      "category": "devops",
+      "version": "0.1.0",
+      "updated": "2026-07-29",
+      "paths": [
+        "**/prometheus*.yml",
+        "**/prometheus*.yaml",
+        "**/alertmanager*.yml",
+        "**/alertmanager*.yaml",
+        "**/*rules*.yaml",
+        "**/otel-collector*.yaml",
+        "**/servicemonitor*.yaml"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1562.008",
+          "T1070"
+        ],
+        "nist_csf": [
+          "PR.PS-04",
+          "DE.CM-09",
+          "DE.AE-02",
+          "DE.AE-03",
+          "DE.AE-06"
+        ],
+        "d3fend": [
+          "Platform Monitoring"
+        ]
+      }
+    },
+    {
+      "name": "owasp",
+      "description": "Security review requiring judgment about exploitability: injection and input handling, authentication and session management, authorization, secret storage and cryptography, and Agentic AI risks, against OWASP Top 10:2025 and ASVS 5.0. Use when user says 'review for security', 'is this secure', 'review this endpoint for injection', 'check for SQL injection or XSS', 'review auth/authorization', 'how are we storing secrets', 'check how we store secrets in this service', 'is this crypto correct', or when writing cryptography, session management, or AI agent code. Judges reachability and impact in this codebase; /clouddrove:appsec owns the deterministic checks a tool can answer (lockfile CVEs, missing headers, wildcard CORS).",
+      "safety": "read-only",
+      "category": "devops",
+      "version": "1.4.0",
+      "updated": "2026-07-05",
+      "paths": [],
+      "allowed_tools": [
+        "Glob",
+        "Read"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1190",
+          "T1059",
+          "T1552",
+          "T1078",
+          "T1110",
+          "T1557"
+        ],
+        "nist_csf": [
+          "ID.RA-01",
+          "PR.AA-01",
+          "PR.AA-05",
+          "PR.DS-02",
+          "PR.PS-06"
+        ],
+        "d3fend": [
+          "Input Validation",
+          "Multi-factor Authentication",
+          "Application Configuration Hardening",
+          "Message Encryption"
+        ]
+      }
+    },
+    {
+      "name": "skill-creator",
+      "description": "Create, edit, evaluate, and debug the skills in this repo, including running their evals and fixing a description that fails to trigger. Use when user says 'help me build a new skill', 'add a skill for X', 'run the evals for the tf skill', 'run the behavioral evals', 'my skill is not triggering', 'fix this skill's description', 'improve this skill's rule catalog', 'add a rule ID', or 'benchmark a skill'. Operates on the skills themselves rather than on infrastructure: a request to review actual Terraform or Kubernetes belongs to that domain skill.",
+      "safety": "writes-files",
+      "category": "devops",
+      "version": "1.0.0",
+      "updated": "2026-04-16",
+      "paths": [],
+      "allowed_tools": null,
+      "frameworks": {}
+    },
+    {
+      "name": "tf",
+      "description": "Generic Terraform review, scaffolding, and version upgrades for AWS infrastructure using the terraform-aws-modules ecosystem. Use when user says 'review my terraform', 'before I raise an MR', 'scaffold a lambda/rds/s3/eks/vpc', 'check my .tf files', 'upgrade provider', or when working in .tf or .tfvars files. NOTE: if the repo has an `_modules/` directory wrapping `clouddrove/*/aws` modules, use /clouddrove:wrapper-tf instead — the two patterns conflict.",
+      "safety": "read-only",
+      "category": "devops",
+      "version": "1.4.0",
+      "updated": "2026-07-07",
+      "paths": [
+        "**/*.tf",
+        "**/*.tfvars",
+        "**/*.tfvars.example"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1078.004",
+          "T1530",
+          "T1580",
+          "T1552"
+        ],
+        "nist_csf": [
+          "PR.PS-06",
+          "PR.DS-01",
+          "PR.AA-05",
+          "ID.RA-01",
+          "DE.CM-09"
+        ],
+        "d3fend": [
+          "Configuration Inventory",
+          "System Configuration Permissions",
+          "Disk Encryption"
+        ]
+      }
+    },
+    {
+      "name": "tf-plan",
+      "description": "Review a Terraform plan before applying it: destroys and replacements of data-bearing resources, secrets readable in plan output, out-of-band drift, blast radius, and whether the apply is bound to the plan you actually reviewed. Use when user says 'review my plan', 'is this plan safe to apply', 'check tfplan', 'what will this destroy', 'why is it replacing', 'review before apply', or shares terraform plan output. Complements /clouddrove:tf and /clouddrove:wrapper-tf, which review .tf source; this reviews the diff Terraform intends to make.",
+      "safety": "read-only",
+      "category": "devops",
+      "version": "0.1.0",
+      "updated": "2026-07-29",
+      "paths": [
+        "**/tfplan*.json",
+        "**/*.tfplan.json"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1485",
+          "T1578"
+        ],
+        "nist_csf": [
+          "PR.PS-06",
+          "PR.DS-11",
+          "ID.RA-01",
+          "DE.CM-09"
+        ],
+        "d3fend": [
+          "Configuration Inventory",
+          "System Configuration Permissions"
+        ]
+      }
+    },
+    {
+      "name": "wrapper-tf",
+      "description": "Team standard for AWS Terraform repos built on the CloudDrove wrapper-module pattern. Use when working in a repo with an `_modules/` directory that wraps `clouddrove/*/aws` modules, scaffolding a new wrapper module, generating Terraform GitHub Actions CI, reviewing wrapper-pattern PRs, or mapping the pattern to SOC2/GDPR controls. Supersedes /tf on CloudDrove repos.",
+      "safety": "runs-commands",
+      "category": "devops",
+      "version": "1.4.0",
+      "updated": "2026-07-07",
+      "paths": [
+        "_modules/**/*.tf",
+        "environments/**/*.tf",
+        "bootstrap/**/*.tf",
+        ".github/workflows/terraform.yml",
+        ".github/workflows/drift.yml"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read",
+        "Bash"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1078.004",
+          "T1530",
+          "T1580",
+          "T1552"
+        ],
+        "nist_csf": [
+          "PR.PS-06",
+          "PR.DS-01",
+          "PR.AA-05",
+          "ID.RA-01",
+          "DE.CM-09"
+        ],
+        "d3fend": [
+          "Configuration Inventory",
+          "System Configuration Permissions",
+          "Disk Encryption"
+        ]
+      }
+    }
+  ]
+}

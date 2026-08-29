@@ -7,6 +7,19 @@ metadata:
   author: Anmol Nagpal
   category: devops
   updated: 2026-07-05
+frameworks:
+  mitre_attack:
+    - T1195
+    - T1552
+    - T1552.001
+    - T1078.004
+  nist_csf:
+    - PR.AA-01
+    - PR.AA-05
+    - GV.SC-07
+    - ID.RA-09
+  d3fend:
+    - Application Configuration Hardening
 paths:
   - "**/.gitlab-ci.yml"
   - "**/.gitlab-ci.yaml"

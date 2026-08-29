@@ -64,7 +64,7 @@ CI also runs ShellCheck on `scripts/` and a full Docker-based install harness (`
 ```
 
 `install.sh` is idempotent — already-installed plugins, MCP servers, and symlinks are reused.
-Edit `skills/<name>/SKILL.md` → run `bash scripts/generate.sh` → commit `.cursor/rules/` + `AGENTS.md`.
+Edit `skills/<name>/SKILL.md` → run `bash scripts/generate.sh` → commit `.cursor/rules/`, `AGENTS.md`, `index.json`, `FRAMEWORKS.md`.
 
 ## Repository Structure
 
@@ -78,8 +78,10 @@ skills/          ← Canonical skill sources, one dir per skill (edit here)
   specs/         ← Backlog spec drafts (not active; no SKILL.md, not generated)
 .cursor/rules/   ← Generated Cursor .mdc rules (do not hand-edit)
 AGENTS.md        ← Generated Codex skill doc (do not hand-edit)
+index.json       ← Generated machine-readable skill catalog (do not hand-edit)
+FRAMEWORKS.md    ← Generated MITRE ATT&CK / NIST CSF 2.0 / D3FEND coverage doc (do not hand-edit)
 agents/          ← Reserved for Claude agents (currently empty)
-scripts/         ← bootstrap, install (dispatcher), install-{claude,cursor,codex}, generate, mcp, set-aws-profile
+scripts/         ← bootstrap, install (dispatcher), install-{claude,cursor,codex}, generate, generate-index, mcp, set-aws-profile
 config/          ← plugins.txt, marketplaces.txt (external team plugins, not clouddrove)
 templates/       ← CLAUDE.md template to copy into project repos
 _docs/           ← CHEATSHEET.md with example prompts
@@ -103,6 +105,13 @@ metadata:
   author: Name
   category: devops
   updated: YYYY-MM-DD
+frameworks:               # Optional: security/compliance mappings (surfaced in index.json + FRAMEWORKS.md)
+  mitre_attack:           # real ATT&CK Enterprise technique IDs (T####[.###])
+    - T1190
+  nist_csf:               # NIST CSF 2.0 subcategory IDs (e.g. PR.PS-06, DE.CM-01)
+    - PR.PS-06
+  d3fend:                 # MITRE D3FEND technique names
+    - Input Validation
 paths:                    # Optional: auto-trigger on these file patterns
   - "**/*.tf"
 allowed-tools:            # Optional: restrict available tools
@@ -134,6 +143,10 @@ allowed-tools:            # Optional: restrict available tools
 | `/clouddrove:deploy` | `skills/deploy/SKILL.md` | Manual only |
 | `/clouddrove:adr` | `skills/adr/SKILL.md` | `**/docs/adr/*.md` |
 | `/clouddrove:wrapper-tf` | `skills/wrapper-tf/SKILL.md` | `_modules/**/*.tf`, `environments/**/*.tf` |
+| `/clouddrove:tf-plan` | `skills/tf-plan/SKILL.md` | `**/tfplan*.json`, `**/*.tfplan.json` |
+| `/clouddrove:gitops` | `skills/gitops/SKILL.md` | `**/argocd/**/*.yaml`, `**/flux-system/**/*.yaml`, `**/*helmrelease*.yaml` |
+| `/clouddrove:observability` | `skills/observability/SKILL.md` | `**/prometheus*.yaml`, `**/alertmanager*.yaml`, `**/servicemonitor*.yaml` |
+| `/clouddrove:incident` | `skills/incident/SKILL.md` | `**/docs/runbooks/*.md`, `**/docs/incidents/*.md`, `**/RUNBOOK.md` |
 | `/clouddrove:skill-creator` | `skills/skill-creator/SKILL.md` | Manual only |
 
 Backlog spec drafts (not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security.
@@ -163,6 +176,8 @@ Sources in `skills/<name>/SKILL.md` generate per-tool artifacts via `scripts/gen
 
 - `.cursor/rules/<name>.mdc` — Cursor (`globs:` derived from `paths:`, auto-attach)
 - `AGENTS.md` — Codex (one file, all skills concatenated)
+- `index.json` — machine-readable skill catalog (name, description, safety, paths, frameworks) via `scripts/generate-index.py`
+- `FRAMEWORKS.md` — MITRE ATT&CK / NIST CSF 2.0 / D3FEND coverage table, inverted from each skill's `frameworks:` block
 
 Install per tool: `./scripts/install.sh --claude|--cursor|--codex|--all`. See `README.md` Quick Start.
 
@@ -186,7 +201,7 @@ Summary: X blocking issue(s), Y advisory issue(s).
 2. Register any new rule IDs in `rules/rule-ids.yaml` under the appropriate domain before using them in the skill
 3. Use `/clouddrove:skill-creator` to iteratively develop and eval the skill
 4. Add eval cases under `skills/<name>/evals/cases/` — copy `validate.sh` verbatim from an existing skill (e.g. `skills/tf/evals/validate.sh`)
-5. Run `bash scripts/generate.sh` to refresh `.cursor/rules/<name>.mdc` + `AGENTS.md`
+5. Run `bash scripts/generate.sh` to refresh `.cursor/rules/<name>.mdc`, `AGENTS.md`, `index.json`, `FRAMEWORKS.md`
 6. Add an entry to the skill table in `README.md` (the plugin auto-discovers any `skills/<name>/SKILL.md`)
 7. Commit `skills/`, `rules/rule-ids.yaml`, `.cursor/rules/`, `AGENTS.md` — teammates pull and re-run `./scripts/install.sh --all`
 
