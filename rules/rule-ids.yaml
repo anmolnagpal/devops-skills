@@ -58,6 +58,7 @@ SEC:
   SEC-LOG-003: 'CloudTrail without log-file validation or not multi-region'
   SEC-LOG-004: 'audit-log S3 bucket not immutable (no Object Lock / versioning)'
   SEC-LOG-005: 'EKS control-plane audit logging disabled'
+  SEC-LOG-006: 'internet-facing ALB or exposed S3 bucket without access logging'
   SEC-SEC-001: 'secret in current files'
   SEC-SEC-002: 'secret in git history'
   SEC-SEC-003: '.env committed'
