@@ -41,17 +41,18 @@ if [ -d "$INSTALL_DIR/.git" ]; then
   echo "Already installed at $INSTALL_DIR — pulling latest..."
   git -C "$INSTALL_DIR" pull --ff-only
 else
-  # Prompt for install dir only when a controlling TTY is available.
-  if [ -t 0 ] || [ -r /dev/tty ]; then
+  # Prompt for install dir only when a controlling TTY is actually usable.
+  # `[ -r /dev/tty ]` lies on macOS: it passes in non-interactive SSH sessions
+  # where opening /dev/tty then fails with "Device not configured". Test by
+  # actually opening it.
+  if [ -t 0 ]; then
     printf "Install to [%s]: " "$INSTALL_DIR"
-    if [ -t 0 ]; then
-      read -r custom_dir || custom_dir=""
-    else
-      read -r custom_dir </dev/tty || custom_dir=""
-    fi
-    if [ -n "$custom_dir" ]; then
-      INSTALL_DIR="${custom_dir/#\~/$HOME}"
-    fi
+    read -r custom_dir || custom_dir=""
+    [ -n "$custom_dir" ] && INSTALL_DIR="${custom_dir/#\~/$HOME}"
+  elif { : </dev/tty; } 2>/dev/null; then
+    printf "Install to [%s]: " "$INSTALL_DIR"
+    read -r custom_dir </dev/tty || custom_dir=""
+    [ -n "$custom_dir" ] && INSTALL_DIR="${custom_dir/#\~/$HOME}"
   else
     echo "No TTY detected — using default install dir: $INSTALL_DIR"
     echo "(Pass --install-dir <path> before --claude/--cursor/--codex to override.)"
@@ -63,4 +64,6 @@ fi
 
 # ── Run install ───────────────────────────────────────────────────────────────
 echo ""
-bash "$INSTALL_DIR/scripts/install.sh" "${INSTALL_ARGS[@]}"
+# ${INSTALL_ARGS[@]+...} guard: on macOS bash 3.2, "${INSTALL_ARGS[@]}" on an
+# empty array trips `set -u` with "unbound variable". This form expands to nothing.
+bash "$INSTALL_DIR/scripts/install.sh" ${INSTALL_ARGS[@]+"${INSTALL_ARGS[@]}"}
