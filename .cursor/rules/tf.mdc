@@ -65,6 +65,9 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 | **SEC-PUB-001** | BLOCKING | S3 bucket affirmatively exposed: a public-read/write ACL, a bucket policy granting `Principal: "*"`, or an `aws_s3_bucket_public_access_block` that sets any of its four flags to `false` |
 | **SEC-LOG-001** | ADVISORY | No CloudTrail trail defined for an account this repo provisions, or a trail with `enable_logging = false` |
 | **SEC-LOG-002** | ADVISORY | A VPC defined here with no `aws_flow_log` covering it (or the module's flow-log flag off) |
+| **SEC-LOG-003** | ADVISORY | An `aws_cloudtrail` here without `enable_log_file_validation = true` (log-file integrity/tamper detection off), or with `is_multi_region_trail` unset/false so activity outside the home region is never recorded |
+| **SEC-LOG-004** | ADVISORY | The S3 bucket this repo declares to receive CloudTrail (or other audit) logs is deletable: no `aws_s3_bucket_object_lock_configuration` (WORM) and no `aws_s3_bucket_versioning` `Enabled`, so an attacker or a fat-fingered `force_destroy` erases the trail (T1070) |
+| **SEC-LOG-005** | ADVISORY | An `aws_eks_cluster` whose `enabled_cluster_log_types` omits `"audit"` (control-plane audit logging off), so API-server calls to the cluster leave no record |
 | **TF-RES-001** | BLOCKING | Missing required tags (`Name`, `Environment`, `Team`, `ManagedBy`) |
 | **TF-RES-002** | ADVISORY | Stateful resource (RDS, EBS, EFS, DynamoDB, ElastiCache, S3 with data) declared with no `lifecycle` block, so a force-new attribute change destroys it silently |
 | **TF-QUAL-002** | ADVISORY | A module directory (`modules/<name>/`, `_modules/<name>/`) with no `README.md` |
@@ -80,7 +83,7 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 
 **Reused from auditkit:** `TF-VAR-001`, `TF-VAR-002`, `TF-PROV-001/002`, `TF-STATE-001/002/003`, `TF-RES-001`, `TF-MOD-001/002`, `TF-QUAL-001`, `SEC-IAM-001/003`, `SEC-PUB-001`, `SEC-LOG-001/002`, `SEC-NET-003`, `ARCH-SPOF-001`,
 `COST-K8S-002`, `TF-RES-002`, `TF-QUAL-002`, `META-SUP-001`.
-**Registered in `rules/rule-ids.yaml`:** `TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`.
+**Registered in `rules/rule-ids.yaml`:** `TF-VAR-003`, `TF-VAR-004`, `TF-OUT-001`, `TF-OUT-002`, `SEC-LOG-003`, `SEC-LOG-004`, `SEC-LOG-005`.
 
 **Output:** every finding carries its rule ID, in the format below. **Suppression:**
 accept a known risk with `# tf-skill:ignore <RULE-ID> -- <reason>` on the line above;
@@ -106,6 +109,8 @@ quote it, don't report it. Evals: [`evals/`](./evals/).
 12. `COST-K8S-002` where interruption is not tolerable and that is visible: a node group tainted for stateful workloads, a group named for a database or a queue consumer with in-flight state, or a group with one node. Spot is a default worth defending, not a rule to apply blindly.
 13. `SEC-NET-003` on a single-purpose module that provisions one tier by design (a module whose whole job is the public subnet layer). The finding is a VPC that declares every subnet identically, not a module that owns one layer of someone else's VPC.
 14. `SEC-LOG-001` and `SEC-LOG-002` when you cannot see the whole configuration. Both are absence rules: "no CloudTrail anywhere" and "no flow log for this VPC" are claims about a repo, not about a file. Assess them only when reviewing a root module or a directory that would plausibly contain them, and stay silent on a single `.tf` handed over in isolation. Also exclude where the resource is owned elsewhere and that place is nameable: a separate security or landing-zone repo, an Organizations-level trail covering all accounts, or a `_modules/` wrapper that enables it. A claim that "the platform team handles it" with nothing to point at is the finding, not the exclusion.
+15. `SEC-LOG-004` on a bucket the trail writes to but this repo does **not** declare (`s3_bucket_name = var.audit_log_bucket`, a `data` source, or a bucket in another repo). The rule protects an audit-log bucket whose lifecycle this code actually owns; a referenced name is someone else's resource to harden. Object Lock also requires versioning, so `aws_s3_bucket_versioning` `Enabled` **plus** an `aws_s3_bucket_object_lock_configuration` clears the finding — versioning alone does not, since a delete marker still hides the logs.
+16. `SEC-LOG-003` and `SEC-LOG-005` are properties of a resource this file declares, not absence rules: report them only against an `aws_cloudtrail` / `aws_eks_cluster` you can actually see, quoting the resource. Do not infer a missing trail or cluster here — that is `SEC-LOG-001`'s job, not these.
 
 Exception 6: if the statement pairs `Resource = "*"` with any mutating action that
 does accept an ARN, or carries no `Condition` and no enumerated action list, the
