@@ -1,0 +1,29 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+# Coarse policy: sensitive objects captured only at Metadata, and a blanket
+# catch-all that drops everything else.
+omitStages:
+  - RequestReceived
+rules:
+  # Secrets and configmaps logged at Metadata only — you learn a secret was
+  # read, never which key or its value.
+  - level: Metadata
+    resources:
+      - group: ""
+        resources: ["secrets", "configmaps"]
+
+  # RBAC changes logged at Metadata only — no record of the granted rules.
+  - level: Metadata
+    resources:
+      - group: "rbac.authorization.k8s.io"
+        resources: ["clusterrolebindings", "rolebindings", "roles", "clusterroles"]
+
+  # Routine reads.
+  - level: Metadata
+    verbs: ["get", "list", "watch"]
+    resources:
+      - group: ""
+        resources: ["pods", "services", "endpoints"]
+
+  # Catch-all: swallow everything not matched above.
+  - level: None

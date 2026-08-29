@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kube-apiserver
+  namespace: kube-system
+  labels:
+    component: kube-apiserver
+    tier: control-plane
+spec:
+  containers:
+    - name: kube-apiserver
+      image: registry.k8s.io/kube-apiserver:v1.31.1
+      command:
+        - kube-apiserver
+        - --advertise-address=10.0.1.10
+        - --allow-privileged=true
+        - --authorization-mode=Node,RBAC
+        - --client-ca-file=/etc/kubernetes/pki/ca.crt
+        - --enable-admission-plugins=NodeRestriction
+        - --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt
+        - --etcd-servers=https://127.0.0.1:2379
+        # Audit logging on, fine-grained policy, local buffer plus an off-node
+        # webhook backend that ships events away from the control-plane host.
+        - --audit-policy-file=/etc/kubernetes/audit/audit-policy.yaml
+        - --audit-log-path=/var/log/kubernetes/audit.log
+        - --audit-log-maxage=30
+        - --audit-log-maxbackup=10
+        - --audit-log-maxsize=100
+        - --audit-webhook-config-file=/etc/kubernetes/audit/webhook-config.yaml
+        - --audit-webhook-batch-max-wait=5s
+        - --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt
+        - --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key
+        - --secure-port=6443
+        - --service-account-issuer=https://kubernetes.default.svc.cluster.local
+        - --service-account-key-file=/etc/kubernetes/pki/sa.pub
+        - --service-account-signing-key-file=/etc/kubernetes/pki/sa.key
+        - --service-cluster-ip-range=10.96.0.0/12
+        - --tls-cert-file=/etc/kubernetes/pki/apiserver.crt
+        - --tls-private-key-file=/etc/kubernetes/pki/apiserver.key
+      volumeMounts:
+        - name: k8s-certs
+          mountPath: /etc/kubernetes/pki
+          readOnly: true
+        - name: audit-config
+          mountPath: /etc/kubernetes/audit
+          readOnly: true
+        - name: audit-log
+          mountPath: /var/log/kubernetes
+  hostNetwork: true
+  priorityClassName: system-node-critical
+  volumes:
+    - name: k8s-certs
+      hostPath:
+        path: /etc/kubernetes/pki
+        type: DirectoryOrCreate
+    - name: audit-config
+      hostPath:
+        path: /etc/kubernetes/audit
+        type: DirectoryOrCreate
+    - name: audit-log
+      hostPath:
+        path: /var/log/kubernetes
+        type: DirectoryOrCreate

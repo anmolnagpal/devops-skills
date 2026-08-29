@@ -147,6 +147,7 @@ allowed-tools:            # Optional: restrict available tools
 | `/clouddrove:gitops` | `skills/gitops/SKILL.md` | `**/argocd/**/*.yaml`, `**/flux-system/**/*.yaml`, `**/*helmrelease*.yaml` |
 | `/clouddrove:observability` | `skills/observability/SKILL.md` | `**/prometheus*.yaml`, `**/alertmanager*.yaml`, `**/servicemonitor*.yaml` |
 | `/clouddrove:incident` | `skills/incident/SKILL.md` | `**/docs/runbooks/*.md`, `**/docs/incidents/*.md`, `**/RUNBOOK.md` |
+| `/clouddrove:logging` | `skills/logging/SKILL.md` | `**/audit-policy*.yaml`, `**/kube-apiserver*.yaml` |
 | `/clouddrove:skill-creator` | `skills/skill-creator/SKILL.md` | Manual only |
 
 Backlog spec drafts (not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security.

@@ -1,0 +1,41 @@
+apiVersion: audit.k8s.io/v1
+kind: Policy
+# Well-formed policy: full payloads for sensitive objects, Metadata for routine
+# reads, specific ordering, no blanket None that swallows sensitive activity.
+omitStages:
+  - RequestReceived
+rules:
+  # Never log requests to a few high-volume, non-sensitive read-only endpoints.
+  - level: None
+    users: ["system:kube-proxy"]
+    verbs: ["watch"]
+    resources:
+      - group: ""
+        resources: ["endpoints", "services"]
+
+  # Secrets and configmaps: full request + response payloads.
+  - level: RequestResponse
+    resources:
+      - group: ""
+        resources: ["secrets", "configmaps"]
+
+  # RBAC changes: full request + response so the granted rules are recorded.
+  - level: RequestResponse
+    resources:
+      - group: "rbac.authorization.k8s.io"
+        resources: ["clusterrolebindings", "rolebindings", "roles", "clusterroles"]
+
+  # Write operations on core objects: capture the request body.
+  - level: Request
+    verbs: ["create", "update", "patch", "delete"]
+    resources:
+      - group: ""
+      - group: "apps"
+      - group: "batch"
+
+  # Routine reads: Metadata is enough to know who looked.
+  - level: Metadata
+    verbs: ["get", "list", "watch"]
+
+  # Everything else at Metadata.
+  - level: Metadata

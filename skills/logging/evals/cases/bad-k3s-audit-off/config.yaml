@@ -1,0 +1,13 @@
+# /etc/rancher/k3s/config.yaml
+# k3s server config. Audit logging is off by default and nothing here turns it
+# on: no audit-policy-file / audit-log-path under kube-apiserver-arg. The API
+# server keeps no record of any call.
+write-kubeconfig-mode: "0644"
+tls-san:
+  - k3s.acme.internal
+node-label:
+  - "environment=prod"
+disable:
+  - traefik
+kube-apiserver-arg:
+  - "enable-admission-plugins=NodeRestriction"

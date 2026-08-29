@@ -1,6 +1,6 @@
 {
   "schema": "clouddrove-skills-index/v1",
-  "count": 17,
+  "count": 18,
   "skills": [
     {
       "name": "adr",
@@ -340,6 +340,43 @@
           "Application Configuration Hardening",
           "Network Traffic Filtering",
           "System Configuration Permissions"
+        ]
+      }
+    },
+    {
+      "name": "logging",
+      "description": "Review whether security-relevant logging is enabled, complete, shipped off-host, and tamper-resistant across Kubernetes and the cloud control plane. Use when user says 'review my audit logging', 'is audit logging on', 'check my k8s audit policy', 'are we logging API-server access', 'review GKE/AKS logging', 'do we capture admin activity', or when working in audit-policy.yaml, kube-apiserver manifests, or GKE/AKS Terraform. Covers generic Kubernetes audit policy, GKE Cloud Logging + audit config, AKS diagnostic settings, and cross-cloud audit-log immutability. For AWS CloudTrail/flow-log/EKS-audit/S3-access IaC use /clouddrove:tf (SEC-LOG-*); for log retention/centralization, metrics, and SLOs use /clouddrove:observability (OBS-LOG-*).",
+      "safety": "read-only",
+      "category": "devops",
+      "version": "0.1.0",
+      "updated": "2026-08-29",
+      "paths": [
+        "**/audit-policy*.yaml",
+        "**/audit-policy*.yml",
+        "**/kube-apiserver*.yaml"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read"
+      ],
+      "frameworks": {
+        "mitre_attack": [
+          "T1562.008",
+          "T1070",
+          "T1610",
+          "T1613",
+          "T1078"
+        ],
+        "nist_csf": [
+          "PR.PS-04",
+          "DE.CM-01",
+          "DE.AE-03",
+          "ID.AM-08",
+          "PR.PS-01"
+        ],
+        "d3fend": [
+          "Platform Monitoring",
+          "Operating System Monitoring"
         ]
       }
     },
