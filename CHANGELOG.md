@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`mcp.sh` no longer crashes when no TTY is usable.** `_ask` guarded on `[ -e /dev/tty ]`, which passes on macOS even when opening `/dev/tty` fails with "Device not configured" (ssh without `-t`, and the shells Claude Code spawns); the read then aborted with `answer: unbound variable` under `set -u`. It now tests by actually opening `/dev/tty` and defaults `answer`, so non-interactive MCP setup skips cleanly as documented. Same defect class as the bash-3.2 install fix in #11.
+
 ## [1.5.0] — 2026-08-29
 
 ### Added
