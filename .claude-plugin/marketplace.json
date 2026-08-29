@@ -10,7 +10,7 @@
       "name": "clouddrove",
       "source": "./",
       "description": "Team DevOps review and scaffolding skills: Terraform (source and plan), Kubernetes/Helm, Docker, GitHub Actions, GitLab CI, Argo CD/Flux, AWS FinOps, OWASP and application security, observability, incident runbooks, deployment gating, and ADRs. Findings carry shared auditkit rule IDs.",
-      "version": "1.4.1",
+      "version": "1.5.0",
       "category": "devops",
       "tags": [
         "terraform",
