@@ -177,6 +177,21 @@ OBS:
   OBS-DASH-001: 'no dashboards'
   OBS-SLO-001: 'no SLO/SLI'
 
+# ── Audit / access logging (k8s + multi-cloud) ────────────────────────────────
+# Security-relevant logging posture: is the audit/access/admin-activity record
+# enabled, complete, shipped off-host, and tamper-resistant. AWS IaC specifics
+# live under SEC-LOG-* (the tf skill); operability logging under OBS-LOG-*.
+LOG:
+  LOG-K8S-001: 'kube-apiserver audit logging not enabled (no audit-policy/audit-log-path)'
+  LOG-K8S-002: 'audit policy too coarse (catch-all None, or Metadata-only for secrets/RBAC)'
+  LOG-K8S-003: 'audit log kept only on the control-plane node (no webhook/off-node backend)'
+  LOG-GCP-001: 'GKE cluster logging disabled or missing control-plane/workload components'
+  LOG-GCP-002: 'GCP Data Access audit logs not enabled (no iam_audit_config DATA_READ/WRITE)'
+  LOG-AZ-001: 'AKS diagnostic setting missing kube-audit / control-plane categories'
+  LOG-AZ-002: 'Azure Activity Log not collected to a Log Analytics workspace'
+  LOG-AWS-001: 'CloudWatch log group for audit/sensitive logs not KMS-encrypted (kms_key_id unset)'
+  LOG-CLOUD-001: 'audit-log sink/bucket mutable or unretained (GCP bucket unlocked, workspace retention short)'
+
 # ── Repo hygiene ──────────────────────────────────────────────────────────────
 REPO:
   REPO-BP-001: 'no branch protection'
