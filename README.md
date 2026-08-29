@@ -9,6 +9,13 @@
 ![Cursor](https://img.shields.io/badge/Cursor-rules-blue)
 ![Codex](https://img.shields.io/badge/Codex-AGENTS.md-green)
 
+![skills](https://img.shields.io/badge/skills-18-brightgreen)
+![rule IDs](https://img.shields.io/badge/rule_IDs-179-blue)
+![eval fixtures](https://img.shields.io/badge/eval_fixtures-97-green)
+[![frameworks](https://img.shields.io/badge/mapped-MITRE_ATT%26CK_·_NIST_CSF_2.0_·_D3FEND-8A2BE2)](FRAMEWORKS.md)
+
+**18 skills · 179 stable rule IDs · 97 eval fixtures · mapped to MITRE ATT&CK, NIST CSF 2.0 & D3FEND.** Findings are tested against fixtures, not asserted — and one rule was [live-validated against a real k3s cluster](skills/logging/SKILL.md).
+
 ## Install
 
 Claude Code, no clone:
@@ -30,7 +37,7 @@ Re-run the same command to update. [Four more install paths →](_docs/INSTALL.m
 
 A markdown file that teaches your coding agent one job properly: what to check, in what order, and what to say about it. Installed once, the agent picks the right one itself when you open a matching file or ask a matching question.
 
-## The 17 skills
+## The 18 skills
 
 | | Skill | What it does | Auto-triggers on |
 |---|---|---|---|
@@ -45,6 +52,7 @@ A markdown file that teaches your coding agent one job properly: what to check, 
 | **Security** | [`owasp`](skills/owasp/SKILL.md) | OWASP Top 10:2025, ASVS 5.0, Agentic AI risks. Severity judged by exploitability | manual |
 |  | [`appsec`](skills/appsec/SKILL.md) | Dependency audit via the real ecosystem tool, security headers, CORS | manual |
 | **Observability** | [`observability`](skills/observability/SKILL.md) | Logging, retention, metrics, alerts that actually page a human, tracing, SLOs | `**/prometheus*.y*ml`, `**/alertmanager*.y*ml` |
+|  | [`logging`](skills/logging/SKILL.md) | Audit/access-log posture across k8s (incl. k3s/RKE2), GKE, AKS, and CloudWatch: is it on, complete, off-host, and tamper-proof | `**/audit-policy*.yaml`, `**/kube-apiserver*.yaml` |
 | **Cost** | [`finops`](skills/finops/SKILL.md) | AWS waste detection, right-sizing, Savings Plans/RIs, EKS cost | manual |
 | **Delivery** | [`deploy`](skills/deploy/SKILL.md) | Rollout strategy, production-readiness gate, rollback playbook | manual |
 |  | [`incident`](skills/incident/SKILL.md) | Runbooks that work at 03:00, on-call readiness, blameless postmortems | `**/docs/runbooks/*.md` |
@@ -87,7 +95,19 @@ ADVISORY — Should fix
 Summary: 2 blocking issue(s), 1 advisory issue(s).
 ```
 
-Those rule IDs are the point. All 166 live in [`rules/rule-ids.yaml`](rules/rule-ids.yaml), CI rejects any a skill invents, and the [auditkit](https://github.com/clouddrove-ci/auditkit) audit engine reads the same registry, so an inline finding and a deep-audit finding are the same finding.
+Those rule IDs are the point. All 179 live in [`rules/rule-ids.yaml`](rules/rule-ids.yaml), CI rejects any a skill invents, and the [auditkit](https://github.com/clouddrove-ci/auditkit) audit engine reads the same registry, so an inline finding and a deep-audit finding are the same finding.
+
+## Mapped to the frameworks
+
+Every security and infra skill declares which controls it enforces, in a `frameworks:` block that generates a machine-readable [`index.json`](index.json) and a coverage table in [`FRAMEWORKS.md`](FRAMEWORKS.md). Across the 15 mapped skills:
+
+| Framework | Coverage |
+|---|---|
+| [MITRE ATT&CK](https://attack.mitre.org/) (Enterprise) | 24 techniques |
+| [NIST CSF 2.0](https://csrc.nist.gov/pubs/cswp/29/the-nist-cybersecurity-framework-20/final) | 27 subcategories |
+| [MITRE D3FEND](https://d3fend.mitre.org/) | 15 techniques |
+
+So "which of my controls does this skill actually check" is a lookup, not a guess. [Full table →](FRAMEWORKS.md)
 
 Ask to save a review and you get a [diffable markdown report](_docs/REVIEW-REPORT.md) under `docs/reviews/`.
 
@@ -95,9 +115,9 @@ Ask to save a review and you get a [diffable markdown report](_docs/REVIEW-REPOR
 
 **Skills read your project context.** Copy `templates/CLAUDE.md` into a repo once and every skill knows your AWS accounts, Terraform backend, and conventions before it reviews anything.
 
-**Every skill declares what it can touch.** `read-only`, `runs-commands`, or `writes-files` in frontmatter, and CI fails if the label disagrees with the skill's tool list. Nine of the seventeen cannot modify your repo at all. The bundled bash-guard hook blocks destructive commands too, though it stops accidents rather than attacks: it matches command text, so it is a speed bump, not a boundary.
+**Every skill declares what it can touch.** `read-only`, `runs-commands`, or `writes-files` in frontmatter, and CI fails if the label disagrees with the skill's tool list. Ten of the eighteen cannot modify your repo at all. The bundled bash-guard hook blocks destructive commands too, though it stops accidents rather than attacks: it matches command text, so it is a speed bump, not a boundary.
 
-**Findings are tested, not asserted.** 64 fixtures cover 100% of catalog rules, and the last live run scored [60/63 with every failure being a bad expectation rather than a bad skill](_docs/EVAL-RESULTS.md). Each skill also ships trigger-phrase evals, because a skill with a weak description never loads at all and no rule test would notice.
+**Findings are tested, not asserted.** 97 fixtures across 15 skills exercise the catalog, and the last live run scored [60/63 with every failure being a bad expectation rather than a bad skill](_docs/EVAL-RESULTS.md). Each skill also ships trigger-phrase evals, because a skill with a weak description never loads at all and no rule test would notice.
 
 ## Also in the box
 
