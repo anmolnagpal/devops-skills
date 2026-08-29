@@ -20,13 +20,17 @@ except Exception:
 _ask() {
   # _ask "Question" → returns 0 for yes, 1 for no
   # Non-interactive environments (CI=true, no TTY) auto-skip.
-  local prompt="$1"
-  if [[ "${CI:-}" == "true" ]] || ! [ -e /dev/tty ]; then
+  local prompt="$1" answer=""
+  # `[ -e /dev/tty ]` lies on macOS: the node exists but opening it fails with
+  # "Device not configured" in non-interactive shells (ssh without -t, and the
+  # shells Claude Code spawns). Test by actually opening it, so those runs skip
+  # cleanly instead of crashing on the read below.
+  if [[ "${CI:-}" == "true" ]] || ! { : </dev/tty; } 2>/dev/null; then
     echo "  (non-interactive — skipping)"
     return 1
   fi
   printf "  %s [y/N] " "$prompt"
-  read -r answer </dev/tty
+  read -r answer </dev/tty || answer=""
   [[ "$answer" =~ ^[Yy]$ ]]
 }
 
