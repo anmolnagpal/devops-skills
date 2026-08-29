@@ -75,6 +75,11 @@ if [[ ${#TOOLS[@]} -eq 0 ]]; then
   fi
 fi
 
+if [[ ${#TOOLS[@]} -eq 0 ]]; then
+  echo "no tools selected (pick one or more: --claude --cursor --codex --all)" >&2
+  exit 1
+fi
+
 if [[ "$SCOPE" == "project" && -z "$TARGET" ]]; then
   echo "--project requires a path" >&2
   exit 1
@@ -92,7 +97,9 @@ for t in "${TOOLS[@]}"; do
       args=()
       [[ $NO_MCP -eq 1 ]]     && args+=(--no-mcp)
       [[ $NO_PLUGINS -eq 1 ]] && args+=(--no-plugins)
-      bash "$REPO/scripts/install-claude.sh" "${args[@]}"
+      # ${args[@]+...} guard: on macOS bash 3.2, "${args[@]}" on an empty array
+      # trips `set -u` with "unbound variable". This form expands to nothing.
+      bash "$REPO/scripts/install-claude.sh" ${args[@]+"${args[@]}"}
       ;;
     cursor)
       bash "$REPO/scripts/install-cursor.sh" --scope "$SCOPE" ${TARGET:+--target "$TARGET"}
