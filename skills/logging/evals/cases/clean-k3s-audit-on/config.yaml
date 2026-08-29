@@ -1,0 +1,15 @@
+# /etc/rancher/k3s/config.yaml
+# Audit logging enabled: a policy file, a log path, and a webhook backend that
+# ships events off the control-plane node.
+write-kubeconfig-mode: "0644"
+tls-san:
+  - k3s.acme.internal
+node-label:
+  - "environment=prod"
+kube-apiserver-arg:
+  - "enable-admission-plugins=NodeRestriction"
+  - "audit-policy-file=/var/lib/rancher/k3s/server/audit-policy.yaml"
+  - "audit-log-path=/var/lib/rancher/k3s/server/logs/audit.log"
+  - "audit-log-maxage=30"
+  - "audit-log-maxbackup=10"
+  - "audit-webhook-config-file=/var/lib/rancher/k3s/server/audit-webhook.yaml"
