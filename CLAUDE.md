@@ -40,6 +40,7 @@ Run these locally before pushing — they are the same checks CI runs:
 pip3 install --break-system-packages pyyaml   # one-time dep; --break-system-packages required on macOS Homebrew Python
 
 bash scripts/check-skills.sh             # lint: name/description frontmatter
+bash scripts/check-agentskills.sh        # every skill conforms to the agentskills.io standard
 bash scripts/check-rule-ids.sh           # every rule ID in skills/ exists in rules/rule-ids.yaml
 bash scripts/check-evals.sh              # eval fixtures reference only known rule IDs
 bash scripts/generate.sh --check         # .cursor/rules/ + AGENTS.md are up to date

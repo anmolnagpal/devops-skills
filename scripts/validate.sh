@@ -20,6 +20,7 @@ CHECKS=(
   "check-rule-ids.sh:every rule ID exists in the canonical registry"
   "check-evals.sh:fixture evals match each skill's Rule Catalog"
   "check-prompts.sh:trigger-phrase evals exist and pin the boundaries"
+  "check-agentskills.sh:every skill conforms to the agentskills.io standard"
 )
 
 failed=()
