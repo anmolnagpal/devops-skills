@@ -1,0 +1,42 @@
+name: notify-mcp-catalog
+
+# The ClouddDrove MCP server serves these skills from its own R2 + D1, built by
+# clouddrove/clouddrove-skills from this repo's main. That build has to be
+# told when to re-run, or a merged skill sits unpublished until someone
+# notices. This fires a repository_dispatch at it on every push to main that
+# touches a skill.
+#
+# Needs MCP_CATALOG_DISPATCH_TOKEN: a fine-grained PAT scoped to
+# clouddrove/clouddrove-skills with Contents: read and write (write is what
+# the dispatch API checks). The catalog also re-publishes hourly on a
+# schedule, so a missing or expired token delays a skill by up to an hour
+# rather than dropping it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "skills/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger catalog re-publish
+        env:
+          GH_TOKEN: ${{ secrets.MCP_CATALOG_DISPATCH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ]; then
+            echo "::warning::MCP_CATALOG_DISPATCH_TOKEN not set — the catalog will pick this up on its hourly schedule instead."
+            exit 0
+          fi
+          gh api repos/clouddrove/clouddrove-skills/dispatches \
+            -f event_type=upstream-skills-updated \
+            -F "client_payload[repo]=${GITHUB_REPOSITORY}" \
+            -F "client_payload[sha]=${GITHUB_SHA}"
+          echo "dispatched upstream-skills-updated for ${GITHUB_SHA}"
