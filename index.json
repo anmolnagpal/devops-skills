@@ -1,6 +1,6 @@
 {
   "schema": "clouddrove-skills-index/v1",
-  "count": 18,
+  "count": 19,
   "skills": [
     {
       "name": "adr",
@@ -52,6 +52,25 @@
           "Software Update"
         ]
       }
+    },
+    {
+      "name": "case-study",
+      "description": "Draft, review and pre-publish check a CloudDrove client case study in the v2 format. Use when user says 'write a case study', 'draft the Wellnest case study', 'turn this project into a case study', 'review this case study before we publish', 'is this case study ready', 'check the numbers in this study', or when working in content under case-studies or outcomes. Enforces the v2 rules: client and number in the headline, three traceable numbers at the top, an attributed client quote, explicit cloud service names, and no placeholder results. This writes and audits marketing case studies; a customer-facing incident write-up belongs to incident.",
+      "safety": "writes-files",
+      "category": "delivery",
+      "version": "0.1.0",
+      "updated": "2026-09-11",
+      "paths": [
+        "**/case-studies/*.md",
+        "**/case-studies/**/*.md",
+        "**/outcomes/*.md"
+      ],
+      "allowed_tools": [
+        "Glob",
+        "Read",
+        "Write"
+      ],
+      "frameworks": {}
     },
     {
       "name": "ci",

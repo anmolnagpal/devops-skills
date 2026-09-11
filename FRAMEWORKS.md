@@ -2,7 +2,7 @@
 
 Generated from `skills/<name>/SKILL.md` frontmatter by `scripts/generate-index.py`. Do not hand-edit.
 
-15 of 18 skills carry framework mappings. Skills without a security-relevant mapping (finops, skill-creator, adr) are intentionally omitted.
+15 of 19 skills carry framework mappings. Skills without a security-relevant mapping (finops, skill-creator, adr) are intentionally omitted.
 
 ## MITRE ATT&CK (Enterprise)
 

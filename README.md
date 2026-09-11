@@ -9,13 +9,13 @@
 ![Cursor](https://img.shields.io/badge/Cursor-rules-blue)
 ![Codex](https://img.shields.io/badge/Codex-AGENTS.md-green)
 
-![skills](https://img.shields.io/badge/skills-18-brightgreen)
+![skills](https://img.shields.io/badge/skills-19-brightgreen)
 ![rule IDs](https://img.shields.io/badge/rule_IDs-179-blue)
 ![eval fixtures](https://img.shields.io/badge/eval_fixtures-97-green)
 [![frameworks](https://img.shields.io/badge/mapped-MITRE_ATT%26CK_·_NIST_CSF_2.0_·_D3FEND-8A2BE2)](FRAMEWORKS.md)
 [![agentskills.io](https://img.shields.io/badge/agentskills.io-conformant-0aa)](https://agentskills.io)
 
-**18 skills · 179 stable rule IDs · 97 eval fixtures · mapped to MITRE ATT&CK, NIST CSF 2.0 & D3FEND.** Findings are tested against fixtures, not asserted — and one rule was [live-validated against a real k3s cluster](skills/logging/SKILL.md).
+**19 skills · 179 stable rule IDs · 97 eval fixtures · mapped to MITRE ATT&CK, NIST CSF 2.0 & D3FEND.** Findings are tested against fixtures, not asserted — and one rule was [live-validated against a real k3s cluster](skills/logging/SKILL.md).
 
 ## Install
 
@@ -38,7 +38,7 @@ Re-run the same command to update. [Four more install paths →](_docs/INSTALL.m
 
 A markdown file that teaches your coding agent one job properly: what to check, in what order, and what to say about it. Installed once, the agent picks the right one itself when you open a matching file or ask a matching question.
 
-## The 18 skills
+## The 19 skills
 
 | | Skill | What it does | Auto-triggers on |
 |---|---|---|---|
@@ -59,6 +59,7 @@ A markdown file that teaches your coding agent one job properly: what to check, 
 |  | [`incident`](skills/incident/SKILL.md) | Runbooks that work at 03:00, on-call readiness, blameless postmortems | `**/docs/runbooks/*.md` |
 |  | [`github`](skills/github/SKILL.md) | Repo hygiene: branch protection, CODEOWNERS, releases, required docs | `**/CODEOWNERS`, `**/.github/dependabot.yml` |
 |  | [`adr`](skills/adr/SKILL.md) | Capture architectural decisions as structured ADRs | `**/docs/adr/*.md` |
+|  | [`case-study`](skills/case-study/SKILL.md) | Client case studies in the v2 format: numbers in the headline, traceable results, pre-publish checklist | `**/case-studies/*.md` |
 | **Meta** | [`skill-creator`](skills/skill-creator/SKILL.md) | Author, eval, and refine new skills in this repo | manual |
 
 ## Using them
