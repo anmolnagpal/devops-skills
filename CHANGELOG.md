@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Terraform plan review now checks actual JSON values for credential exposure
+  regardless of sensitivity metadata. Added a marked-sensitive plaintext fixture
+  and corrected the omitted-value control. Review findings name attribute paths
+  without repeating secrets.
+
 ### Added
 
 - **agentskills.io conformance, enforced.** `scripts/check-agentskills.sh` (and a new CI gate) assert every skill meets the [agentskills.io](https://agentskills.io) open Agent Skills standard: `name` + `description` present, name lowercase-kebab ≤ 64 chars matching its directory and free of reserved vendor words, description ≤ 1024 chars, and no angle brackets in any frontmatter value. `scripts/agentskills-skill.schema.json` carries the schema. All 18 skills conform, so the repo can be listed on agentskills.io.

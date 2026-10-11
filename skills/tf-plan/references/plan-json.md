@@ -107,12 +107,20 @@ object of `true` flags. An attribute being unknown is not a change and not a fin
 This is the field that makes plans look larger than they are.
 
 **`before_sensitive` and `after_sensitive`.** Mirror-shaped objects of booleans, marking
-which values are sensitive. This is the field `TF-PLAN-002` turns on:
+which values are sensitive. These flags do not prove the JSON value is redacted:
 
-- `after_sensitive.password === true` means the value is redacted in output. Not a
-  finding, however secret-shaped the value looks.
-- A credential-shaped value with `after_sensitive` false or absent for that path **is**
-  the finding.
+- `after_sensitive.password === true` does not remove `after.password` from
+  JSON output. If the actual credential is readable, report `TF-PLAN-002`.
+- Inspect `before`, `after`, and output values as well as their sensitivity
+  metadata. A readable credential is a finding with true, false, or absent
+  sensitivity flags. A genuinely omitted or redacted value is not exposure
+  in the supplied artifact; do not invent the missing value.
+- Quote only the resource address and attribute path in findings, never the
+  secret itself. Protect plan artifacts and their JSON exports as sensitive data.
+
+See HashiCorp's [show command reference](https://developer.hashicorp.com/terraform/cli/commands/show)
+for the plaintext JSON warning. Marking a value sensitive protects normal
+human-readable rendering, not every serialized artifact.
 
 Note that these can also be `true` or `false` as whole booleans rather than objects when
 the entire value is sensitive, so handle both shapes.

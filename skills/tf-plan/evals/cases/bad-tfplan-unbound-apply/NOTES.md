@@ -3,8 +3,9 @@
 Two findings that source review structurally cannot see.
 
 `TF-PLAN-002` — `aws_db_instance.replica` carries a literal `password` in
-`change.after`, and `after_sensitive.password` is `false`, so the value is not
-redacted. Anyone with read access to the CI logs or the plan artifact has the
+`change.after`, so the supplied artifact exposes the value. The false sensitivity
+flag is additional metadata, not the cause of exposure. Anyone with read access
+to a published JSON artifact has the
 production database password. The `.tf` source may well have sourced it from a
 variable; that is not the point, and `/clouddrove:tf`'s `TF-VAR-001` would not fire
 on it.
@@ -17,9 +18,10 @@ not apply: job ordering via `needs:` is not artifact binding, and there is no
 Terraform Cloud, Atlantis, or Spacelift run providing the guarantee.
 
 `aws_ssm_parameter.db_url` must NOT be reported. It looks credential-shaped and it
-is a SecureString, but `after_sensitive.value` is `true`, so the value is redacted
-in output. That is exclusion 6, and it is the pair that separates "a secret is
-readable" from "a secret exists".
+is a SecureString, but `change.after` contains no `value`. That is exclusion 6:
+the supplied artifact does not expose the credential. `after_sensitive.value`
+being true does not itself redact a value. If a plaintext `value` were present,
+it would be a finding regardless of that flag.
 
 Must NOT fire: `TF-PLAN-001` (both actions are pure `create`; the db instance is
 data-bearing but nothing is being destroyed), `TF-PLAN-003`, `TF-PLAN-004`,

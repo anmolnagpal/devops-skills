@@ -1,0 +1,23 @@
+{
+  "format_version": "1.2",
+  "terraform_version": "1.14.3",
+  "variables": {"environment": {"value": "prod"}},
+  "resource_changes": [
+    {
+      "address": "aws_ssm_parameter.db_password",
+      "mode": "managed",
+      "type": "aws_ssm_parameter",
+      "name": "db_password",
+      "change": {
+        "actions": ["create"],
+        "before": null,
+        "after": {
+          "name": "/prod/payments/db_password",
+          "type": "SecureString",
+          "value": "INERT_FIXTURE_PASSWORD_NOT_A_REAL_CREDENTIAL"
+        },
+        "after_sensitive": {"value": true}
+      }
+    }
+  ]
+}

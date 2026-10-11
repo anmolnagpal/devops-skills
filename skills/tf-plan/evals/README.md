@@ -71,9 +71,10 @@ treated as a failure during behavioral grading.
 The pair worth protecting is `bad-tfplan-unbound-apply` against itself: one
 resource has a readable `password` with `after_sensitive: false` and must fire
 `TF-PLAN-002`, while an SSM SecureString in the same plan has
-`after_sensitive: true` and must stay silent. A skill that greps for
-secret-shaped strings fails that pair; one that reads the sensitivity markers
-passes it.
+`after_sensitive: true` but no actual value in `change.after`, and must stay
+silent because the supplied artifact omits the value. The flag alone is not
+redaction. `bad-tfplan-sensitive-plaintext` isolates the opposite case: an
+actual plaintext credential with the flag true must fire `TF-PLAN-002`.
 
 ## Adding a case
 

@@ -4756,10 +4756,13 @@ Don't report these unless a stated exception applies:
 5. `TF-PLAN-005` where the version bump **is** the change set (a plan containing
    only provider or module upgrades and their unavoidable consequences). The rule
    exists to stop bundling, not to stop upgrading.
-6. `TF-PLAN-002` where the value flagged is already marked sensitive by the
-   provider (`after_sensitive: true`) and therefore redacted in output, or is a
-   resource identifier that merely looks credential-shaped (an ARN, a KMS key id,
-   a bucket name). The finding is a readable secret, not a secret-shaped string.
+6. `TF-PLAN-002` where the supplied artifact actually omits or redacts the secret
+   value, or contains only a resource identifier (an ARN, a KMS key id, a bucket
+   name). Sensitivity flags are metadata: `terraform show -json` can include
+   plaintext secrets even when `after_sensitive` is true. Inspect actual values
+   in `before`, `after`, and outputs; do not exempt a readable secret because
+   it is marked sensitive. Report its address and attribute path without
+   repeating the secret in the review.
 7. `TF-PLAN-006` where the pipeline genuinely does bind apply to the artifact:
    `-out` written, uploaded, downloaded, and passed to `apply <file>`, or an
    equivalent (Terraform Cloud/Enterprise run, Atlantis, Spacelift, Env0) where
@@ -4836,7 +4839,7 @@ API: never renumber a shipped rule; deprecate and add. Severities are the
 | ID | Severity | Check |
 |----|----------|-------|
 | **TF-PLAN-001** | BLOCKING | Plan action is `delete` or `replace` on a data-bearing resource |
-| **TF-PLAN-002** | BLOCKING | A secret, password, token, or private key is readable in plan output (not marked sensitive) |
+| **TF-PLAN-002** | BLOCKING | A secret, password, token, or private key is readable in the supplied plan output, regardless of sensitivity metadata |
 | **TF-PLAN-003** | ADVISORY | Out-of-band drift: state or reality differs from code with no code change to explain it |
 | **TF-PLAN-004** | ADVISORY | Blast radius: change set is oversized for one apply (>25 resources) or spans more than one environment |
 | **TF-PLAN-005** | ADVISORY | Provider or module version bump bundled with unrelated resource changes in the same apply |
