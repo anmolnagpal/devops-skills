@@ -308,5 +308,5 @@ Total: ~$158k/year saved on $960k/year spend, with no 3-year lock-in. Re-evaluat
 3. **Use Cost Explorer → Recommendations** as a starting point. It does the math but doesn't know your business plans (architecture changes, migrations, sunsetting).
 4. **Buy in tranches**, not all at once. Stagger expirations across quarters so renewal/decision load is spread out.
 5. **Set utilization + coverage alerts** in AWS Budgets the day you buy. See `tooling.md`.
-6. **Track expirations** at least 60 days out — `scripts/reservation-coverage.sh --expiring-days 60`.
+6. **Track expirations** at least 60 days out, `${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh --expiring-days 60`.
 7. **Review quarterly.** Adjust the next tranche based on actual utilization and architectural changes.

@@ -160,3 +160,11 @@ For agentic AI security + ASVS → read `agentic.md`
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only
 guarantee holds. Include the suppressions-honored and not-assessed sections.
+
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.

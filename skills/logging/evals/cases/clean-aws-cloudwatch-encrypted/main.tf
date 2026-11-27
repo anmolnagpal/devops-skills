@@ -10,7 +10,7 @@ terraform {
     bucket         = "acme-tfstate"
     key            = "env/prod/logging.tfstate"
     region         = "eu-west-1"
-    dynamodb_table = "acme-tfstate-lock"
+    use_lockfile   = true
     encrypt        = true
   }
 }

@@ -6,14 +6,18 @@ alwaysApply: true
 
 This skill covers AWS cost optimization: identifying waste, right-sizing workloads, choosing the right storage classes and instance families, planning commitment purchases (Savings Plans, RIs, reserved nodes for RDS/ElastiCache/OpenSearch/Redshift/DynamoDB), and using AWS-native cost tooling (Cost Explorer, CUR, Compute Optimizer, Trusted Advisor, Budgets).
 
-**Scripts:** Always run scripts with `--help` first. Scripts call the AWS CLI and assume credentials are already configured (env vars, profile, or instance role). Do not read script source unless debugging the script itself.
+**Scripts:** Always run scripts with `--help` first. Scripts live in this skill's own folder: call them as `bash ${CLAUDE_SKILL_DIR}/scripts/<name>.sh`, never relative to the repo you are auditing. Scripts call the AWS CLI and assume credentials are already configured (env vars, profile, or instance role). Do not read script source unless debugging the script itself.
+
+**Read-only.** This skill and its scripts never change AWS resources. Any change (a volume migration, a deletion, a purchase) is emitted as a command for a human to review and run.
+
+**Agent mode.** Never stop to ask a question. Where input is missing, use the documented default (current region, the `Owner` tag key, all services, 1-year No Upfront for commitment math) and list the open questions at the end of the output for the PM.
 
 **References:** Load reference files on demand. Do not pre-load all references.
 
-**Slash commands:** Users can also invoke these directly:
-- `/finops-skills:finops-audit [account-or-profile]` — Account-wide waste audit (idle resources, untagged spend, gp2 volumes, old snapshots)
-- `/finops-skills:finops-rightsize [resource-id]` — Analyze a workload (EC2 / RDS / ASG) and recommend instance/RDS sizing
-- `/finops-skills:finops-commit` — Recommend a coordinated reservation portfolio (Savings Plans + RDS/ElastiCache/OpenSearch RIs)
+**Invocation:** `/clouddrove:finops` followed by the task, for example:
+- `/clouddrove:finops audit [account-or-profile]`: account-wide waste audit (idle resources, untagged spend, gp2 volumes, old snapshots)
+- `/clouddrove:finops rightsize [resource-id]`: analyze a workload (EC2 / RDS / ASG) and recommend instance/RDS sizing
+- `/clouddrove:finops commit`: recommend a coordinated reservation portfolio (Savings Plans + RDS/ElastiCache/OpenSearch RIs)
 
 ---
 
@@ -87,7 +91,7 @@ is unreachable:
 
 1. **Non-prod running 24/7 that is load-testing or a shared dev cluster on purpose** (`COST-COMP-003`). A schedule saves nothing if the environment is genuinely in use overnight, and a dev cluster that everyone shares is not idle. Check for a schedule already in place, a documented reason, or usage before recommending a shutdown window.
 2. **Multi-AZ in non-prod that exists to rehearse failover** (`COST-DB-001`). Staging that mirrors prod topology is the point of staging. This applies to `staging` specifically; `dev` and `sandbox` rarely need it.
-3. **Reserved capacity or Savings Plans recommendations for a workload being decommissioned or re-platformed** within the commitment term. A one-year commitment on something with a three-month remaining life is a loss, not a saving. Ask before recommending a commitment.
+3. **Reserved capacity or Savings Plans recommendations for a workload being decommissioned or re-platformed** within the commitment term. A one-year commitment on something with a three-month remaining life is a loss, not a saving. If the remaining life is unknown, report the commitment as conditional and list the question for the PM at the end of the output.
 4. **Graviton migration where the image is not multi-arch** (`COST-COMP-004`). The saving is real and so is the porting work. Report it with the dependency named (a `linux/amd64`-only base image, a compiled extension, a vendor agent), not as a free win.
 5. **Orphaned resources under 30 days old** (`COST-STOR-002`). A volume detached last week may be mid-migration. Say how old it is; an unattached volume from 2023 and one from Tuesday are different findings.
 6. **gp2 volumes on an instance type that does not support gp3** or where the volume is a boot volume under a vendor-managed appliance (`COST-STOR-003`).
@@ -162,8 +166,8 @@ Go after these in order of impact, not in order of "easy."
 │  └─ Read references/storage.md
 │
 └─ Lots of small line items?
-   ├─ Run idle/waste audit → scripts/find-idle-resources.sh
-   ├─ Untagged spend → scripts/untagged-spend.sh
+   ├─ Run idle/waste audit → ${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh
+   ├─ Untagged spend → ${CLAUDE_SKILL_DIR}/scripts/untagged-spend.sh
    └─ Read references/waste.md
 ```
 
@@ -173,9 +177,9 @@ Go after these in order of impact, not in order of "easy."
 
 In rough order of savings-per-effort. Most accounts have at least 3-4 of these.
 
-1. **gp2 → gp3 EBS migration** — typically 20% cheaper *and* faster. Online conversion, no downtime. Run `scripts/ebs-gp2-to-gp3-audit.sh`.
+1. **gp2 → gp3 EBS migration**, typically 20% cheaper *and* faster. Online conversion, no downtime. Run `${CLAUDE_SKILL_DIR}/scripts/ebs-gp2-to-gp3-audit.sh`.
 2. **Compute Savings Plan for steady baseline** — 1yr No Upfront on stable EC2/Fargate/Lambda usage = ~27% off, no lock-in pain. Most flexible commitment AWS offers.
-3. **Delete unattached EBS volumes + old snapshots** — pure waste. Run `scripts/find-idle-resources.sh`.
+3. **Delete unattached EBS volumes + old snapshots**, pure waste. Run `${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh`.
 4. **VPC Endpoints for S3, DynamoDB, ECR, Secrets Manager** — eliminates NAT Gateway data processing fees for those flows.
 5. **S3 Intelligent-Tiering on large buckets** — automatic, low risk, ~30-70% off cold data.
 6. **RDS Reserved Instances for prod databases** — DBs are the most steady-state workload you have. 1yr All Upfront ~40% off, 3yr All Upfront ~60%.
@@ -231,14 +235,14 @@ For Cost Explorer queries, CUR + Athena recipes, and Compute Optimizer workflow,
 
 ## Diagnostic Scripts
 
-All scripts use the AWS CLI. Set `AWS_PROFILE` or `AWS_REGION` as needed. Run with `--help` for full options.
+All scripts use the AWS CLI and are read-only. Set `AWS_PROFILE` or `AWS_REGION` as needed. Run with `--help` for full options.
 
 ### Idle Resource Finder
 
 ```bash
-bash scripts/find-idle-resources.sh                      # current region
-bash scripts/find-idle-resources.sh --region us-east-1
-bash scripts/find-idle-resources.sh --all-regions        # slow but thorough
+bash ${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh                      # current region
+bash ${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh --region us-east-1
+bash ${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh --all-regions        # slow but thorough
 ```
 
 Finds: unattached EBS volumes, unused Elastic IPs, idle ELBs (no requests), stopped EC2 (still paying for EBS), snapshots older than 90 days, unattached ENIs.
@@ -246,17 +250,17 @@ Finds: unattached EBS volumes, unused Elastic IPs, idle ELBs (no requests), stop
 ### EBS gp2 → gp3 Audit
 
 ```bash
-bash scripts/ebs-gp2-to-gp3-audit.sh
-bash scripts/ebs-gp2-to-gp3-audit.sh --apply             # actually convert (with confirmation)
+bash ${CLAUDE_SKILL_DIR}/scripts/ebs-gp2-to-gp3-audit.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/ebs-gp2-to-gp3-audit.sh --all-regions
 ```
 
-Lists every gp2 volume with estimated monthly savings if migrated to gp3. Optionally performs the online migration.
+Lists every gp2 volume with estimated monthly savings if migrated to gp3, and prints the `aws ec2 modify-volume` command per volume for a human to review and run. The script never changes a volume.
 
 ### Untagged Spend
 
 ```bash
-bash scripts/untagged-spend.sh --tag-key Owner
-bash scripts/untagged-spend.sh --tag-key CostCenter --region eu-west-1
+bash ${CLAUDE_SKILL_DIR}/scripts/untagged-spend.sh --tag-key Owner
+bash ${CLAUDE_SKILL_DIR}/scripts/untagged-spend.sh --tag-key CostCenter --region eu-west-1
 ```
 
 Reports resources missing a required tag, grouped by service. Use to drive a tagging cleanup before allocating cost.
@@ -264,9 +268,9 @@ Reports resources missing a required tag, grouped by service. Use to drive a tag
 ### Reservation Coverage
 
 ```bash
-bash scripts/reservation-coverage.sh                     # all services
-bash scripts/reservation-coverage.sh --service rds
-bash scripts/reservation-coverage.sh --expiring-days 60
+bash ${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh                     # all services
+bash ${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh --service rds
+bash ${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh --expiring-days 60
 ```
 
 Reports current SP/RI coverage and utilization across EC2, RDS, ElastiCache, OpenSearch, Redshift; flags reservations expiring soon.
@@ -298,17 +302,17 @@ Load these as the task requires:
 | Task | Action |
 |---|---|
 | "My AWS bill is too high" | Use decision tree above. Start with Cost Explorer by SERVICE. |
-| Find waste in account | Run `scripts/find-idle-resources.sh`. Read `waste.md`. |
+| Find waste in account | Run `${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh`. Read `waste.md`. |
 | Should I buy a Savings Plan? | Read `reservations.md`. Use Cost Explorer → Recommendations. |
 | 1-yr vs 3-yr commitment | Read `reservations.md` payment math section. |
 | RDS / ElastiCache / OpenSearch reservations | Read `reservations.md` — separate sections per service. |
-| gp2 → gp3 migration | Run `scripts/ebs-gp2-to-gp3-audit.sh`. Read `storage.md`. |
+| gp2 → gp3 migration | Run `${CLAUDE_SKILL_DIR}/scripts/ebs-gp2-to-gp3-audit.sh`. Read `storage.md`. |
 | NAT Gateway too expensive | Read `networking.md` — VPC Endpoints + NAT alternatives. |
 | Right-size a workload | Use Compute Optimizer first. Read `compute.md`. |
 | Set up CUR + Athena | Read `tooling.md`. |
 | Build coverage/utilization alerts | Read `tooling.md` AWS Budgets section. |
-| Check current reservation coverage | Run `scripts/reservation-coverage.sh`. |
-| Drive a tagging cleanup | Run `scripts/untagged-spend.sh`. Read `waste.md`. |
+| Check current reservation coverage | Run `${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh`. |
+| Drive a tagging cleanup | Run `${CLAUDE_SKILL_DIR}/scripts/untagged-spend.sh`. Read `waste.md`. |
 | Set up multi-account guardrails (SCPs, OUs) | Read `organizations.md`. |
 | Cap sandbox spend with a kill-switch | Read `organizations.md` Budget Actions section. |
 | Share SP/RI across accounts | Read `organizations.md` consolidated billing section. |
@@ -316,7 +320,7 @@ Load these as the task requires:
 | Karpenter vs Cluster Autoscaler | Read `eks.md`. |
 | Per-namespace EKS cost attribution | Read `eks.md` (Kubecost / OpenCost section). |
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not ask; produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only

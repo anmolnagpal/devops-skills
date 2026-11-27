@@ -202,5 +202,5 @@ For a mid-size AWS account:
 3. **AWS Budgets** for monthly spend, RI/SP utilization+coverage, sandbox kill-switches.
 4. **Cost Anomaly Detection** monitors per service and per account.
 5. **Cost-allocation tags** enabled on `Owner`, `Environment`, `CostCenter`.
-6. **Quarterly reservation review** cycle, driven by `scripts/reservation-coverage.sh` + Cost Explorer recommendations.
-7. **Monthly waste sweep** with `scripts/find-idle-resources.sh`.
+6. **Quarterly reservation review** cycle, driven by `${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh` + Cost Explorer recommendations.
+7. **Monthly waste sweep** with `${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh`.

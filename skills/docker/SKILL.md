@@ -33,7 +33,14 @@ paths:
 allowed-tools:
   - Glob
   - Read
-  - Bash
+  - "Bash(bash ${CLAUDE_SKILL_DIR}/scripts/image-audit.sh:*)"
+  - "Bash(bash ${CLAUDE_SKILL_DIR}/scripts/compose-check.sh:*)"
+  - "Bash(docker image inspect:*)"
+  - "Bash(docker history:*)"
+  - "Bash(docker scout cves:*)"
+  - "Bash(docker scout recommendations:*)"
+  - "Bash(trivy image:*)"
+  - "Bash(grype:*)"
 ---
 
 
@@ -44,11 +51,6 @@ This skill covers Docker operations (building, running, debugging containers), D
 **Scripts:** Always run scripts with `--help` first. Do not read script source unless debugging the script itself.
 
 **References:** Load reference files on demand based on the task at hand. Do not pre-load all references.
-
-**Slash commands:** Users can also invoke these directly:
-- `/docker-skills:docker-debug [container]` — Diagnose a running or failed container
-- `/docker-skills:docker-build [context]` — Build, tag, and validate a Docker image
-- `/docker-skills:docker-optimize [image]` — Analyze an image and suggest size reductions
 
 ---
 
@@ -396,36 +398,36 @@ For multi-stage Dockerfile examples and base image comparison, read [Dockerfile 
 
 ### Image Audit
 
-Run `bash scripts/image-audit.sh --help` for full usage.
+Run `bash ${CLAUDE_SKILL_DIR}/scripts/image-audit.sh --help` for full usage.
 
 Analyzes a Docker image for size optimization opportunities: layer-by-layer breakdown, identifies large files, detects unnecessary packages, checks for common anti-patterns (running as root, no healthcheck, unneeded cache dirs).
 
 ```bash
 # Audit a specific image
-bash scripts/image-audit.sh myapp:latest
+bash ${CLAUDE_SKILL_DIR}/scripts/image-audit.sh myapp:latest
 
 # Audit with detailed layer breakdown
-bash scripts/image-audit.sh myapp:latest --layers
+bash ${CLAUDE_SKILL_DIR}/scripts/image-audit.sh myapp:latest --layers
 
 # Compare two images
-bash scripts/image-audit.sh myapp:v1 --compare myapp:v2
+bash ${CLAUDE_SKILL_DIR}/scripts/image-audit.sh myapp:v1 --compare myapp:v2
 ```
 
 ### Compose Check
 
-Run `bash scripts/compose-check.sh --help` for full usage.
+Run `bash ${CLAUDE_SKILL_DIR}/scripts/compose-check.sh --help` for full usage.
 
 Validates a Docker Compose file: checks for missing healthchecks, hardcoded secrets, missing restart policies, privileged mode, volume backup needs, and network isolation gaps.
 
 ```bash
 # Check compose file in current directory
-bash scripts/compose-check.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/compose-check.sh
 
 # Check a specific file
-bash scripts/compose-check.sh -f docker-compose.prod.yml
+bash ${CLAUDE_SKILL_DIR}/scripts/compose-check.sh -f docker-compose.prod.yml
 
 # Check with strict mode (warnings become errors)
-bash scripts/compose-check.sh --strict
+bash ${CLAUDE_SKILL_DIR}/scripts/compose-check.sh --strict
 ```
 
 ---
@@ -464,7 +466,7 @@ Load these references as needed based on the task:
 |------|--------|
 | Container crashing or stuck | Use decision tree above. For detailed steps, read `troubleshooting.md` |
 | Writing a new Dockerfile | Read `dockerfile.md` for multi-stage patterns and base image selection |
-| Reducing image size | Use optimization checklist above. Run `scripts/image-audit.sh` |
+| Reducing image size | Use optimization checklist above. Run `${CLAUDE_SKILL_DIR}/scripts/image-audit.sh` |
 | Setting up Docker Compose | Read `compose.md` for service patterns and full-stack example |
 | Pushing to a registry | Read `registry.md` for auth setup and tagging strategies |
 | Multi-arch builds | Read `registry.md` for buildx setup and manifest lists |
@@ -472,5 +474,13 @@ Load these references as needed based on the task:
 | Build is slow | Check `.dockerignore`, layer ordering, BuildKit cache. Read `dockerfile.md` |
 | Hot-reload in dev | Read `compose.md` for bind mount and override patterns |
 | Scanning for vulnerabilities | Read `registry.md` for docker scout, trivy, and grype |
-| Validating compose file | Run `scripts/compose-check.sh` |
-| Auditing image size | Run `scripts/image-audit.sh <image>` |
+| Validating compose file | Run `${CLAUDE_SKILL_DIR}/scripts/compose-check.sh` |
+| Auditing image size | Run `${CLAUDE_SKILL_DIR}/scripts/image-audit.sh <image>` |
+
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.

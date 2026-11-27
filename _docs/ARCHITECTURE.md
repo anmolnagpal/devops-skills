@@ -97,7 +97,7 @@ Every skill declares its blast radius in frontmatter, and `scripts/check-skills.
 |---|---|---|
 | `read-only` | `tf`, `tf-plan`, `k8s`, `ci`, `github-actions`, `gitops`, `owasp`, `deploy`, `observability` | Cannot mutate anything. Reads files, reports findings. |
 | `runs-commands` | `docker`, `finops`, `github`, `appsec`, `wrapper-tf` | Shells out to real tooling (`npm audit`, `gh api`, `aws`, `docker`), writes no files. |
-| `writes-files` | `adr`, `incident`, `skill-creator` | Creates or edits files in your repo. |
+| `writes-files` | `adr`, `incident` | Creates or edits files in your repo. |
 
 Check any skill's label with `grep '^safety:' skills/<name>/SKILL.md`. The repo also ships a `PreToolUse` bash-guard hook that blocks destructive commands regardless of which skill asked.
 

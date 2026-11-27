@@ -79,7 +79,7 @@ sections, and a delete-me checklist. Copying beats writing from empty.
 4. Register any new rule IDs in `rules/rule-ids.yaml` **before** using them in the skill's Rule Catalog. See [Add a rule ID](#add-a-rule-id).
 5. Add [fixture cases](#fixture-cases) under `skills/<name>/evals/cases/` and
    [trigger-phrase evals](#trigger-phrase-evals) in `skills/<name>/evals/prompts.md`.
-6. Use `/clouddrove:skill-creator` (this repo) to iterate on the skill and run evals.
+6. Iterate on the skill and run `bash scripts/check-evals.sh`.
 7. Run `bash scripts/generate.sh`, which rebuilds `.cursor/rules/<name>.mdc` and `AGENTS.md` from your source.
 8. Commit `skills/<name>/SKILL.md`, any registry change, the new `.cursor/rules/<name>.mdc`, and the updated `AGENTS.md`.
 9. Add the skill to the right category table in `README.md`, and to the relationship diagram if it consumes or is consumed by another skill.

@@ -39,7 +39,7 @@ Run these locally before pushing — they are the same checks CI runs:
 ```bash
 pip3 install --break-system-packages pyyaml   # one-time dep; --break-system-packages required on macOS Homebrew Python
 
-bash scripts/check-skills.sh             # lint: name/description frontmatter
+bash scripts/check-skills.sh             # lint: frontmatter, safety label, no unscoped Bash
 bash scripts/check-agentskills.sh        # every skill conforms to the agentskills.io standard
 bash scripts/check-rule-ids.sh           # every rule ID in skills/ exists in rules/rule-ids.yaml
 bash scripts/check-evals.sh              # eval fixtures reference only known rule IDs
@@ -149,7 +149,6 @@ allowed-tools:            # Optional: restrict available tools
 | `/clouddrove:observability` | `skills/observability/SKILL.md` | `**/prometheus*.yaml`, `**/alertmanager*.yaml`, `**/servicemonitor*.yaml` |
 | `/clouddrove:incident` | `skills/incident/SKILL.md` | `**/docs/runbooks/*.md`, `**/docs/incidents/*.md`, `**/RUNBOOK.md` |
 | `/clouddrove:logging` | `skills/logging/SKILL.md` | `**/audit-policy*.yaml`, `**/kube-apiserver*.yaml` |
-| `/clouddrove:skill-creator` | `skills/skill-creator/SKILL.md` | Manual only |
 
 Backlog spec drafts (not active): `skills/specs/` — aws-cost, aws-security, azure-cost, azure-security, gcp-cost, gcp-security, kubernetes-cost, kubernetes-security.
 
@@ -201,7 +200,7 @@ Summary: X blocking issue(s), Y advisory issue(s).
 
 1. Create `skills/<name>/SKILL.md` following the frontmatter format above (one directory per skill; co-locate `evals/`, references, scripts)
 2. Register any new rule IDs in `rules/rule-ids.yaml` under the appropriate domain before using them in the skill
-3. Use `/clouddrove:skill-creator` to iteratively develop and eval the skill
+3. Write evals in `skills/<name>/evals/` and run `bash scripts/check-evals.sh`
 4. Add eval cases under `skills/<name>/evals/cases/` — copy `validate.sh` verbatim from an existing skill (e.g. `skills/tf/evals/validate.sh`)
 5. Run `bash scripts/generate.sh` to refresh `.cursor/rules/<name>.mdc`, `AGENTS.md`, `index.json`, `FRAMEWORKS.md`
 6. Add an entry to the skill table in `README.md` (the plugin auto-discovers any `skills/<name>/SKILL.md`)
@@ -222,7 +221,7 @@ Non-default marketplaces go in `config/marketplaces.txt`.
 
 ## Key Conventions
 
-- Skills restrict tools via `allowed-tools` — review skills use only `Glob` and `Read` (no writes)
+- Skills restrict tools via `allowed-tools`. Review skills use only `Glob` and `Read`. Skills that run commands list scoped entries such as `Bash(terraform validate:*)`; bare `Bash` fails `scripts/check-skills.sh`
 - `mcp.sh` is **sourced** (not executed directly) by `install.sh` — it must not use `#!/bin/bash` exit semantics that break the parent shell
 - `scripts/set-aws-profile.sh` uses inline Python to patch `~/.claude/settings.json`; it updates `AWS_PROFILE` for `eks-mcp-server` and `billing-mcp-server`
 - The `templates/CLAUDE.md` is a template to copy into project repos for always-on team context — it is not this repo's own CLAUDE.md

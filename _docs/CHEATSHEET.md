@@ -274,17 +274,6 @@ first. The skill reads the artifact; it never runs Terraform itself.
 
 ---
 
-### `/skill-creator` — Build a New Skill
-
-**Example conversations:**
-```
-"Help me build a new skill for writing runbooks"
-"I want to create a skill that reviews Dockerfile best practices"
-"Build and test a new /cost skill for AWS cost analysis"
-```
-
----
-
 ## MCP Servers
 
 ### `kubernetes-mcp-server` — Live Kubernetes Access

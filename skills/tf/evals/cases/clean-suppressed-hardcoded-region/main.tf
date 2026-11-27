@@ -1,7 +1,7 @@
 # Fixture: would trigger TF-VAR-004 but the risk is suppressed with a reason.
 # Should produce ZERO findings — the suppression must be honored.
 terraform {
-  required_version = "~> 1.7"
+  required_version = "~> 1.14"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -12,7 +12,7 @@ terraform {
     bucket         = "acme-tfstate"
     key            = "single-region-svc/terraform.tfstate"
     region         = "eu-west-1"
-    dynamodb_table = "terraform-state-lock"
+    use_lockfile   = true
     encrypt        = true
   }
 }

@@ -6,7 +6,8 @@
 #   2. frontmatter `name` is present and equals the directory name
 #      (the plugin and generators key skills by directory).
 #   3. frontmatter `description` is present and non-empty (it's the trigger text).
-#   4. frontmatter `safety` is present and one of read-only / runs-commands /
+#   4. allowed-tools never lists bare `Bash`; Bash entries are scoped.
+#   5. frontmatter `safety` is present and one of read-only / runs-commands /
 #      writes-files, and matches what `allowed-tools` actually permits. This is
 #      the greppable blast-radius label: a skill claiming read-only must not be
 #      able to mutate anything.
@@ -60,6 +61,13 @@ for path in skills:
     LEVELS = ("read-only", "runs-commands", "writes-files")
     MUTATING = {"Write", "Edit", "NotebookEdit", "MultiEdit"}
 
+    # Unscoped Bash lets an agent run any command. Every skill must list the
+    # exact command prefixes it needs, e.g. Bash(terraform plan:*).
+    tools_raw = fm.get("allowed-tools")
+    if tools_raw is not None and "Bash" in tools_raw:
+        print(f"FAIL [{d}]: allowed-tools has unscoped 'Bash'; scope it as Bash(<command>:*)")
+        fail = 1
+
     safety = fm.get("safety")
     if not safety:
         print(f"FAIL [{d}]: frontmatter missing 'safety' (one of {'/'.join(LEVELS)})")
@@ -75,7 +83,7 @@ for path in skills:
             expected = "writes-files"
         elif MUTATING & set(tools):
             expected = "writes-files"
-        elif "Bash" in tools:
+        elif any(t == "Bash" or str(t).startswith("Bash(") for t in tools):
             expected = "runs-commands"
         else:
             expected = "read-only"

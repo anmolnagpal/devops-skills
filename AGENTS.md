@@ -83,10 +83,10 @@ What we are doing. 1–3 sentences, stated clearly.
 
 ## NEW — Record a decision
 
-1. **Initialize once.** If `docs/adr/` does not exist, ask the user to confirm before
-   creating it. On confirmation, create the directory, a `README.md` seeded with the
-   index table header (below), and a `template.md` copy of the format above. Never
-   create files without explicit consent.
+1. **Initialize once.** If `docs/adr/` does not exist, create the directory, a
+   `README.md` seeded with the index table header (below), and a `template.md` copy of
+   the format above. Do not stop to ask; the change lands in a pull request that a human
+   reviews. Note the new directory in your summary.
 2. **Number it.** Next zero-padded number after the highest existing `docs/adr/NNNN-*.md`
    (start at `0001`). Slug = kebab-case of the title.
 3. **Fill it from the conversation** — extract the decision, the context that prompted it,
@@ -117,6 +117,14 @@ What we are doing. 1–3 sentences, stated clearly.
 
 Never delete or rewrite a past ADR's decision — superseding preserves the history of
 *why it changed*, which is the whole point.
+
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.
 
 
 ## /appsec
@@ -291,6 +299,14 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
 
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.
+
 
 ## /ci
 
@@ -391,8 +407,11 @@ Read the arguments provided:
 - `new helm` → go to **NEW > Helm Pipeline**
 - No arguments → use Glob to check the current directory, then:
   - If `.gitlab-ci.yml` exists → go to **REVIEW**
-  - If `.tf` files exist but no `.gitlab-ci.yml` → ask: "No pipeline found. Do you want me to **review** something or scaffold a **new** pipeline? (terraform / helm)"
-  - Otherwise → ask: "What do you need? **review** an existing pipeline, or create a **new** one? (terraform / helm)"
+  - If `.tf` files exist but no `.gitlab-ci.yml` → go to **NEW > Terraform Pipeline**
+  - If a Helm chart (`Chart.yaml`) exists but no `.gitlab-ci.yml` → go to **NEW > Helm Pipeline**
+  - Otherwise → report that no pipeline was found and list "review or new (terraform / helm)?" as an open question for the PM
+
+Agent mode: never stop to ask a question. Use the documented default and list open questions at the end of the output for the PM.
 
 ---
 
@@ -411,6 +430,7 @@ Identify whether this is a Terraform pipeline, Helm pipeline, or both, then appl
 ### Image versions
 - Always pin Docker image versions — never use `:latest`
 - Terraform CI image must match `required_version` in the repo's `versions.tf`
+- The `hashicorp/terraform` image needs `entrypoint: [""]` under `image:` (its entrypoint is `terraform`, so `script:` lines fail without it)
 
 ### Environment separation
 - Staging and production must always be separate jobs — never the same job with a variable switch
@@ -430,7 +450,7 @@ stages:
 - `validate`: runs `terraform fmt -check` and `terraform validate`
 - `plan`: runs on MRs and main branch; plan saved as a GitLab artifact
 - `apply`: runs only on the main/protected branch with `when: manual`
-- Never use `-auto-approve` in production apply jobs
+- Never use `-auto-approve` in production apply jobs; apply the reviewed plan artifact (`terraform apply tfplan`)
 - Never hardcode `TF_VAR_` values — all variables come from GitLab CI/CD variables
 - Remote backend only — never use local Terraform state
 
@@ -482,9 +502,9 @@ Summary: 2 blocking issue(s), 1 advisory issue(s). Fix blocking issues before me
 
 ### Terraform Pipeline
 
-Ask:
-1. What is the Terraform directory or workspace structure? (single root module / multiple environments as directories / Terraform workspaces?)
-2. Which GitLab CI/CD variable names hold AWS credentials? (default: `$AWS_ACCESS_KEY_ID`, `$AWS_SECRET_ACCESS_KEY`)
+Defaults (detect from the repo where possible; list anything guessed as an open question for the PM):
+1. Terraform layout: a single root module at `.` unless the repo shows environment directories or workspaces.
+2. AWS credential variables: `$AWS_ACCESS_KEY_ID`, `$AWS_SECRET_ACCESS_KEY`.
 
 Generate `.gitlab-ci.yml`:
 
@@ -493,7 +513,7 @@ Generate `.gitlab-ci.yml`:
 # Generated with /ci new terraform — review with /ci review before merging
 
 variables:
-  TF_VERSION: "1.7"
+  TF_VERSION: "1.17.2"
   TF_DIR: "."
 
 stages:
@@ -502,7 +522,9 @@ stages:
   - apply
 
 default:
-  image: hashicorp/terraform:${TF_VERSION}
+  image:
+    name: hashicorp/terraform:${TF_VERSION}
+    entrypoint: [""]   # the image entrypoint is `terraform`, which breaks script lines
   before_script:
     - terraform -version
     - terraform init
@@ -549,11 +571,11 @@ apply:
 
 ### Helm / EKS Pipeline
 
-Ask:
-1. Service name and Helm chart location?
-2. Namespace in EKS?
-3. GitLab CI/CD variable name for the kubeconfig? (e.g. `$KUBECONFIG_STAGING`, `$KUBECONFIG_PROD`)
-4. Container registry URL? (ECR or GitLab registry)
+Defaults (detect from the repo where possible; list anything guessed as an open question for the PM):
+1. Service name: the chart's `name` in `Chart.yaml`; chart location: the directory holding it.
+2. Namespace: the service name.
+3. Kubeconfig variables: `$KUBECONFIG_STAGING`, `$KUBECONFIG_PROD`.
+4. Registry: GitLab registry (`$CI_REGISTRY_IMAGE`) unless the repo references ECR.
 
 Generate `.gitlab-ci.yml`:
 
@@ -628,7 +650,7 @@ Next steps:
 3. Run /ci review to validate before merging
 ```
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not ask; produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only
@@ -830,6 +852,14 @@ explicit sign-off and usually a forward-fix plan, not a rollback.
 produces the content and the session performs the write, so the read-only
 guarantee holds. Include the suppressions-honored and not-assessed sections.
 
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.
+
 
 ## /docker
 
@@ -843,11 +873,6 @@ This skill covers Docker operations (building, running, debugging containers), D
 **Scripts:** Always run scripts with `--help` first. Do not read script source unless debugging the script itself.
 
 **References:** Load reference files on demand based on the task at hand. Do not pre-load all references.
-
-**Slash commands:** Users can also invoke these directly:
-- `/docker-skills:docker-debug [container]` — Diagnose a running or failed container
-- `/docker-skills:docker-build [context]` — Build, tag, and validate a Docker image
-- `/docker-skills:docker-optimize [image]` — Analyze an image and suggest size reductions
 
 ---
 
@@ -1195,36 +1220,36 @@ For multi-stage Dockerfile examples and base image comparison, read [Dockerfile 
 
 ### Image Audit
 
-Run `bash scripts/image-audit.sh --help` for full usage.
+Run `bash ${CLAUDE_SKILL_DIR}/scripts/image-audit.sh --help` for full usage.
 
 Analyzes a Docker image for size optimization opportunities: layer-by-layer breakdown, identifies large files, detects unnecessary packages, checks for common anti-patterns (running as root, no healthcheck, unneeded cache dirs).
 
 ```bash
 # Audit a specific image
-bash scripts/image-audit.sh myapp:latest
+bash ${CLAUDE_SKILL_DIR}/scripts/image-audit.sh myapp:latest
 
 # Audit with detailed layer breakdown
-bash scripts/image-audit.sh myapp:latest --layers
+bash ${CLAUDE_SKILL_DIR}/scripts/image-audit.sh myapp:latest --layers
 
 # Compare two images
-bash scripts/image-audit.sh myapp:v1 --compare myapp:v2
+bash ${CLAUDE_SKILL_DIR}/scripts/image-audit.sh myapp:v1 --compare myapp:v2
 ```
 
 ### Compose Check
 
-Run `bash scripts/compose-check.sh --help` for full usage.
+Run `bash ${CLAUDE_SKILL_DIR}/scripts/compose-check.sh --help` for full usage.
 
 Validates a Docker Compose file: checks for missing healthchecks, hardcoded secrets, missing restart policies, privileged mode, volume backup needs, and network isolation gaps.
 
 ```bash
 # Check compose file in current directory
-bash scripts/compose-check.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/compose-check.sh
 
 # Check a specific file
-bash scripts/compose-check.sh -f docker-compose.prod.yml
+bash ${CLAUDE_SKILL_DIR}/scripts/compose-check.sh -f docker-compose.prod.yml
 
 # Check with strict mode (warnings become errors)
-bash scripts/compose-check.sh --strict
+bash ${CLAUDE_SKILL_DIR}/scripts/compose-check.sh --strict
 ```
 
 ---
@@ -1263,7 +1288,7 @@ Load these references as needed based on the task:
 |------|--------|
 | Container crashing or stuck | Use decision tree above. For detailed steps, read `troubleshooting.md` |
 | Writing a new Dockerfile | Read `dockerfile.md` for multi-stage patterns and base image selection |
-| Reducing image size | Use optimization checklist above. Run `scripts/image-audit.sh` |
+| Reducing image size | Use optimization checklist above. Run `${CLAUDE_SKILL_DIR}/scripts/image-audit.sh` |
 | Setting up Docker Compose | Read `compose.md` for service patterns and full-stack example |
 | Pushing to a registry | Read `registry.md` for auth setup and tagging strategies |
 | Multi-arch builds | Read `registry.md` for buildx setup and manifest lists |
@@ -1271,8 +1296,16 @@ Load these references as needed based on the task:
 | Build is slow | Check `.dockerignore`, layer ordering, BuildKit cache. Read `dockerfile.md` |
 | Hot-reload in dev | Read `compose.md` for bind mount and override patterns |
 | Scanning for vulnerabilities | Read `registry.md` for docker scout, trivy, and grype |
-| Validating compose file | Run `scripts/compose-check.sh` |
-| Auditing image size | Run `scripts/image-audit.sh <image>` |
+| Validating compose file | Run `${CLAUDE_SKILL_DIR}/scripts/compose-check.sh` |
+| Auditing image size | Run `${CLAUDE_SKILL_DIR}/scripts/image-audit.sh <image>` |
+
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.
 
 
 ## /finops
@@ -1283,14 +1316,18 @@ Load these references as needed based on the task:
 
 This skill covers AWS cost optimization: identifying waste, right-sizing workloads, choosing the right storage classes and instance families, planning commitment purchases (Savings Plans, RIs, reserved nodes for RDS/ElastiCache/OpenSearch/Redshift/DynamoDB), and using AWS-native cost tooling (Cost Explorer, CUR, Compute Optimizer, Trusted Advisor, Budgets).
 
-**Scripts:** Always run scripts with `--help` first. Scripts call the AWS CLI and assume credentials are already configured (env vars, profile, or instance role). Do not read script source unless debugging the script itself.
+**Scripts:** Always run scripts with `--help` first. Scripts live in this skill's own folder: call them as `bash ${CLAUDE_SKILL_DIR}/scripts/<name>.sh`, never relative to the repo you are auditing. Scripts call the AWS CLI and assume credentials are already configured (env vars, profile, or instance role). Do not read script source unless debugging the script itself.
+
+**Read-only.** This skill and its scripts never change AWS resources. Any change (a volume migration, a deletion, a purchase) is emitted as a command for a human to review and run.
+
+**Agent mode.** Never stop to ask a question. Where input is missing, use the documented default (current region, the `Owner` tag key, all services, 1-year No Upfront for commitment math) and list the open questions at the end of the output for the PM.
 
 **References:** Load reference files on demand. Do not pre-load all references.
 
-**Slash commands:** Users can also invoke these directly:
-- `/finops-skills:finops-audit [account-or-profile]` — Account-wide waste audit (idle resources, untagged spend, gp2 volumes, old snapshots)
-- `/finops-skills:finops-rightsize [resource-id]` — Analyze a workload (EC2 / RDS / ASG) and recommend instance/RDS sizing
-- `/finops-skills:finops-commit` — Recommend a coordinated reservation portfolio (Savings Plans + RDS/ElastiCache/OpenSearch RIs)
+**Invocation:** `/clouddrove:finops` followed by the task, for example:
+- `/clouddrove:finops audit [account-or-profile]`: account-wide waste audit (idle resources, untagged spend, gp2 volumes, old snapshots)
+- `/clouddrove:finops rightsize [resource-id]`: analyze a workload (EC2 / RDS / ASG) and recommend instance/RDS sizing
+- `/clouddrove:finops commit`: recommend a coordinated reservation portfolio (Savings Plans + RDS/ElastiCache/OpenSearch RIs)
 
 ---
 
@@ -1364,7 +1401,7 @@ is unreachable:
 
 1. **Non-prod running 24/7 that is load-testing or a shared dev cluster on purpose** (`COST-COMP-003`). A schedule saves nothing if the environment is genuinely in use overnight, and a dev cluster that everyone shares is not idle. Check for a schedule already in place, a documented reason, or usage before recommending a shutdown window.
 2. **Multi-AZ in non-prod that exists to rehearse failover** (`COST-DB-001`). Staging that mirrors prod topology is the point of staging. This applies to `staging` specifically; `dev` and `sandbox` rarely need it.
-3. **Reserved capacity or Savings Plans recommendations for a workload being decommissioned or re-platformed** within the commitment term. A one-year commitment on something with a three-month remaining life is a loss, not a saving. Ask before recommending a commitment.
+3. **Reserved capacity or Savings Plans recommendations for a workload being decommissioned or re-platformed** within the commitment term. A one-year commitment on something with a three-month remaining life is a loss, not a saving. If the remaining life is unknown, report the commitment as conditional and list the question for the PM at the end of the output.
 4. **Graviton migration where the image is not multi-arch** (`COST-COMP-004`). The saving is real and so is the porting work. Report it with the dependency named (a `linux/amd64`-only base image, a compiled extension, a vendor agent), not as a free win.
 5. **Orphaned resources under 30 days old** (`COST-STOR-002`). A volume detached last week may be mid-migration. Say how old it is; an unattached volume from 2023 and one from Tuesday are different findings.
 6. **gp2 volumes on an instance type that does not support gp3** or where the volume is a boot volume under a vendor-managed appliance (`COST-STOR-003`).
@@ -1439,8 +1476,8 @@ Go after these in order of impact, not in order of "easy."
 │  └─ Read references/storage.md
 │
 └─ Lots of small line items?
-   ├─ Run idle/waste audit → scripts/find-idle-resources.sh
-   ├─ Untagged spend → scripts/untagged-spend.sh
+   ├─ Run idle/waste audit → ${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh
+   ├─ Untagged spend → ${CLAUDE_SKILL_DIR}/scripts/untagged-spend.sh
    └─ Read references/waste.md
 ```
 
@@ -1450,9 +1487,9 @@ Go after these in order of impact, not in order of "easy."
 
 In rough order of savings-per-effort. Most accounts have at least 3-4 of these.
 
-1. **gp2 → gp3 EBS migration** — typically 20% cheaper *and* faster. Online conversion, no downtime. Run `scripts/ebs-gp2-to-gp3-audit.sh`.
+1. **gp2 → gp3 EBS migration**, typically 20% cheaper *and* faster. Online conversion, no downtime. Run `${CLAUDE_SKILL_DIR}/scripts/ebs-gp2-to-gp3-audit.sh`.
 2. **Compute Savings Plan for steady baseline** — 1yr No Upfront on stable EC2/Fargate/Lambda usage = ~27% off, no lock-in pain. Most flexible commitment AWS offers.
-3. **Delete unattached EBS volumes + old snapshots** — pure waste. Run `scripts/find-idle-resources.sh`.
+3. **Delete unattached EBS volumes + old snapshots**, pure waste. Run `${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh`.
 4. **VPC Endpoints for S3, DynamoDB, ECR, Secrets Manager** — eliminates NAT Gateway data processing fees for those flows.
 5. **S3 Intelligent-Tiering on large buckets** — automatic, low risk, ~30-70% off cold data.
 6. **RDS Reserved Instances for prod databases** — DBs are the most steady-state workload you have. 1yr All Upfront ~40% off, 3yr All Upfront ~60%.
@@ -1508,14 +1545,14 @@ For Cost Explorer queries, CUR + Athena recipes, and Compute Optimizer workflow,
 
 ## Diagnostic Scripts
 
-All scripts use the AWS CLI. Set `AWS_PROFILE` or `AWS_REGION` as needed. Run with `--help` for full options.
+All scripts use the AWS CLI and are read-only. Set `AWS_PROFILE` or `AWS_REGION` as needed. Run with `--help` for full options.
 
 ### Idle Resource Finder
 
 ```bash
-bash scripts/find-idle-resources.sh                      # current region
-bash scripts/find-idle-resources.sh --region us-east-1
-bash scripts/find-idle-resources.sh --all-regions        # slow but thorough
+bash ${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh                      # current region
+bash ${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh --region us-east-1
+bash ${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh --all-regions        # slow but thorough
 ```
 
 Finds: unattached EBS volumes, unused Elastic IPs, idle ELBs (no requests), stopped EC2 (still paying for EBS), snapshots older than 90 days, unattached ENIs.
@@ -1523,17 +1560,17 @@ Finds: unattached EBS volumes, unused Elastic IPs, idle ELBs (no requests), stop
 ### EBS gp2 → gp3 Audit
 
 ```bash
-bash scripts/ebs-gp2-to-gp3-audit.sh
-bash scripts/ebs-gp2-to-gp3-audit.sh --apply             # actually convert (with confirmation)
+bash ${CLAUDE_SKILL_DIR}/scripts/ebs-gp2-to-gp3-audit.sh
+bash ${CLAUDE_SKILL_DIR}/scripts/ebs-gp2-to-gp3-audit.sh --all-regions
 ```
 
-Lists every gp2 volume with estimated monthly savings if migrated to gp3. Optionally performs the online migration.
+Lists every gp2 volume with estimated monthly savings if migrated to gp3, and prints the `aws ec2 modify-volume` command per volume for a human to review and run. The script never changes a volume.
 
 ### Untagged Spend
 
 ```bash
-bash scripts/untagged-spend.sh --tag-key Owner
-bash scripts/untagged-spend.sh --tag-key CostCenter --region eu-west-1
+bash ${CLAUDE_SKILL_DIR}/scripts/untagged-spend.sh --tag-key Owner
+bash ${CLAUDE_SKILL_DIR}/scripts/untagged-spend.sh --tag-key CostCenter --region eu-west-1
 ```
 
 Reports resources missing a required tag, grouped by service. Use to drive a tagging cleanup before allocating cost.
@@ -1541,9 +1578,9 @@ Reports resources missing a required tag, grouped by service. Use to drive a tag
 ### Reservation Coverage
 
 ```bash
-bash scripts/reservation-coverage.sh                     # all services
-bash scripts/reservation-coverage.sh --service rds
-bash scripts/reservation-coverage.sh --expiring-days 60
+bash ${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh                     # all services
+bash ${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh --service rds
+bash ${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh --expiring-days 60
 ```
 
 Reports current SP/RI coverage and utilization across EC2, RDS, ElastiCache, OpenSearch, Redshift; flags reservations expiring soon.
@@ -1575,17 +1612,17 @@ Load these as the task requires:
 | Task | Action |
 |---|---|
 | "My AWS bill is too high" | Use decision tree above. Start with Cost Explorer by SERVICE. |
-| Find waste in account | Run `scripts/find-idle-resources.sh`. Read `waste.md`. |
+| Find waste in account | Run `${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh`. Read `waste.md`. |
 | Should I buy a Savings Plan? | Read `reservations.md`. Use Cost Explorer → Recommendations. |
 | 1-yr vs 3-yr commitment | Read `reservations.md` payment math section. |
 | RDS / ElastiCache / OpenSearch reservations | Read `reservations.md` — separate sections per service. |
-| gp2 → gp3 migration | Run `scripts/ebs-gp2-to-gp3-audit.sh`. Read `storage.md`. |
+| gp2 → gp3 migration | Run `${CLAUDE_SKILL_DIR}/scripts/ebs-gp2-to-gp3-audit.sh`. Read `storage.md`. |
 | NAT Gateway too expensive | Read `networking.md` — VPC Endpoints + NAT alternatives. |
 | Right-size a workload | Use Compute Optimizer first. Read `compute.md`. |
 | Set up CUR + Athena | Read `tooling.md`. |
 | Build coverage/utilization alerts | Read `tooling.md` AWS Budgets section. |
-| Check current reservation coverage | Run `scripts/reservation-coverage.sh`. |
-| Drive a tagging cleanup | Run `scripts/untagged-spend.sh`. Read `waste.md`. |
+| Check current reservation coverage | Run `${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh`. |
+| Drive a tagging cleanup | Run `${CLAUDE_SKILL_DIR}/scripts/untagged-spend.sh`. Read `waste.md`. |
 | Set up multi-account guardrails (SCPs, OUs) | Read `organizations.md`. |
 | Cap sandbox spend with a kill-switch | Read `organizations.md` Budget Actions section. |
 | Share SP/RI across accounts | Read `organizations.md` consolidated billing section. |
@@ -1593,7 +1630,7 @@ Load these as the task requires:
 | Karpenter vs Cluster Autoscaler | Read `eks.md`. |
 | Per-namespace EKS cost attribution | Read `eks.md` (Kubecost / OpenCost section). |
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not ask; produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only
@@ -1702,8 +1739,10 @@ write access to external collaborators, the exclusion doesn't apply.
 1. If the user message names a mode (`review`, `new`, `harden`) → execute that.
 2. Otherwise inspect the working directory:
    - If `.github/workflows/*.yml` exists → go to **REVIEW**
-   - If no workflows but `.tf` or `Dockerfile` exists → ask: "No workflows found. Scaffold a **new** one? (terraform / docker / release)"
-   - Otherwise ask: "What do you need? **review** / **new** / **harden**"
+   - If no workflows but `.tf` or `Dockerfile` exists → go to **NEW**
+   - Otherwise default to **REVIEW** of whatever CI config exists, and list "review, new, or harden?" as an open question for the PM at the end of the output
+
+Agent mode: never stop to ask a question. Use the documented default and list open questions at the end of the output for the PM.
 
 Always read every workflow file before commenting. Follow all `uses:` references to reusable workflows in the same repo and read those too.
 
@@ -1764,15 +1803,15 @@ Summary: 4 blocking issue(s), 2 advisory issue(s).
 
 ## NEW — Scaffold a new workflow
 
-Ask which template:
+Pick the template from the repo contents without asking: `.tf` files → **terraform**, a `Dockerfile` → **docker**, neither → **release**. If more than one fits, generate the terraform one and list the others as an open question for the PM.
 
-- **terraform** — fmt / validate / plan on PR, apply on merge with environment gate
+- **terraform**: fmt / validate / plan on PR; on merge, plan again, then apply that exact plan behind an environment gate
 - **docker** — build + push (GHCR or ECR) with provenance and SBOM
 - **release** — tag-driven changelog + artifact upload
 
 ### Terraform scaffold
 
-Generate `.github/workflows/terraform.yml`:
+Generate `.github/workflows/terraform.yml`. The apply job never runs `terraform apply -auto-approve` and never plans on its own: it applies the plan file a reviewer saw, after checking its sha256.
 
 ```yaml
 name: terraform
@@ -1785,66 +1824,91 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  id-token: write   # OIDC
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false   # never cancel a running apply
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@<sha40>  # v4.x
-      - uses: hashicorp/setup-terraform@<sha40>  # v3.x
-        with: { terraform_version: "1.9.x" }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with: { terraform_version: "1.17.2" }
       - run: terraform fmt -check -recursive
       - run: terraform init -backend=false
       - run: terraform validate
 
   plan:
     needs: validate
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write   # OIDC
+    outputs:
+      plan_sha256: ${{ steps.hash.outputs.sha256 }}
     steps:
-      - uses: actions/checkout@<sha40>  # v4.x
-      - uses: aws-actions/configure-aws-credentials@<sha40>  # v4.x
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: aws-actions/configure-aws-credentials@45666896f5d8e0f10ae255413f3a4cdd03bdc8f5  # v6.3.1
         with:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/gha-terraform-plan
           aws-region: ${{ vars.AWS_REGION }}
-      - uses: hashicorp/setup-terraform@<sha40>  # v3.x
-        with: { terraform_version: "1.9.x" }
-      - run: terraform init
-      - run: terraform plan -out=tfplan
-      - uses: actions/upload-artifact@<sha40>  # v4.x
-        with: { name: tfplan, path: tfplan, retention-days: 7 }
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with: { terraform_version: "1.17.2" }
+      - run: terraform init -input=false
+      - run: terraform plan -input=false -out=tfplan
+      - id: hash
+        run: |
+          sha256sum tfplan > tfplan.sha256
+          echo "sha256=$(cut -d' ' -f1 tfplan.sha256)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: tfplan
+          path: |
+            tfplan
+            tfplan.sha256
+          retention-days: 7   # the plan can hold secrets; keep it short-lived
 
   apply:
-    needs: validate
+    needs: plan
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production   # add required reviewers in repo settings
+    environment: prod   # required reviewers approve after reading the plan job log
+    permissions:
+      contents: read
+      id-token: write   # OIDC, subject repo:<org>/<repo>:environment:prod
     steps:
-      - uses: actions/checkout@<sha40>  # v4.x
-      - uses: aws-actions/configure-aws-credentials@<sha40>  # v4.x
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with: { name: tfplan }
+      - name: Verify plan sha256
+        env:
+          PLAN_SHA256: ${{ needs.plan.outputs.plan_sha256 }}
+        run: |
+          sha256sum -c tfplan.sha256
+          echo "${PLAN_SHA256}  tfplan" | sha256sum -c -
+      - uses: aws-actions/configure-aws-credentials@45666896f5d8e0f10ae255413f3a4cdd03bdc8f5  # v6.3.1
         with:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/gha-terraform-apply
           aws-region: ${{ vars.AWS_REGION }}
-      - uses: hashicorp/setup-terraform@<sha40>  # v3.x
-        with: { terraform_version: "1.9.x" }
-      - run: terraform init
-      - run: terraform apply -auto-approve
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with: { terraform_version: "1.17.2" }
+      - run: terraform init -input=false
+      - run: terraform apply tfplan
 ```
 
-Tell the user to:
-1. Replace `<sha40>` with the SHA of the action version you want (run `gh api repos/<org>/<repo>/git/refs/tags/v4.2.2`)
-2. Create IAM roles `gha-terraform-plan` (read-only) and `gha-terraform-apply` (write) with OIDC trust policy for `repo:<org>/<repo>:*`
-3. Set repo vars `AWS_ACCOUNT_ID` and `AWS_REGION`
-4. In repo Settings → Environments, create `production` with required reviewers
+The second sha256 check compares against the hash passed as a job output, which does not travel inside the artifact, so a swapped artifact fails even if its `.sha256` file was swapped with it. Terraform also refuses a saved plan whose state has moved on, so a stale plan fails instead of applying.
+
+Include these setup steps in the output for a human:
+1. SHAs above were current when this skill was written. Before shipping, re-check each with `gh api repos/<owner>/<repo>/releases/latest --jq .tag_name` then `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, and the Terraform version against `gh api repos/hashicorp/terraform/releases/latest`.
+2. Create IAM role `gha-terraform-plan` (read-only) with an OIDC trust whose `sub` is `StringEquals` to `repo:<org>/<repo>:pull_request` and `repo:<org>/<repo>:ref:refs/heads/main`.
+3. Create IAM role `gha-terraform-apply` (write) with an OIDC trust whose `sub` is `StringEquals` to `repo:<org>/<repo>:environment:prod` only. Never a wildcard such as `repo:<org>/<repo>:*`, which lets any branch, tag or PR assume the write role. See the trust policy under HARDEN.
+4. Set repo vars `AWS_ACCOUNT_ID` and `AWS_REGION`.
+5. In repo Settings → Environments, create `prod` with required reviewers, and restrict its deployment branches to `main`.
 
 ### Docker scaffold (GHCR + OIDC)
 
@@ -1874,15 +1938,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@<sha40>  # v4.x
-      - uses: docker/setup-buildx-action@<sha40>  # v3.x
-      - uses: docker/login-action@<sha40>  # v3.x
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550  # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: meta
-        uses: docker/metadata-action@<sha40>  # v5.x
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6.2.0
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -1891,7 +1955,7 @@ jobs:
             type=semver,pattern={{version}}
             type=sha
       - id: build
-        uses: docker/build-push-action@<sha40>  # v6.x
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
@@ -1902,7 +1966,7 @@ jobs:
           provenance: true
           sbom: true
       - if: github.event_name != 'pull_request'
-        uses: actions/attest-build-provenance@<sha40>  # v1.x
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8  # v4.2.2
         with:
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.build.outputs.digest }}
@@ -1921,7 +1985,7 @@ Walk the workflow files and propose patches for:
 
 1. Pin every `uses: action@vN` → `uses: action@<sha40>  # vN.M.P`. Suggest `pinact` or `actionlint` to automate.
 2. Add `permissions: contents: read` at top, then escalate per-job to least needed.
-3. Replace static AWS keys with OIDC + `role-to-assume`. Provide the trust policy snippet:
+3. Replace static AWS keys with OIDC + `role-to-assume`. Provide the trust policy snippet for the role a prod deploy assumes. Pin `sub` with `StringEquals` to the `prod` environment; never use a wildcard like `repo:<org>/<repo>:*` (any branch, tag or fork PR could then assume it):
 
 ```json
 {
@@ -1931,8 +1995,10 @@ Walk the workflow files and propose patches for:
     "Principal": { "Federated": "arn:aws:iam::<account>:oidc-provider/token.actions.githubusercontent.com" },
     "Action": "sts:AssumeRoleWithWebIdentity",
     "Condition": {
-      "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
-      "StringLike":  { "token.actions.githubusercontent.com:sub": "repo:<org>/<repo>:*" }
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+        "token.actions.githubusercontent.com:sub": "repo:<org>/<repo>:environment:prod"
+      }
     }
   }]
 }
@@ -1949,12 +2015,13 @@ Output as a unified diff or per-file edit list, never silently rewrite.
 
 ## Notes for Claude
 
-- Never invent action SHAs — tell the user to look them up with `gh api repos/<owner>/<repo>/git/refs/tags/<tag>`.
+- Never invent action SHAs or versions. This skill has no shell, so it cannot look them up. Use the pins in the scaffolds above (each taken from the repo's latest release on 2026-11-27). For any other action, leave a `<sha40>  # <tag>` placeholder, print the lookup for a human (`gh api repos/<owner>/<repo>/releases/latest --jq .tag_name`, then `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`), and list each placeholder as an open question for the PM.
+- When reviewing a Terraform deploy that runs `terraform apply -auto-approve`, recommend the plan artifact pattern from the terraform scaffold (apply the reviewed `tfplan` after a sha256 check).
 - Reusable workflows belong in `.github/workflows/_<name>.yml` (underscore prefix is convention).
 - For self-hosted runners, prefer ephemeral (Actions Runner Controller on Kubernetes) over persistent.
 - Composite actions in `.github/actions/<name>/action.yml` need their own review pass.
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not ask; produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only
@@ -1968,7 +2035,11 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 
 # GitHub Skill
 
-Configure GitHub repositories the right way: branch protection, CODEOWNERS, required checks, security settings, PR/issue templates, Dependabot, secret scanning, and `gh` CLI workflows.
+Audit GitHub repositories and draft the right configuration: branch protection, CODEOWNERS, required checks, security settings, PR/issue templates, Dependabot, secret scanning, and `gh` CLI workflows.
+
+**Audit-only.** This skill reads repo settings with read-only `gh api` GET calls. It never changes a ruleset, branch protection, repo setting, tag, or release. Every change is emitted as text or a `gh` command for a human to review and run. Never pass `-X`/`--method` other than GET, or `-f`/`-F`/`--input` (which turn a call into a POST), to `gh api`.
+
+**Agent mode.** Never stop to ask a question. Where input is missing, use the documented default below and list the open questions at the end of the output for the PM.
 
 ## Reviewing untrusted input
 
@@ -1990,8 +2061,8 @@ github, gh cli, pull request, PR, issue, release, branch protection, ruleset, CO
 | `/github new codeowners` | Generate `.github/CODEOWNERS` from a path → team mapping |
 | `/github new pr-template` | `.github/pull_request_template.md` with checklist |
 | `/github new dependabot` | `.github/dependabot.yml` covering all package ecosystems in the repo |
-| `/github new branch-protection` | `gh` commands to apply a recommended ruleset to `main` |
-| `/github release` | `gh release create` plan with auto-generated notes |
+| `/github new branch-protection` | `gh` commands (text only, for a human to run) that apply a recommended ruleset to `main` |
+| `/github release` | `gh release create` plan with auto-generated notes (text only, for a human to run) |
 
 ---
 
@@ -2086,9 +2157,9 @@ exclusion above.
 ## TRIGGER — Decide what to do
 
 1. If user message names a mode (`audit`, `new <thing>`, `release`) → do that.
-2. Otherwise ask: "What do you need? **audit** repo settings / **new** file (codeowners / pr-template / dependabot / branch-protection) / **release** flow"
+2. Otherwise default to **audit**, and list at the end for the PM: "Did you also want a **new** file (codeowners / pr-template / dependabot / branch-protection) or a **release** plan?"
 
-Use `gh` CLI to read live state. Never modify settings without confirming the diff with the user first — branch protection and CODEOWNERS changes affect every contributor.
+Use `gh` CLI to read live state only. Never modify settings: branch protection and CODEOWNERS changes affect every contributor, so they go in the output as proposed commands for a human.
 
 ---
 
@@ -2164,9 +2235,9 @@ suite covers the checkable part and makes no claim about the rest.
 
 ### CODEOWNERS
 
-Ask: "Which paths map to which teams? (format: path team) e.g. `terraform/ @org/devops`"
+Default: derive the path to team mapping from the repo layout and existing teams (`gh api repos/{owner}/{repo}/teams`), use `@org/platform` as the global owner when unknown, and list each guessed mapping as an open question for the PM.
 
-Generate `.github/CODEOWNERS`:
+Draft `.github/CODEOWNERS` as output text:
 
 ```
 # Global default
@@ -2260,7 +2331,7 @@ Add a directory entry per `package.json`, `requirements.txt`, `go.mod`, `Cargo.t
 
 ### Branch protection (ruleset)
 
-Generate `gh` commands that apply a ruleset (modern; preferred over legacy branch protection):
+Emit, as text for a human to review and run, the `gh` command that applies a ruleset (modern; preferred over legacy branch protection). Do not run it:
 
 ```bash
 gh api -X POST repos/{owner}/{repo}/rulesets \
@@ -2282,41 +2353,43 @@ gh api -X POST repos/{owner}/{repo}/rulesets \
   -F 'rules[][parameters][required_status_checks][][context]=ci/test'
 ```
 
-Tell the user to replace `ci/build` and `ci/test` with their actual workflow check names (found via `gh api repos/{owner}/{repo}/commits/{default}/check-runs`).
+Fill in the real check names yourself from `gh api repos/{owner}/{repo}/commits/{default}/check-runs`. If none are found, keep `ci/build` and `ci/test` as placeholders and list them as an open question for the PM.
 
 ---
 
 ## RELEASE — Tag a release
 
+This mode produces a release plan only. The agent runs the read-only checks; the `gh release` create and upload commands are output for a human to run.
+
 Steps:
 
-1. Decide version: `vMAJOR.MINOR.PATCH` (SemVer).
+1. Decide version (default: next PATCH after `gh release list --limit 1`): `vMAJOR.MINOR.PATCH` (SemVer).
 2. Verify the default branch is clean and CI green:
    ```bash
    gh run list --branch main --limit 1
    ```
-3. Generate release notes from PRs since last tag:
+3. Emit for a human (do not run): create the release with notes from PRs since last tag:
    ```bash
    gh release create vX.Y.Z --generate-notes --target main
    ```
 4. For prereleases: add `--prerelease` and tag like `vX.Y.Z-rc.1`.
-5. Upload artifacts:
+5. Emit for a human (do not run): upload artifacts:
    ```bash
    gh release upload vX.Y.Z dist/*.tar.gz
    ```
 
-Confirm with the user before tagging. Releases are visible to anyone with repo access and trigger workflows that listen on `release: published`.
+Never tag or publish yourself. Releases are visible to anyone with repo access and trigger workflows that listen on `release: published`, so a human runs the commands above after review.
 
 ---
 
 ## Notes for Claude
 
-- `gh` requires `GH_TOKEN` or `gh auth login`. If commands fail with auth errors, tell the user to run `gh auth status`.
-- Org-level settings (SSO, IP allowlists, base permissions) live at `gh api orgs/{org}` — repo audits should mention but not modify org policy without explicit permission.
+- `gh` requires `GH_TOKEN` or `gh auth login`. If commands fail with auth errors, run `gh auth status`, report the result, and list the missing auth as an open question for the PM.
+- Org-level settings (SSO, IP allowlists, base permissions) live at `gh api orgs/{org}`, repo audits mention org policy but never modify it.
 - Fine-grained PATs are preferred over classic PATs. Suggest expiry ≤ 90 days.
 - Never paste secrets into the chat. If a secret leaks in a commit, the only safe action is rotate-then-purge (BFG / git-filter-repo), not just delete.
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not ask; produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only
@@ -2681,6 +2754,14 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
 
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.
+
 
 ## /incident
 
@@ -3023,6 +3104,14 @@ sections that matter at 03:00 are present and specific.
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
 
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.
+
 
 ## /k8s
 
@@ -3059,7 +3148,7 @@ kubernetes, k8s, eks, helm, values.yaml, chart, pod, deployment, service, ingres
 When an input is novel and no specific rule below matches, fall back to these:
 
 1. **Secrets never live in values** — reference a Kubernetes Secret or external-secrets; plaintext in `values.yaml` is committed forever.
-2. **Pin the image, federate the identity** — explicit immutable tag set at deploy; IRSA for AWS, never mounted static keys.
+2. **Pin the image, federate the identity**, explicit immutable tag set at deploy; EKS Pod Identity (or IRSA) for AWS, never mounted static keys.
 3. **Bound every workload** — requests *and* limits on every container; probes so the scheduler knows truth; ≥2 replicas for staging/prod.
 4. **Least privilege in the pod** — `runAsNonRoot`, no privilege escalation, read-only root FS.
 5. **Strict for prod, relaxed for dev** — `replicaCount: 1` and missing limits are acceptable only in dev.
@@ -3077,7 +3166,7 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 | ID | Severity | Check |
 |----|----------|-------|
 | **SEC-SEC-001** | BLOCKING | Plaintext secret/password/token/apiKey inline in values |
-| **SEC-IAM-002** | BLOCKING | Static AWS credentials in env instead of IRSA |
+| **SEC-IAM-002** | BLOCKING | Static AWS credentials in env instead of EKS Pod Identity or IRSA |
 | **SEC-K8S-001** | ADVISORY | `securityContext` missing/incomplete (`runAsNonRoot`, `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem`) |
 | **SEC-K8S-002** | BLOCKING | `privileged: true`, a `hostPath` volume, or `hostNetwork`/`hostPID`/`hostIPC` on a normal workload |
 | **SEC-K8S-003** | BLOCKING | RBAC over-grant: `ClusterRole` with wildcard verb **and** resource, or a binding to `cluster-admin` |
@@ -3132,6 +3221,8 @@ filename.
 
 ---
 
+**Agent mode.** Never stop to ask the user. When an input is missing, use the default documented here and end the output with an `Open questions for the PM` list naming each default you chose and what would change it.
+
 ## Step 1 — Determine the action
 
 Read the arguments provided:
@@ -3139,8 +3230,8 @@ Read the arguments provided:
 - `review` or `review <env>` → go to **REVIEW**
 - `new <service-name>` → go to **NEW**
 - No arguments → use Glob to check the current directory, then:
-  - If `values.yaml` or `Chart.yaml` exists → ask: "I can see Helm files here. Do you want to **review** (pre-deploy check) or create something **new**?"
-  - If the directory is empty → default to **NEW** and ask for the service name
+  - If `values.yaml` or `Chart.yaml` exists → default to **REVIEW**; list "wanted new instead?" under open questions
+  - If the directory is empty → default to **NEW** (service name rules below)
 
 ---
 
@@ -3148,7 +3239,7 @@ Read the arguments provided:
 
 Run before every EKS deployment. Find and read all values files (`values.yaml`, `values-dev.yaml`, `values-staging.yaml`, `values-prod.yaml`, `Chart.yaml`) and any `templates/` files if present.
 
-**Target environment:** Use the argument if provided. Otherwise infer from the file being reviewed, or ask.
+**Target environment:** Use the argument if provided. Otherwise infer from the file being reviewed; if nothing indicates it, assume prod (strictest gate) and list that under open questions.
 Production and staging checks are stricter than dev.
 
 ### Secrets
@@ -3211,6 +3302,17 @@ livenessProbe:
 ### Replica count
 - Minimum `replicaCount: 2` for staging and production
 - `replicaCount: 1` is only acceptable for dev environments
+- Spread replicas across zones so one AZ outage cannot take them all. `ScheduleAnyway` suits most apps; use `DoNotSchedule` only when losing zone balance is worse than a pending pod:
+
+```yaml
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app: <service-name>
+```
 
 ### Required labels
 Every workload must have these labels:
@@ -3302,7 +3404,18 @@ serviceAccount:
 Also flag any secret injected as a literal `env[].value` rather than `secretKeyRef` — that lands in `kubectl describe`, in the ReplicaSet spec, and in anyone's terminal scrollback.
 
 ### AWS access from pods
-Use IAM Roles for Service Accounts (IRSA) — never mount static AWS credentials:
+Never mount static AWS credentials. For new EKS workloads prefer **EKS Pod Identity**: the cluster needs the `eks-pod-identity-agent` addon, the role trusts `pods.eks.amazonaws.com`, and the link lives in Terraform, so the chart needs no annotation:
+
+```hcl
+resource "aws_eks_pod_identity_association" "app" {
+  cluster_name    = var.cluster_name
+  namespace       = "<namespace>"
+  service_account = "<service-name>"
+  role_arn        = aws_iam_role.app.arn
+}
+```
+
+IRSA is still fine for existing workloads and for clusters where the agent addon cannot run (e.g. Fargate pods):
 
 ```yaml
 serviceAccount:
@@ -3333,16 +3446,16 @@ If reviewing environment-specific overrides, assess the merged result for the ta
 ## NEW — Scaffold Helm Values for a New Service
 
 ### Identify the service name
-Extract from the argument. If not provided, ask: "What is the service name?"
+Extract from the argument, else from `Chart.yaml` or the directory name.
 
-### Ask targeted questions (max 5)
-1. What type of workload? (web service with HTTP / background worker / cron job)
-2. Container image repository? (e.g. `123456789.dkr.ecr.eu-west-1.amazonaws.com/my-service`)
-3. Does it expose an HTTP port? If yes, which port?
-4. Any environment variables or secrets? (list them — we'll wire them up correctly)
-5. Rough resource size: small (0.1 CPU / 128Mi) / medium (0.5 CPU / 512Mi) / large (1 CPU / 1Gi)?
+### Defaults (use when the request does not say)
+1. Workload type: web service with HTTP (other options: background worker / cron job)
+2. Image repository: placeholder `<image-repository>`
+3. HTTP port: 8080
+4. Environment variables and secrets: none; leave `env` and `envFrom` empty
+5. Resource size: small (0.1 CPU / 128Mi); medium is 0.5 CPU / 512Mi, large is 1 CPU / 1Gi
 
-Wait for answers before generating files.
+List every default you applied under open questions.
 
 ### Generated `values.yaml`
 
@@ -3353,7 +3466,7 @@ Wait for answers before generating files.
 replicaCount: 2
 
 image:
-  repository: <from answer>
+  repository: <from request or default>
   tag: ""           # Always set at deploy time: --set image.tag=$IMAGE_TAG
   pullPolicy: IfNotPresent
 
@@ -3364,8 +3477,8 @@ commonLabels:
 
 service:
   type: ClusterIP
-  port: <from answer>
-  targetPort: <from answer>
+  port: <from request or default>
+  targetPort: <from request or default>
 
 resources:
   requests:
@@ -3407,6 +3520,12 @@ securityContext:
 
 topologySpreadConstraints:
   - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app: <service-name>
+  - maxSkew: 1
     topologyKey: kubernetes.io/hostname
     whenUnsatisfiable: DoNotSchedule
     labelSelector:
@@ -3422,6 +3541,7 @@ autoscaling:
 serviceAccount:
   create: true
   annotations: {}
+  # Preferred: EKS Pod Identity (aws_eks_pod_identity_association), no annotation needed.
   # For IRSA:
   # annotations:
   #   eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME
@@ -3444,11 +3564,11 @@ Next steps:
 1. Update image.repository with your ECR URL
 2. Configure secrets via Kubernetes Secrets or external-secrets
 3. Update /health paths in readinessProbe and livenessProbe
-4. For IRSA: create the IAM role and add ARN to serviceAccount.annotations
+4. For AWS access: create the IAM role and an aws_eks_pod_identity_association (or, for IRSA, add the role ARN to serviceAccount.annotations)
 5. Run /k8s review before your first deploy
 ```
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not wait for a reply. Produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only
@@ -3580,6 +3700,14 @@ ADVISORY — Should fix
 
 Summary: 1 blocking issue, 1 advisory issue.
 ```
+
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.
 
 
 ## /observability
@@ -3917,6 +4045,14 @@ guarantee holds. Include the suppressions-honored and not-assessed sections.
 > Evals for this catalog live in [`evals/`](./evals/) — each case is an input
 > fixture plus the exact rule IDs it must surface. See that folder's README to run them.
 
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.
+
 
 ## /owasp
 
@@ -4081,500 +4217,13 @@ For agentic AI security + ASVS → read `agentic.md`
 produces the content and the session performs the write, so the read-only
 guarantee holds. Include the suppressions-honored and not-assessed sections.
 
-
-## /skill-creator
-
-  - **Use when**: Create, edit, evaluate, and debug the skills in this repo, including running their evals and fixing a description that fails to trigger. Use when user says 'help me build a new skill', 'add a skill for X', 'run the evals for the tf skill', 'run the behavioral evals', 'my skill is not triggering', 'fix this skill's description', 'improve this skill's rule catalog', 'add a rule ID', or 'benchmark a skill'. Operates on the skills themselves rather than on infrastructure: a request to review actual Terraform or Kubernetes belongs to that domain skill.
-
-# Skill Creator
-
-A skill for creating new skills and iteratively improving them.
-
-> **Standalone vs. full install:** The core workflow — Capture Intent, Write SKILL.md,
-> draft Test Cases, and iterate — works fully in this repo. The eval runner, benchmarking,
-> and description-optimization loop require supporting files (`eval-viewer/`, `scripts/`,
-> `agents/`, `assets/`, `references/`) that ship with the
-> [claude-mem](https://github.com/thedotmack/claude-mem) plugin's skill-creator. If
-> `claude-mem` is installed, those sections work automatically. If it is not, skip the
-> sections marked with script invocations and use the manual inline-review approach
-> described in the Claude.ai-specific instructions below.
-
-At a high level, the process of creating a skill goes like this:
-
-- Decide what you want the skill to do and roughly how it should do it
-- Write a draft of the skill
-- Create a few test prompts and run claude-with-access-to-the-skill on them
-- Help the user evaluate the results both qualitatively and quantitatively
-  - While the runs happen in the background, draft some quantitative evals if there aren't any (if there are some, you can either use as is or modify if you feel something needs to change about them). Then explain them to the user (or if they already existed, explain the ones that already exist)
-  - Use the `eval-viewer/generate_review.py` script to show the user the results for them to look at, and also let them look at the quantitative metrics
-- Rewrite the skill based on feedback from the user's evaluation of the results (and also if there are any glaring flaws that become apparent from the quantitative benchmarks)
-- Repeat until you're satisfied
-- Expand the test set and try again at larger scale
-
-Your job when using this skill is to figure out where the user is in this process and then jump in and help them progress through these stages. So for instance, maybe they're like "I want to make a skill for X". You can help narrow down what they mean, write a draft, write the test cases, figure out how they want to evaluate, run all the prompts, and repeat.
-
-On the other hand, maybe they already have a draft of the skill. In this case you can go straight to the eval/iterate part of the loop.
-
-Of course, you should always be flexible and if the user is like "I don't need to run a bunch of evaluations, just vibe with me", you can do that instead.
-
-Then after the skill is done (but again, the order is flexible), you can also run the skill description improver, which we have a whole separate script for, to optimize the triggering of the skill.
-
-Cool? Cool.
-
-## Communicating with the user
-
-The skill creator is liable to be used by people across a wide range of familiarity with coding jargon. If you haven't heard (and how could you, it's only very recently that it started), there's a trend now where the power of Claude is inspiring plumbers to open up their terminals, parents and grandparents to google "how to install npm". On the other hand, the bulk of users are probably fairly computer-literate.
-
-So please pay attention to context cues to understand how to phrase your communication! In the default case, just to give you some idea:
-
-- "evaluation" and "benchmark" are borderline, but OK
-- for "JSON" and "assertion" you want to see serious cues from the user that they know what those things are before using them without explaining them
-
-It's OK to briefly explain terms if you're in doubt, and feel free to clarify terms with a short definition if you're unsure if the user will get it.
-
----
-
-## Creating a skill
-
-### Capture Intent
-
-Start by understanding the user's intent. The current conversation might already contain a workflow the user wants to capture (e.g., they say "turn this into a skill"). If so, extract answers from the conversation history first — the tools used, the sequence of steps, corrections the user made, input/output formats observed. The user may need to fill the gaps, and should confirm before proceeding to the next step.
-
-1. What should this skill enable Claude to do?
-2. When should this skill trigger? (what user phrases/contexts)
-3. What's the expected output format?
-4. Should we set up test cases to verify the skill works? Skills with objectively verifiable outputs (file transforms, data extraction, code generation, fixed workflow steps) benefit from test cases. Skills with subjective outputs (writing style, art) often don't need them. Suggest the appropriate default based on the skill type, but let the user decide.
-
-### Interview and Research
-
-Proactively ask questions about edge cases, input/output formats, example files, success criteria, and dependencies. Wait to write test prompts until you've got this part ironed out.
-
-Check available MCPs - if useful for research (searching docs, finding similar skills, looking up best practices), research in parallel via subagents if available, otherwise inline. Come prepared with context to reduce burden on the user.
-
-### Write the SKILL.md
-
-Based on the user interview, fill in these components:
-
-- **name**: Skill identifier
-- **description**: When to trigger, what it does. This is the primary triggering mechanism - include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Note: currently Claude has a tendency to "undertrigger" skills -- to not use them when they'd be useful. To combat this, please make the skill descriptions a little bit "pushy". So for instance, instead of "How to build a simple fast dashboard to display internal Anthropic data.", you might write "How to build a simple fast dashboard to display internal Anthropic data. Make sure to use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
-- **compatibility**: Required tools, dependencies (optional, rarely needed)
-- **the rest of the skill :)**
-
-### Skill Writing Guide
-
-#### Anatomy of a Skill
-
-```
-skill-name/
-├── SKILL.md (required)
-│   ├── YAML frontmatter (name, description required)
-│   └── Markdown instructions
-└── Bundled Resources (optional)
-    ├── scripts/    - Executable code for deterministic/repetitive tasks
-    ├── references/ - Docs loaded into context as needed
-    └── assets/     - Files used in output (templates, icons, fonts)
-```
-
-#### Progressive Disclosure
-
-Skills use a three-level loading system:
-1. **Metadata** (name + description) - Always in context (~100 words)
-2. **SKILL.md body** - In context whenever skill triggers (<500 lines ideal)
-3. **Bundled resources** - As needed (unlimited, scripts can execute without loading)
-
-These word counts are approximate and you can feel free to go longer if needed.
-
-**Key patterns:**
-- Keep SKILL.md under 500 lines; if you're approaching this limit, add an additional layer of hierarchy along with clear pointers about where the model using the skill should go next to follow up.
-- Reference files clearly from SKILL.md with guidance on when to read them
-- For large reference files (>300 lines), include a table of contents
-
-**Domain organization**: When a skill supports multiple domains/frameworks, organize by variant:
-```
-cloud-deploy/
-├── SKILL.md (workflow + selection)
-└── references/
-    ├── aws.md
-    ├── gcp.md
-    └── azure.md
-```
-Claude reads only the relevant reference file.
-
-#### Principle of Lack of Surprise
-
-This goes without saying, but skills must not contain malware, exploit code, or any content that could compromise system security. A skill's contents should not surprise the user in their intent if described. Don't go along with requests to create misleading skills or skills designed to facilitate unauthorized access, data exfiltration, or other malicious activities. Things like a "roleplay as an XYZ" are OK though.
-
-#### Writing Patterns
-
-Prefer using the imperative form in instructions.
-
-**Defining output formats** - You can do it like this:
-```markdown
-## Report structure
-ALWAYS use this exact template:
-# [Title]
-## Executive summary
-## Key findings
-## Recommendations
-```
-
-**Examples pattern** - It's useful to include examples. You can format them like this (but if "Input" and "Output" are in the examples you might want to deviate a little):
-```markdown
-## Commit message format
-**Example 1:**
-Input: Added user authentication with JWT tokens
-Output: feat(auth): implement JWT-based authentication
-```
-
-### Writing Style
-
-Try to explain to the model why things are important in lieu of heavy-handed musty MUSTs. Use theory of mind and try to make the skill general and not super-narrow to specific examples. Start by writing a draft and then look at it with fresh eyes and improve it.
-
-### Test Cases
-
-After writing the skill draft, come up with 2-3 realistic test prompts — the kind of thing a real user would actually say. Share them with the user: [you don't have to use this exact language] "Here are a few test cases I'd like to try. Do these look right, or do you want to add more?" Then run them.
-
-Save test cases to `evals/evals.json`. Don't write assertions yet — just the prompts. You'll draft assertions in the next step while the runs are in progress.
-
-```json
-{
-  "skill_name": "example-skill",
-  "evals": [
-    {
-      "id": 1,
-      "prompt": "User's task prompt",
-      "expected_output": "Description of expected result",
-      "files": []
-    }
-  ]
-}
-```
-
-See `references/schemas.md` for the full schema (including the `assertions` field, which you'll add later).
-
-## Running and evaluating test cases
-
-This section is one continuous sequence — don't stop partway through. Do NOT use `/skill-test` or any other testing skill.
-
-Put results in `<skill-name>-workspace/` as a sibling to the skill directory. Within the workspace, organize results by iteration (`iteration-1/`, `iteration-2/`, etc.) and within that, each test case gets a directory (`eval-0/`, `eval-1/`, etc.). Don't create all of this upfront — just create directories as you go.
-
-### Step 1: Spawn all runs (with-skill AND baseline) in the same turn
-
-For each test case, spawn two subagents in the same turn — one with the skill, one without. This is important: don't spawn the with-skill runs first and then come back for baselines later. Launch everything at once so it all finishes around the same time.
-
-**With-skill run:**
-
-```
-Execute this task:
-- Skill path: <path-to-skill>
-- Task: <eval prompt>
-- Input files: <eval files if any, or "none">
-- Save outputs to: <workspace>/iteration-<N>/eval-<ID>/with_skill/outputs/
-- Outputs to save: <what the user cares about — e.g., "the .docx file", "the final CSV">
-```
-
-**Baseline run** (same prompt, but the baseline depends on context):
-- **Creating a new skill**: no skill at all. Same prompt, no skill path, save to `without_skill/outputs/`.
-- **Improving an existing skill**: the old version. Before editing, snapshot the skill (`cp -r <skill-path> <workspace>/skill-snapshot/`), then point the baseline subagent at the snapshot. Save to `old_skill/outputs/`.
-
-Write an `eval_metadata.json` for each test case (assertions can be empty for now). Give each eval a descriptive name based on what it's testing — not just "eval-0". Use this name for the directory too. If this iteration uses new or modified eval prompts, create these files for each new eval directory — don't assume they carry over from previous iterations.
-
-```json
-{
-  "eval_id": 0,
-  "eval_name": "descriptive-name-here",
-  "prompt": "The user's task prompt",
-  "assertions": []
-}
-```
-
-### Step 2: While runs are in progress, draft assertions
-
-Don't just wait for the runs to finish — you can use this time productively. Draft quantitative assertions for each test case and explain them to the user. If assertions already exist in `evals/evals.json`, review them and explain what they check.
-
-Good assertions are objectively verifiable and have descriptive names — they should read clearly in the benchmark viewer so someone glancing at the results immediately understands what each one checks. Subjective skills (writing style, design quality) are better evaluated qualitatively — don't force assertions onto things that need human judgment.
-
-Update the `eval_metadata.json` files and `evals/evals.json` with the assertions once drafted. Also explain to the user what they'll see in the viewer — both the qualitative outputs and the quantitative benchmark.
-
-### Step 3: As runs complete, capture timing data
-
-When each subagent task completes, you receive a notification containing `total_tokens` and `duration_ms`. Save this data immediately to `timing.json` in the run directory:
-
-```json
-{
-  "total_tokens": 84852,
-  "duration_ms": 23332,
-  "total_duration_seconds": 23.3
-}
-```
-
-This is the only opportunity to capture this data — it comes through the task notification and isn't persisted elsewhere. Process each notification as it arrives rather than trying to batch them.
-
-### Step 4: Grade, aggregate, and launch the viewer
-
-Once all runs are done:
-
-1. **Grade each run** — spawn a grader subagent (or grade inline) that reads `agents/grader.md` and evaluates each assertion against the outputs. Save results to `grading.json` in each run directory. The grading.json expectations array must use the fields `text`, `passed`, and `evidence` (not `name`/`met`/`details` or other variants) — the viewer depends on these exact field names. For assertions that can be checked programmatically, write and run a script rather than eyeballing it — scripts are faster, more reliable, and can be reused across iterations.
-
-2. **Aggregate into benchmark** — run the aggregation script from the skill-creator directory:
-   ```bash
-   python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name <name>
-   ```
-   This produces `benchmark.json` and `benchmark.md` with pass_rate, time, and tokens for each configuration, with mean ± stddev and the delta. If generating benchmark.json manually, see `references/schemas.md` for the exact schema the viewer expects.
-Put each with_skill version before its baseline counterpart.
-
-3. **Do an analyst pass** — read the benchmark data and surface patterns the aggregate stats might hide. See `agents/analyzer.md` (the "Analyzing Benchmark Results" section) for what to look for — things like assertions that always pass regardless of skill (non-discriminating), high-variance evals (possibly flaky), and time/token tradeoffs.
-
-4. **Launch the viewer** with both qualitative outputs and quantitative data:
-   ```bash
-   nohup python <skill-creator-path>/eval-viewer/generate_review.py \
-     <workspace>/iteration-N \
-     --skill-name "my-skill" \
-     --benchmark <workspace>/iteration-N/benchmark.json \
-     > /dev/null 2>&1 &
-   VIEWER_PID=$!
-   ```
-   For iteration 2+, also pass `--previous-workspace <workspace>/iteration-<N-1>`.
-
-   **Cowork / headless environments:** If `webbrowser.open()` is not available or the environment has no display, use `--static <output_path>` to write a standalone HTML file instead of starting a server. Feedback will be downloaded as a `feedback.json` file when the user clicks "Submit All Reviews". After download, copy `feedback.json` into the workspace directory for the next iteration to pick up.
-
-Note: please use generate_review.py to create the viewer; there's no need to write custom HTML.
-
-5. **Tell the user** something like: "I've opened the results in your browser. There are two tabs — 'Outputs' lets you click through each test case and leave feedback, 'Benchmark' shows the quantitative comparison. When you're done, come back here and let me know."
-
-### What the user sees in the viewer
-
-The "Outputs" tab shows one test case at a time:
-- **Prompt**: the task that was given
-- **Output**: the files the skill produced, rendered inline where possible
-- **Previous Output** (iteration 2+): collapsed section showing last iteration's output
-- **Formal Grades** (if grading was run): collapsed section showing assertion pass/fail
-- **Feedback**: a textbox that auto-saves as they type
-- **Previous Feedback** (iteration 2+): their comments from last time, shown below the textbox
-
-The "Benchmark" tab shows the stats summary: pass rates, timing, and token usage for each configuration, with per-eval breakdowns and analyst observations.
-
-Navigation is via prev/next buttons or arrow keys. When done, they click "Submit All Reviews" which saves all feedback to `feedback.json`.
-
-### Step 5: Read the feedback
-
-When the user tells you they're done, read `feedback.json`:
-
-```json
-{
-  "reviews": [
-    {"run_id": "eval-0-with_skill", "feedback": "the chart is missing axis labels", "timestamp": "..."},
-    {"run_id": "eval-1-with_skill", "feedback": "", "timestamp": "..."},
-    {"run_id": "eval-2-with_skill", "feedback": "perfect, love this", "timestamp": "..."}
-  ],
-  "status": "complete"
-}
-```
-
-Empty feedback means the user thought it was fine. Focus your improvements on the test cases where the user had specific complaints.
-
-Kill the viewer server when you're done with it:
-
-```bash
-kill $VIEWER_PID 2>/dev/null
-```
-
----
-
-## Improving the skill
-
-This is the heart of the loop. You've run the test cases, the user has reviewed the results, and now you need to make the skill better based on their feedback.
-
-### How to think about improvements
-
-1. **Generalize from the feedback.** The big picture thing that's happening here is that we're trying to create skills that can be used a million times (maybe literally, maybe even more who knows) across many different prompts. Here you and the user are iterating on only a few examples over and over again because it helps move faster. The user knows these examples in and out and it's quick for them to assess new outputs. But if the skill you and the user are codeveloping works only for those examples, it's useless. Rather than put in fiddly overfitty changes, or oppressively constrictive MUSTs, if there's some stubborn issue, you might try branching out and using different metaphors, or recommending different patterns of working. It's relatively cheap to try and maybe you'll land on something great.
-
-2. **Keep the prompt lean.** Remove things that aren't pulling their weight. Make sure to read the transcripts, not just the final outputs — if it looks like the skill is making the model waste a bunch of time doing things that are unproductive, you can try getting rid of the parts of the skill that are making it do that and seeing what happens.
-
-3. **Explain the why.** Try hard to explain the **why** behind everything you're asking the model to do. Today's LLMs are *smart*. They have good theory of mind and when given a good harness can go beyond rote instructions and really make things happen. Even if the feedback from the user is terse or frustrated, try to actually understand the task and why the user is writing what they wrote, and what they actually wrote, and then transmit this understanding into the instructions. If you find yourself writing ALWAYS or NEVER in all caps, or using super rigid structures, that's a yellow flag — if possible, reframe and explain the reasoning so that the model understands why the thing you're asking for is important. That's a more humane, powerful, and effective approach.
-
-4. **Look for repeated work across test cases.** Read the transcripts from the test runs and notice if the subagents all independently wrote similar helper scripts or took the same multi-step approach to something. If all 3 test cases resulted in the subagent writing a `create_docx.py` or a `build_chart.py`, that's a strong signal the skill should bundle that script. Write it once, put it in `scripts/`, and tell the skill to use it. This saves every future invocation from reinventing the wheel.
-
-This task is pretty important (we are trying to create billions a year in economic value here!) and your thinking time is not the blocker; take your time and really mull things over. I'd suggest writing a draft revision and then looking at it anew and making improvements. Really do your best to get into the head of the user and understand what they want and need.
-
-### The iteration loop
-
-After improving the skill:
-
-1. Apply your improvements to the skill
-2. Rerun all test cases into a new `iteration-<N+1>/` directory, including baseline runs. If you're creating a new skill, the baseline is always `without_skill` (no skill) — that stays the same across iterations. If you're improving an existing skill, use your judgment on what makes sense as the baseline: the original version the user came in with, or the previous iteration.
-3. Launch the reviewer with `--previous-workspace` pointing at the previous iteration
-4. Wait for the user to review and tell you they're done
-5. Read the new feedback, improve again, repeat
-
-Keep going until:
-- The user says they're happy
-- The feedback is all empty (everything looks good)
-- You're not making meaningful progress
-
----
-
-## Advanced: Blind comparison
-
-For situations where you want a more rigorous comparison between two versions of a skill (e.g., the user asks "is the new version actually better?"), there's a blind comparison system. Read `agents/comparator.md` and `agents/analyzer.md` for the details. The basic idea is: give two outputs to an independent agent without telling it which is which, and let it judge quality. Then analyze why the winner won.
-
-This is optional, requires subagents, and most users won't need it. The human review loop is usually sufficient.
-
----
-
-## Description Optimization
-
-The description field in SKILL.md frontmatter is the primary mechanism that determines whether Claude invokes a skill. After creating or improving a skill, offer to optimize the description for better triggering accuracy.
-
-### Step 1: Generate trigger eval queries
-
-Create 20 eval queries — a mix of should-trigger and should-not-trigger. Save as JSON:
-
-```json
-[
-  {"query": "the user prompt", "should_trigger": true},
-  {"query": "another prompt", "should_trigger": false}
-]
-```
-
-The queries must be realistic and something a Claude Code or Claude.ai user would actually type. Not abstract requests, but requests that are concrete and specific and have a good amount of detail. For instance, file paths, personal context about the user's job or situation, column names and values, company names, URLs. A little bit of backstory. Some might be in lowercase or contain abbreviations or typos or casual speech. Use a mix of different lengths, and focus on edge cases rather than making them clear-cut (the user will get a chance to sign off on them).
-
-Bad: `"Format this data"`, `"Extract text from PDF"`, `"Create a chart"`
-
-Good: `"ok so my boss just sent me this xlsx file (its in my downloads, called something like 'Q4 sales final FINAL v2.xlsx') and she wants me to add a column that shows the profit margin as a percentage. The revenue is in column C and costs are in column D i think"`
-
-For the **should-trigger** queries (8-10), think about coverage. You want different phrasings of the same intent — some formal, some casual. Include cases where the user doesn't explicitly name the skill or file type but clearly needs it. Throw in some uncommon use cases and cases where this skill competes with another but should win.
-
-For the **should-not-trigger** queries (8-10), the most valuable ones are the near-misses — queries that share keywords or concepts with the skill but actually need something different. Think adjacent domains, ambiguous phrasing where a naive keyword match would trigger but shouldn't, and cases where the query touches on something the skill does but in a context where another tool is more appropriate.
-
-The key thing to avoid: don't make should-not-trigger queries obviously irrelevant. "Write a fibonacci function" as a negative test for a PDF skill is too easy — it doesn't test anything. The negative cases should be genuinely tricky.
-
-### Step 2: Review with user
-
-Present the eval set to the user for review using the HTML template:
-
-1. Read the template from `assets/eval_review.html`
-2. Replace the placeholders:
-   - `__EVAL_DATA_PLACEHOLDER__` → the JSON array of eval items (no quotes around it — it's a JS variable assignment)
-   - `__SKILL_NAME_PLACEHOLDER__` → the skill's name
-   - `__SKILL_DESCRIPTION_PLACEHOLDER__` → the skill's current description
-3. Write to a temp file (e.g., `/tmp/eval_review_<skill-name>.html`) and open it: `open /tmp/eval_review_<skill-name>.html`
-4. The user can edit queries, toggle should-trigger, add/remove entries, then click "Export Eval Set"
-5. The file downloads to `~/Downloads/eval_set.json` — check the Downloads folder for the most recent version in case there are multiple (e.g., `eval_set (1).json`)
-
-This step matters — bad eval queries lead to bad descriptions.
-
-### Step 3: Run the optimization loop
-
-Tell the user: "This will take some time — I'll run the optimization loop in the background and check on it periodically."
-
-Save the eval set to the workspace, then run in the background:
-
-```bash
-python -m scripts.run_loop \
-  --eval-set <path-to-trigger-eval.json> \
-  --skill-path <path-to-skill> \
-  --model <model-id-powering-this-session> \
-  --max-iterations 5 \
-  --verbose
-```
-
-Use the model ID from your system prompt (the one powering the current session) so the triggering test matches what the user actually experiences.
-
-While it runs, periodically tail the output to give the user updates on which iteration it's on and what the scores look like.
-
-This handles the full optimization loop automatically. It splits the eval set into 60% train and 40% held-out test, evaluates the current description (running each query 3 times to get a reliable trigger rate), then calls Claude to propose improvements based on what failed. It re-evaluates each new description on both train and test, iterating up to 5 times. When it's done, it opens an HTML report in the browser showing the results per iteration and returns JSON with `best_description` — selected by test score rather than train score to avoid overfitting.
-
-### How skill triggering works
-
-Understanding the triggering mechanism helps design better eval queries. Skills appear in Claude's `available_skills` list with their name + description, and Claude decides whether to consult a skill based on that description. The important thing to know is that Claude only consults skills for tasks it can't easily handle on its own — simple, one-step queries like "read this PDF" may not trigger a skill even if the description matches perfectly, because Claude can handle them directly with basic tools. Complex, multi-step, or specialized queries reliably trigger skills when the description matches.
-
-This means your eval queries should be substantive enough that Claude would actually benefit from consulting a skill. Simple queries like "read file X" are poor test cases — they won't trigger skills regardless of description quality.
-
-### Step 4: Apply the result
-
-Take `best_description` from the JSON output and update the skill's SKILL.md frontmatter. Show the user before/after and report the scores.
-
----
-
-### Package and Present (only if `present_files` tool is available)
-
-Check whether you have access to the `present_files` tool. If you don't, skip this step. If you do, package the skill and present the .skill file to the user:
-
-```bash
-python -m scripts.package_skill <path/to/skill-folder>
-```
-
-After packaging, direct the user to the resulting `.skill` file path so they can install it.
-
----
-
-## Claude.ai-specific instructions
-
-In Claude.ai, the core workflow is the same (draft → test → review → improve → repeat), but because Claude.ai doesn't have subagents, some mechanics change. Here's what to adapt:
-
-**Running test cases**: No subagents means no parallel execution. For each test case, read the skill's SKILL.md, then follow its instructions to accomplish the test prompt yourself. Do them one at a time. This is less rigorous than independent subagents (you wrote the skill and you're also running it, so you have full context), but it's a useful sanity check — and the human review step compensates. Skip the baseline runs — just use the skill to complete the task as requested.
-
-**Reviewing results**: If you can't open a browser (e.g., Claude.ai's VM has no display, or you're on a remote server), skip the browser reviewer entirely. Instead, present results directly in the conversation. For each test case, show the prompt and the output. If the output is a file the user needs to see (like a .docx or .xlsx), save it to the filesystem and tell them where it is so they can download and inspect it. Ask for feedback inline: "How does this look? Anything you'd change?"
-
-**Benchmarking**: Skip the quantitative benchmarking — it relies on baseline comparisons which aren't meaningful without subagents. Focus on qualitative feedback from the user.
-
-**The iteration loop**: Same as before — improve the skill, rerun the test cases, ask for feedback — just without the browser reviewer in the middle. You can still organize results into iteration directories on the filesystem if you have one.
-
-**Description optimization**: This section requires the `claude` CLI tool (specifically `claude -p`) which is only available in Claude Code. Skip it if you're on Claude.ai.
-
-**Blind comparison**: Requires subagents. Skip it.
-
-**Packaging**: The `package_skill.py` script works anywhere with Python and a filesystem. On Claude.ai, you can run it and the user can download the resulting `.skill` file.
-
-**Updating an existing skill**: The user might be asking you to update an existing skill, not create a new one. In this case:
-- **Preserve the original name.** Note the skill's directory name and `name` frontmatter field -- use them unchanged. E.g., if the installed skill is `research-helper`, output `research-helper.skill` (not `research-helper-v2`).
-- **Copy to a writeable location before editing.** The installed skill path may be read-only. Copy to `/tmp/skill-name/`, edit there, and package from the copy.
-- **If packaging manually, stage in `/tmp/` first**, then copy to the output directory -- direct writes may fail due to permissions.
-
----
-
-## Cowork-Specific Instructions
-
-If you're in Cowork, the main things to know are:
-
-- You have subagents, so the main workflow (spawn test cases in parallel, run baselines, grade, etc.) all works. (However, if you run into severe problems with timeouts, it's OK to run the test prompts in series rather than parallel.)
-- You don't have a browser or display, so when generating the eval viewer, use `--static <output_path>` to write a standalone HTML file instead of starting a server. Then proffer a link that the user can click to open the HTML in their browser.
-- For whatever reason, the Cowork setup seems to disincline Claude from generating the eval viewer after running the tests, so just to reiterate: whether you're in Cowork or in Claude Code, after running tests, you should always generate the eval viewer for the human to look at examples before revising the skill yourself and trying to make corrections, using `generate_review.py` (not writing your own boutique html code). Sorry in advance but I'm gonna go all caps here: GENERATE THE EVAL VIEWER *BEFORE* evaluating inputs yourself. You want to get them in front of the human ASAP!
-- Feedback works differently: since there's no running server, the viewer's "Submit All Reviews" button will download `feedback.json` as a file. You can then read it from there (you may have to request access first).
-- Packaging works — `package_skill.py` just needs Python and a filesystem.
-- Description optimization (`run_loop.py` / `run_eval.py`) should work in Cowork just fine since it uses `claude -p` via subprocess, not a browser, but please save it until you've fully finished making the skill and the user agrees it's in good shape.
-- **Updating an existing skill**: The user might be asking you to update an existing skill, not create a new one. Follow the update guidance in the claude.ai section above.
-
----
-
-## Reference files
-
-The agents/ directory contains instructions for specialized subagents. Read them when you need to spawn the relevant subagent.
-
-- `agents/grader.md` — How to evaluate assertions against outputs
-- `agents/comparator.md` — How to do blind A/B comparison between two outputs
-- `agents/analyzer.md` — How to analyze why one version beat another
-
-The references/ directory has additional documentation:
-- `references/schemas.md` — JSON structures for evals.json, grading.json, etc.
-
----
-
-Repeating one more time the core loop here for emphasis:
-
-- Figure out what the skill is about
-- Draft or edit the skill
-- Run claude-with-access-to-the-skill on test prompts
-- With the user, evaluate the outputs:
-  - Create benchmark.json and run `eval-viewer/generate_review.py` to help the user review them
-  - Run quantitative evals
-- Repeat until you and the user are satisfied
-- Package the final skill and return it to the user.
-
-Please add steps to your TodoList, if you have such a thing, to make sure you don't forget. If you're in Cowork, please specifically put "Create evals JSON and run `eval-viewer/generate_review.py` so human can review test cases" in your TodoList to make sure it happens.
-
-Good luck!
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.
 
 
 ## /tf-plan
@@ -4655,6 +4304,8 @@ terraform plan, tfplan, plan review, terraform show json, resource_changes, appl
    decision.
 
 ---
+
+**Agent mode.** Never stop to ask the user. When an input is missing, use the default documented here and end the output with an `Open questions for the PM` list naming each default you chose and what would change it.
 
 ## REVIEW — Pre-Apply Plan Check
 
@@ -4820,8 +4471,8 @@ Trigger: user asks why a resource is being replaced or recreated.
    because the resource is genuinely disposable. Recommend one, with the reason.
 
 If `replace_paths` is absent (`terraform plan` text output rather than JSON), say
-so plainly and ask for the JSON rather than guessing at the cause from attribute
-diffs.
+so plainly and list a request for the JSON plan under open questions rather than
+guessing at the cause from attribute diffs.
 
 ---
 
@@ -4867,7 +4518,7 @@ data is lost and whether a recovery point exists; a replacement finding without
 that is not actionable. If you cannot quote the plan entry, don't report it.
 
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not wait for a reply. Produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only
@@ -4947,7 +4598,7 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 | **TF-PROV-001** | BLOCKING | Provider version unpinned or `>=` (use `~>`) |
 | **TF-PROV-002** | BLOCKING | No `terraform{}` block / `required_version` / `required_providers` |
 | **TF-STATE-001** | BLOCKING | No remote backend (local state in a shared repo) |
-| **TF-STATE-002** | ADVISORY | Remote backend without state locking (`dynamodb_table`) |
+| **TF-STATE-002** | ADVISORY | S3 backend without `use_lockfile = true` (native S3 state locking, Terraform >= 1.10), or still locking via the deprecated `dynamodb_table` |
 | **TF-STATE-003** | BLOCKING | A `.tfstate` or `.tfstate.backup` file committed to the repo |
 | **SEC-PUB-001** | BLOCKING | S3 bucket affirmatively exposed: a public-read/write ACL, a bucket policy granting `Principal: "*"`, or an `aws_s3_bucket_public_access_block` that sets any of its four flags to `false` |
 | **SEC-LOG-001** | ADVISORY | No CloudTrail trail defined for an account this repo provisions, or a trail with `enable_logging = false` |
@@ -5016,6 +4667,8 @@ Exception: if a "placeholder" file is actually referenced by a real `terraform a
 
 ---
 
+**Agent mode.** Never stop to ask the user. When an input is missing, use the default documented here and end the output with an `Open questions for the PM` list naming each default you chose and what would change it.
+
 ## Step 1 — Determine the action
 
 Read the arguments provided:
@@ -5024,8 +4677,8 @@ Read the arguments provided:
 - `new <resource-type>` → go to **NEW**
 - `upgrade` → go to **UPGRADE**
 - No arguments → read the current directory using Glob, then decide:
-  - If `.tf` files exist → ask: "I can see Terraform files here. What do you need? **review** (pre-MR check) / **new** (scaffold a resource) / **upgrade** (version bump guide)"
-  - If the directory is empty → default to **NEW** and ask what resource to create
+  - If `.tf` files exist → default to **REVIEW**; list "wanted new or upgrade instead?" under open questions
+  - If the directory is empty → default to **NEW** (resource type rules below)
 
 ---
 
@@ -5057,18 +4710,18 @@ Always include a `terraform {}` block:
 
 ```hcl
 terraform {
-  required_version = "~> 1.7"
+  required_version = "~> 1.17"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
   backend "s3" {
     # bucket         = "your-tfstate-bucket"
     # key            = "<service>/terraform.tfstate"
     # region         = "eu-west-1"
-    # dynamodb_table = "terraform-state-lock"
+    use_lockfile     = true   # S3 native locking; dynamodb_table is deprecated
     # encrypt        = true
   }
 }
@@ -5079,7 +4732,7 @@ terraform {
 
 ### Remote backend
 - Always configure a remote backend — never use local state in shared repos
-- Use S3 backend with a `dynamodb_table` for state locking
+- Use the S3 backend with `use_lockfile = true` for state locking (needs Terraform >= 1.10). `dynamodb_table` is deprecated: flag it. Migrate by setting both, running `terraform init -reconfigure`, then removing `dynamodb_table`
 
 ### Tagging
 Always define a `locals` block with common tags and merge into every resource and module:
@@ -5099,12 +4752,14 @@ All four tags are required on every AWS resource: `Name`, `Environment`, `Team`,
 
 ### Module usage
 Prefer `terraform-aws-modules` over raw AWS provider resources:
-- Lambda → `terraform-aws-modules/lambda/aws ~> 7.0`
-- RDS → `terraform-aws-modules/rds/aws ~> 6.0`
-- S3 → `terraform-aws-modules/s3-bucket/aws ~> 4.0`
-- EKS → `terraform-aws-modules/eks/aws ~> 20.0`
-- VPC → `terraform-aws-modules/vpc/aws ~> 5.0`
-- IAM → `terraform-aws-modules/iam/aws ~> 5.0`
+- Lambda → `terraform-aws-modules/lambda/aws ~> 8.0`
+- RDS → `terraform-aws-modules/rds/aws ~> 7.0`
+- S3 → `terraform-aws-modules/s3-bucket/aws ~> 5.0`
+- EKS → `terraform-aws-modules/eks/aws ~> 21.0`
+- VPC → `terraform-aws-modules/vpc/aws ~> 6.0`
+- IAM → `terraform-aws-modules/iam/aws ~> 6.0`
+
+These majors target AWS provider 6.x. Check each module's `UPGRADE-*.md` before bumping an existing call: EKS 21 and IAM 6 rename inputs and submodules.
 
 Always pin module versions with `version = "~> X.Y"` — never use a git ref, branch, or omit the version.
 
@@ -5130,24 +4785,24 @@ If the repo contains only module definitions (no root module), skip the backend 
 ## NEW — Scaffold a New Terraform Resource
 
 ### Identify the resource type
-Extract from the argument (e.g. `new lambda`, `new rds`). If not provided, ask: "What resource type? (lambda / rds / s3 / eks / vpc / iam-role)"
+Extract from the argument (e.g. `new lambda`, `new rds`) or infer it from the request (lambda / rds / s3 / eks / vpc / iam-role). If it cannot be inferred, generate nothing and return the single open question.
 
-### Ask targeted questions (max 5)
+### Defaults (use when the request does not say)
 
-**Always ask:**
-1. Resource name? (e.g. `payments-processor`)
-2. Environment — fixed value or variable? (dev / staging / prod)
-3. AWS region — fixed value or variable?
+**Always:**
+1. Resource name: from the argument, else the directory name
+2. Environment: `var.environment`, no default
+3. AWS region: `var.region`, no default
 
 **Resource-specific:**
-- **lambda:** Runtime? Memory (MB)? Timeout (seconds)? VPC access needed?
-- **rds:** Engine (mysql/postgres)? Instance class? Multi-AZ?
-- **s3:** Public or private? Versioning? Lifecycle rules?
-- **eks:** Kubernetes version? Node instance type? Min/max nodes?
-- **vpc:** CIDR? Number of AZs? NAT gateway?
-- **iam-role:** Which service assumes this role? What permissions?
+- **lambda:** runtime as `var.runtime` (no default), 256 MB, 30 s timeout, no VPC
+- **rds:** postgres, instance class as `var.instance_class`, `multi_az = true`
+- **s3:** private, versioning enabled, no lifecycle rules
+- **eks:** `var.kubernetes_version` (no default), node type as a variable, min 2 / max 6 nodes
+- **vpc:** CIDR as `var.cidr`, 3 AZs, one NAT gateway per AZ
+- **iam-role:** trust only the named service; no permissions beyond what the request states (never `*`)
 
-Wait for answers before generating code.
+List every default you applied under open questions.
 
 ### Generated files
 
@@ -5160,18 +4815,18 @@ Wait for answers before generating code.
 **`versions.tf`**:
 ```hcl
 terraform {
-  required_version = "~> 1.7"
+  required_version = "~> 1.17"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
   backend "s3" {
     # bucket         = "your-tfstate-bucket"
     # key            = "<service>/<resource>/terraform.tfstate"
     # region         = "eu-west-1"
-    # dynamodb_table = "terraform-state-lock"
+    use_lockfile     = true   # S3 native locking; dynamodb_table is deprecated
     # encrypt        = true
   }
 }
@@ -5196,18 +4851,28 @@ Next steps:
 Find and read `versions.tf`, all `*.tf` files with module `source` and `version`, and `.terraform.lock.hcl`. Report the current versions.
 
 ### Identify the target
-If not provided, ask: "What are you upgrading, and to which version? (e.g. AWS provider 4.x → 5.x, Terraform 1.6 → 1.9)"
+If not provided, default to the AWS provider's next major from `.terraform.lock.hcl` (one major only) and list the chosen target under open questions.
 
 ### Breaking changes reference
 
+Confirm each item against the provider's official upgrade guide (`docs/guides/version-<N>-upgrade`) before reporting it.
+
+**AWS provider 5.x → 6.x:**
+- Every regional resource gains a `region` argument (per-resource region override); multi-region setups can drop extra provider aliases
+- `data.aws_region` `name` is deprecated, use `region`
+- `aws_s3_bucket` `region` is now the input argument; the computed bucket location moved to `bucket_region`
+- Resources for retired services removed (e.g. OpsWorks, SimpleDB, WorkLink): delete or `removed {}` them first
+- Current `terraform-aws-modules` majors (EKS 21, VPC 6, S3 5, IAM 6, Lambda 8, RDS 7) require provider 6.x, so bump modules and provider together
+
 **AWS provider 4.x → 5.x:**
-- `aws_s3_bucket` inline `acl`, `versioning`, `logging`, `lifecycle_rule`, `website`, `cors_rule`, `replication_configuration` → must be separate resources
-- `aws_security_group` inline `ingress`/`egress` → deprecated, use `aws_security_group_rule`
-- `aws_instance` IMDSv2 now required by default
+- EC2-Classic support removed (`aws_db_security_group`, `aws_redshift_security_group`, classic args on `aws_instance`/`aws_eip`)
+- `aws_eip` `vpc = true` deprecated, use `domain = "vpc"`
+- `aws_db_instance` `name` removed, use `db_name`
+- `aws_elasticache_replication_group` `number_cache_clusters` / `replication_group_description` renamed to `num_cache_clusters` / `description`
+- Inline `aws_s3_bucket` arguments (`acl`, `versioning`, `logging`, `lifecycle_rule`, ...) stay deprecated; move them to the separate `aws_s3_bucket_*` resources
 
 **AWS provider 3.x → 4.x:**
-- S3 ACL and policy resources separated
-- Default tags support added
+- `aws_s3_bucket` split: `acl`, `versioning`, `logging`, `lifecycle_rule`, `website`, `cors_rule`, `server_side_encryption_configuration`, `replication_configuration` moved to separate `aws_s3_bucket_*` resources (import each one)
 
 **Terraform core minor (1.x → 1.x):** Generally safe; check for deprecated function usage.
 
@@ -5240,14 +4905,14 @@ Steps
 7. Apply to production with a team member watching
 
 Rollback
-- Apply is transactional — if it fails, state is unchanged
+- Apply is not transactional: a failed apply keeps whatever it already changed, so run `terraform plan` to see the real state before retrying or reverting
 - To roll back code: revert the version bump and run terraform init -upgrade again
 ```
 
 Flag any resource that would be destroyed and recreated — these need manual sign-off.
 Do not suggest upgrading multiple major versions in one step.
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not wait for a reply. Produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only
@@ -5326,7 +4991,7 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 | **TF-OUT-001** | BLOCKING | `output` block missing `description` |
 | **TF-OUT-002** | BLOCKING | Secret in an output not marked `sensitive = true` |
 | **TF-STATE-001** | BLOCKING | No `backend "s3"` (skip for module-only repos) |
-| **TF-STATE-002** | BLOCKING | Backend without `dynamodb_table` state locking |
+| **TF-STATE-002** | BLOCKING | S3 backend without `use_lockfile = true` (native S3 locking, Terraform >= 1.10), or still locking via the deprecated `dynamodb_table` |
 | **SEC-ENC-001** | BLOCKING | KMS/encryption-at-rest missing (Aurora, ElastiCache, EKS etcd, S3, Secrets Manager) |
 | **SEC-ENC-002** | BLOCKING | In-transit encryption disabled (ElastiCache transit, ALB TLS / HTTP→HTTPS redirect) |
 | **SEC-ENC-003** | BLOCKING | WAF not associated with the public ALB (`waf_acl_arn` not passed) |
@@ -5346,7 +5011,7 @@ Evals: [`evals/`](./evals/).
 
 **False-positive exclusions** — don't report these unless a stated exception applies:
 
-1. `bootstrap/` (the state bucket + lock table module) not calling `module "labels"` — it bootstraps the label registry's own backend before `_modules/labels` can be consumed; `CDTF-WRAP-002` targets `_modules/<name>/`, not `bootstrap/`.
+1. `bootstrap/` (the state bucket module) not calling `module "labels"`, it bootstraps the label registry's own backend before `_modules/labels` can be consumed; `CDTF-WRAP-002` targets `_modules/<name>/`, not `bootstrap/`.
 2. `enable_dns_validation = false` without a comment — this is `CDTF-MOD-006` at ADVISORY already, not a reason to also raise a separate BLOCKING finding.
 3. Non-prod environments (`dev`/`sandbox`) for `SEC-NET-001` (EKS public endpoint) — stays ADVISORY per the shared registry's environment convention (see `/clouddrove:k8s` dev relaxation); don't escalate to BLOCKING outside staging/prod.
 4. `SEC-IAM-003` on a policy attached to a service role (`aws_iam_role` assumed by an AWS service principal or CI/CD OIDC role) — MFA presence only applies to a human's interactive session, not a service credential. Nearly every wrapper module attaches policies to service roles (EKS node/IRSA roles, Lambda execution roles), so this exclusion applies by default here; `SEC-IAM-003` only fires on an `aws_iam_user`/`aws_iam_group` policy, which is rare in this pattern.
@@ -5361,6 +5026,8 @@ the exclusion doesn't apply — report it.
 
 ---
 
+**Agent mode.** Never stop to ask the user. When an input is missing, use the default documented here and end the output with an `Open questions for the PM` list naming each default you chose and what would change it.
+
 ## Step 1 — Determine the action
 
 Read the arguments:
@@ -5370,8 +5037,8 @@ Read the arguments:
 - `review` → **REVIEW**
 - `controls` → **CONTROLS**
 - No arguments → glob for `_modules/`, `environments/`, `.github/workflows/`:
-  - Empty repo → default to **NEW**, ask which module
-  - Files found → ask: "**new** / **ci** / **review** / **controls**?"
+  - Empty repo → default to **NEW** with module `labels` (every other module depends on it); list the choice under open questions
+  - Files found → default to **REVIEW**; list "wanted new / ci / controls instead?" under open questions
 
 ---
 
@@ -5385,7 +5052,7 @@ _modules/
   <name>/          # wrapper around clouddrove/<name>/aws
 environments/
   dev/  staging/  prod/    # only call _modules/<name>, never CloudDrove directly
-bootstrap/         # state bucket + lock table (one-time, separate state)
+bootstrap/         # state bucket (one-time, separate state; locking is use_lockfile, no table)
 ```
 
 Three invariants:
@@ -5450,17 +5117,17 @@ module "<name>" {
 
 ### Identify module type
 
-Extract from argument (e.g. `new monitoring`). If missing, ask: "Which module? (security / vpc / eks / aurora / elasticache / alb / dns / acm / waf / iam / monitoring / s3 / secrets / dashboard / labels)"
+Extract from argument (e.g. `new monitoring`) or infer from the request (security / vpc / eks / aurora / elasticache / alb / dns / acm / waf / iam / monitoring / s3 / secrets / dashboard / labels). If neither names one, default to `labels` and list it under open questions.
 
 ### Standard `main.tf` header
 
 ```hcl
 terraform {
-  required_version = ">= 1.6.0"
+  required_version = "~> 1.17"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
 }
@@ -5574,7 +5241,7 @@ All resources follow `{client_name}-{environment}-{resource}`. Verify:
 
 ### Known upstream bugs (AWS provider v5)
 
-Three CloudDrove modules use `data.aws_region.*.region` (removed in AWS provider v5 — should be `data.aws_region.current.name`). After `terraform init`, patch the downloaded source:
+Three CloudDrove modules use `data.aws_region.*.region` (removed in AWS provider v5, should be `data.aws_region.current.name`). On AWS provider 6.x skip this patch: `region` is valid again and `name` is the deprecated attribute. On 5.x, after `terraform init`, patch the downloaded source:
 
 ```bash
 for dir in \
@@ -5593,7 +5260,7 @@ Issues filed: [terraform-aws-vpc#105](https://github.com/clouddrove/terraform-aw
 
 - **BLOCKING:** Any `variable` or `output` block missing `description`
 - **BLOCKING:** Passwords / tokens / keys in outputs without `sensitive = true`
-- **BLOCKING:** No `backend "s3"` with `dynamodb_table` for state locking
+- **BLOCKING:** No `backend "s3"` with `use_lockfile = true` for state locking. `dynamodb_table` is deprecated: flag it; migrate by setting both, running `terraform init -reconfigure`, then removing `dynamodb_table`
 - **BLOCKING:** Same backend `key` across environments — each env needs a unique key
 - **ADVISORY:** Variables without `type`
 
@@ -5674,7 +5341,7 @@ Summary: <N> controls covered, <N> gaps.
 
 Mark `❌ MISSING` for any control where the responsible module is absent from `environments/{env}/main.tf` or the module exists but the relevant variable is disabled.
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not wait for a reply. Produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only

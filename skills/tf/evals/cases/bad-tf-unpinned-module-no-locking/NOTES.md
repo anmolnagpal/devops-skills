@@ -9,7 +9,7 @@ competent: real module, real tags, described and typed variables, a remote backe
 - `TF-MOD-002` — the VPC module is sourced from a git URL pinned to `?ref=master`,
   which is a moving branch rather than a version. This is the git-ref form of the
   rule rather than the omitted-version form, which is the one people argue is fine.
-- `TF-STATE-002` — the S3 backend has no `dynamodb_table`, so two concurrent applies
+- `TF-STATE-002`, the S3 backend has no `use_lockfile = true`, so two concurrent applies
   can interleave. ADVISORY per this skill's catalog.
 - `TF-OUT-002` — `db_credentials` outputs a Secrets Manager `secret_string` with a
   description and no `sensitive = true`. Note the *variable* feeding it is correctly

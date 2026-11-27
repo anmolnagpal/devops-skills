@@ -37,7 +37,7 @@ assert any(p['name']=='clouddrove' for p in m['plugins']), 'clouddrove not liste
 p=json.load(open('.claude-plugin/plugin.json')); \
 assert p['name']=='clouddrove', 'plugin.json name mismatch'; \
 print('  ✓ manifests valid, clouddrove plugin listed')" && \
-    for skill in tf k8s ci owasp skill-creator docker finops github github-actions deploy adr wrapper-tf; do \
+    for skill in tf k8s ci owasp docker finops github github-actions deploy adr wrapper-tf; do \
       [ -f "skills/$skill/SKILL.md" ] \
         && echo "  ✓ skills/$skill/SKILL.md" \
         || (echo "  ✗ skills/$skill/SKILL.md MISSING" && exit 1); \

@@ -19,7 +19,7 @@ A reviewer checking style passes this and the customer documents are world-reada
 - `SEC-LOG-002` — `aws_vpc.main` is defined here with no `aws_flow_log` covering it,
   so there is no network record either.
 
-Must NOT fire: `TF-STATE-001` and `TF-STATE-002` (S3 backend with `dynamodb_table`),
+Must NOT fire: `TF-STATE-001` and `TF-STATE-002` (S3 backend with `use_lockfile = true`),
 `TF-PROV-001`/`002` (pinned, `required_version` present), `TF-RES-001` (all four
 required tags via `locals`), `TF-VAR-003` (every variable has description and type),
 `TF-OUT-001` (both outputs described), `TF-QUAL-001` (`locals` used),
