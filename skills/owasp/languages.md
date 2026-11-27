@@ -13,10 +13,10 @@ Object.assign(target, userInput)
 Object.assign(Object.create(null), validated)
 
 // UNSAFE: eval injection
-eval(userCode)
+new Function(userCode)()  // same risk as eval
 // SAFE: Never use eval with user input
 ```
-**Watch for:** `eval()`, `innerHTML`, `document.write()`, `__proto__`, prototype chain manipulation
+**Watch for:** `eval`, `new Function`, `innerHTML`, `document.write()`, `__proto__`, prototype chain manipulation
 
 ---
 
@@ -33,7 +33,7 @@ query = "SELECT * FROM users WHERE name = '%s'" % user_input
 # SAFE: Parameterized
 cursor.execute("SELECT * FROM users WHERE name = %s", (user_input,))
 ```
-**Watch for:** `pickle`, `eval()`, `exec()`, `os.system()`, `subprocess` with `shell=True`
+**Watch for:** `pickle`, `eval`, `exec`, `os.system()`, `subprocess` with `shell=True`
 
 ---
 
@@ -182,8 +182,7 @@ rm $user_file
 # SAFE: Always quote
 rm "$user_file"
 
-# UNSAFE: eval
-eval "$user_command"
+# UNSAFE: eval on any string built from user input runs it as shell code
 # SAFE: Never eval user input
 ```
 **Watch for:** Unquoted variables, `eval`, backticks, `$(...)` with user input, missing `set -euo pipefail`
@@ -207,7 +206,7 @@ eval "$user_command"
 | Language | Top Risk | Watch For |
 |----------|----------|-----------|
 | Scala | XXE, serialization | XML parsing, `Serializable`, Java interop |
-| R | Code injection | `eval()`, `parse()`, `source()`, `system()` |
+| R | Code injection | `eval`, `parse()`, `source()`, `system()` |
 | Perl | Regex DoS, open() injection | Two-arg `open()`, backticks, `eval` |
 | Lua | Sandbox escape | `loadstring`, `os.execute`, `io` library |
 | Elixir | Atom exhaustion | `String.to_atom`, `Code.eval_string` |

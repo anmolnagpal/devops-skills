@@ -105,7 +105,7 @@ services:
 | PostgreSQL | `pg_isready -U <user> -d <db>` |
 | MySQL | `mysqladmin ping -h localhost` |
 | Redis | `redis-cli ping` |
-| MongoDB | `mongosh --eval "db.adminCommand('ping')"` |
+| MongoDB | `echo 'db.runCommand("ping").ok' | mongosh --quiet` |
 | Elasticsearch | `curl -f http://localhost:9200/_cluster/health` |
 | RabbitMQ | `rabbitmq-diagnostics -q ping` |
 | HTTP app | `curl -f http://localhost:<port>/health` |

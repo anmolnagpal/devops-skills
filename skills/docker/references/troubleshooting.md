@@ -94,7 +94,7 @@ docker run --rm -it --entrypoint /bin/sh <image>
 - Fix: Read the logs (`docker logs`), fix the application error
 
 **Shell form vs exec form**
-- Shell form (`CMD node server.js`) wraps in `/bin/sh -c`, which may exit before the child process
+- Shell form (`CMD node server.js`) runs under a `/bin/sh` wrapper, which may exit before the child process
 - Fix: Use exec form (`CMD ["node", "server.js"]`)
 
 **PID 1 and signal handling**
