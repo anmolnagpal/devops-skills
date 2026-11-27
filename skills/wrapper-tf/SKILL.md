@@ -32,7 +32,12 @@ paths:
 allowed-tools:
   - Glob
   - Read
-  - Bash
+  - "Bash(terraform fmt -check:*)"
+  - "Bash(terraform validate:*)"
+  - "Bash(terraform init -backend=false:*)"
+  - "Bash(tflint:*)"
+  - "Bash(checkov:*)"
+  - "Bash(trivy config:*)"
 ---
 
 # CloudDrove Terraform Skill
@@ -102,7 +107,7 @@ IDs are an API — never renumber a shipped rule; deprecate and add.
 | **TF-OUT-001** | BLOCKING | `output` block missing `description` |
 | **TF-OUT-002** | BLOCKING | Secret in an output not marked `sensitive = true` |
 | **TF-STATE-001** | BLOCKING | No `backend "s3"` (skip for module-only repos) |
-| **TF-STATE-002** | BLOCKING | Backend without `dynamodb_table` state locking |
+| **TF-STATE-002** | BLOCKING | S3 backend without `use_lockfile = true` (native S3 locking, Terraform >= 1.10), or still locking via the deprecated `dynamodb_table` |
 | **SEC-ENC-001** | BLOCKING | KMS/encryption-at-rest missing (Aurora, ElastiCache, EKS etcd, S3, Secrets Manager) |
 | **SEC-ENC-002** | BLOCKING | In-transit encryption disabled (ElastiCache transit, ALB TLS / HTTP→HTTPS redirect) |
 | **SEC-ENC-003** | BLOCKING | WAF not associated with the public ALB (`waf_acl_arn` not passed) |
@@ -122,7 +127,7 @@ Evals: [`evals/`](./evals/).
 
 **False-positive exclusions** — don't report these unless a stated exception applies:
 
-1. `bootstrap/` (the state bucket + lock table module) not calling `module "labels"` — it bootstraps the label registry's own backend before `_modules/labels` can be consumed; `CDTF-WRAP-002` targets `_modules/<name>/`, not `bootstrap/`.
+1. `bootstrap/` (the state bucket module) not calling `module "labels"`, it bootstraps the label registry's own backend before `_modules/labels` can be consumed; `CDTF-WRAP-002` targets `_modules/<name>/`, not `bootstrap/`.
 2. `enable_dns_validation = false` without a comment — this is `CDTF-MOD-006` at ADVISORY already, not a reason to also raise a separate BLOCKING finding.
 3. Non-prod environments (`dev`/`sandbox`) for `SEC-NET-001` (EKS public endpoint) — stays ADVISORY per the shared registry's environment convention (see `/clouddrove:k8s` dev relaxation); don't escalate to BLOCKING outside staging/prod.
 4. `SEC-IAM-003` on a policy attached to a service role (`aws_iam_role` assumed by an AWS service principal or CI/CD OIDC role) — MFA presence only applies to a human's interactive session, not a service credential. Nearly every wrapper module attaches policies to service roles (EKS node/IRSA roles, Lambda execution roles), so this exclusion applies by default here; `SEC-IAM-003` only fires on an `aws_iam_user`/`aws_iam_group` policy, which is rare in this pattern.
@@ -137,6 +142,8 @@ the exclusion doesn't apply — report it.
 
 ---
 
+**Agent mode.** Never stop to ask the user. When an input is missing, use the default documented here and end the output with an `Open questions for the PM` list naming each default you chose and what would change it.
+
 ## Step 1 — Determine the action
 
 Read the arguments:
@@ -146,8 +153,8 @@ Read the arguments:
 - `review` → **REVIEW**
 - `controls` → **CONTROLS**
 - No arguments → glob for `_modules/`, `environments/`, `.github/workflows/`:
-  - Empty repo → default to **NEW**, ask which module
-  - Files found → ask: "**new** / **ci** / **review** / **controls**?"
+  - Empty repo → default to **NEW** with module `labels` (every other module depends on it); list the choice under open questions
+  - Files found → default to **REVIEW**; list "wanted new / ci / controls instead?" under open questions
 
 ---
 
@@ -161,7 +168,7 @@ _modules/
   <name>/          # wrapper around clouddrove/<name>/aws
 environments/
   dev/  staging/  prod/    # only call _modules/<name>, never CloudDrove directly
-bootstrap/         # state bucket + lock table (one-time, separate state)
+bootstrap/         # state bucket (one-time, separate state; locking is use_lockfile, no table)
 ```
 
 Three invariants:
@@ -226,17 +233,17 @@ module "<name>" {
 
 ### Identify module type
 
-Extract from argument (e.g. `new monitoring`). If missing, ask: "Which module? (security / vpc / eks / aurora / elasticache / alb / dns / acm / waf / iam / monitoring / s3 / secrets / dashboard / labels)"
+Extract from argument (e.g. `new monitoring`) or infer from the request (security / vpc / eks / aurora / elasticache / alb / dns / acm / waf / iam / monitoring / s3 / secrets / dashboard / labels). If neither names one, default to `labels` and list it under open questions.
 
 ### Standard `main.tf` header
 
 ```hcl
 terraform {
-  required_version = ">= 1.6.0"
+  required_version = "~> 1.17"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
 }
@@ -350,7 +357,7 @@ All resources follow `{client_name}-{environment}-{resource}`. Verify:
 
 ### Known upstream bugs (AWS provider v5)
 
-Three CloudDrove modules use `data.aws_region.*.region` (removed in AWS provider v5 — should be `data.aws_region.current.name`). After `terraform init`, patch the downloaded source:
+Three CloudDrove modules use `data.aws_region.*.region` (removed in AWS provider v5, should be `data.aws_region.current.name`). On AWS provider 6.x skip this patch: `region` is valid again and `name` is the deprecated attribute. On 5.x, after `terraform init`, patch the downloaded source:
 
 ```bash
 for dir in \
@@ -369,7 +376,7 @@ Issues filed: [terraform-aws-vpc#105](https://github.com/clouddrove/terraform-aw
 
 - **BLOCKING:** Any `variable` or `output` block missing `description`
 - **BLOCKING:** Passwords / tokens / keys in outputs without `sensitive = true`
-- **BLOCKING:** No `backend "s3"` with `dynamodb_table` for state locking
+- **BLOCKING:** No `backend "s3"` with `use_lockfile = true` for state locking. `dynamodb_table` is deprecated: flag it; migrate by setting both, running `terraform init -reconfigure`, then removing `dynamodb_table`
 - **BLOCKING:** Same backend `key` across environments — each env needs a unique key
 - **ADVISORY:** Variables without `type`
 
@@ -450,7 +457,7 @@ Summary: <N> controls covered, <N> gaps.
 
 Mark `❌ MISSING` for any control where the responsible module is absent from `environments/{env}/main.tf` or the module exists but the relevant variable is disabled.
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not wait for a reply. Produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only

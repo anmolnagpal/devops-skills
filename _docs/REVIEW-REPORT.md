@@ -11,7 +11,7 @@ diff, attach to a PR, or hand to an auditor six months later.
 
 ## Why the skills do not write it themselves
 
-Eleven review skills are `safety: read-only`, with `allowed-tools` limited to `Glob`
+Ten review skills are `safety: read-only`, with `allowed-tools` limited to `Glob`
 and `Read`. That is enforced by `scripts/check-skills.sh` and stated in the README,
 and it is worth more than the convenience of a skill writing its own output: a
 reviewer that cannot modify your repo is a reviewer you can run without reading its

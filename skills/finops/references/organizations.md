@@ -282,4 +282,4 @@ For a 20-50 account org:
 6. **Org-level CUR + CUDOS dashboard** in a dedicated billing account.
 7. **Compute Optimizer + Cost Anomaly Detection + Trusted Advisor** enabled org-wide.
 8. **Centralized commitment purchases** in management account with sharing ON.
-9. **Quarterly FinOps review** across the org using CUDOS + `scripts/reservation-coverage.sh`.
+9. **Quarterly FinOps review** across the org using CUDOS + `${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh`.

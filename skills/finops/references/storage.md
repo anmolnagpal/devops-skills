@@ -14,14 +14,14 @@ EBS, EBS snapshots, S3 storage classes, S3 lifecycle, and common storage waste.
 
 ### gp2 → gp3 Migration
 
-**Always do this.** It's an online operation (`aws ec2 modify-volume`) — no downtime, no detach.
+**Always do this.** It's an online operation (`aws ec2 modify-volume`, run by a human), no downtime, no detach.
 
 - gp3 base: 3000 IOPS + 125 MB/s included with any size.
 - gp2: IOPS = 3 × size_GiB, capped at 16,000.
 - For volumes ≤ ~1 TiB, gp3 base perf already matches or exceeds what gp2 delivers.
 - For larger volumes, you may need to provision extra IOPS/throughput on gp3 — still typically cheaper than gp2.
 
-Run `scripts/ebs-gp2-to-gp3-audit.sh` to estimate savings per volume.
+Run `${CLAUDE_SKILL_DIR}/scripts/ebs-gp2-to-gp3-audit.sh` to estimate savings per volume and print the migration commands for a human to run.
 
 ### EBS Sizing Pitfalls
 

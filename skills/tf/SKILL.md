@@ -89,7 +89,7 @@ shipped rule; deprecate and add. Reused vs new-to-registry IDs are listed under 
 | **TF-PROV-001** | BLOCKING | Provider version unpinned or `>=` (use `~>`) |
 | **TF-PROV-002** | BLOCKING | No `terraform{}` block / `required_version` / `required_providers` |
 | **TF-STATE-001** | BLOCKING | No remote backend (local state in a shared repo) |
-| **TF-STATE-002** | ADVISORY | Remote backend without state locking (`dynamodb_table`) |
+| **TF-STATE-002** | ADVISORY | S3 backend without `use_lockfile = true` (native S3 state locking, Terraform >= 1.10), or still locking via the deprecated `dynamodb_table` |
 | **TF-STATE-003** | BLOCKING | A `.tfstate` or `.tfstate.backup` file committed to the repo |
 | **SEC-PUB-001** | BLOCKING | S3 bucket affirmatively exposed: a public-read/write ACL, a bucket policy granting `Principal: "*"`, or an `aws_s3_bucket_public_access_block` that sets any of its four flags to `false` |
 | **SEC-LOG-001** | ADVISORY | No CloudTrail trail defined for an account this repo provisions, or a trail with `enable_logging = false` |
@@ -158,6 +158,8 @@ Exception: if a "placeholder" file is actually referenced by a real `terraform a
 
 ---
 
+**Agent mode.** Never stop to ask the user. When an input is missing, use the default documented here and end the output with an `Open questions for the PM` list naming each default you chose and what would change it.
+
 ## Step 1 — Determine the action
 
 Read the arguments provided:
@@ -166,8 +168,8 @@ Read the arguments provided:
 - `new <resource-type>` → go to **NEW**
 - `upgrade` → go to **UPGRADE**
 - No arguments → read the current directory using Glob, then decide:
-  - If `.tf` files exist → ask: "I can see Terraform files here. What do you need? **review** (pre-MR check) / **new** (scaffold a resource) / **upgrade** (version bump guide)"
-  - If the directory is empty → default to **NEW** and ask what resource to create
+  - If `.tf` files exist → default to **REVIEW**; list "wanted new or upgrade instead?" under open questions
+  - If the directory is empty → default to **NEW** (resource type rules below)
 
 ---
 
@@ -199,18 +201,18 @@ Always include a `terraform {}` block:
 
 ```hcl
 terraform {
-  required_version = "~> 1.7"
+  required_version = "~> 1.17"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
   backend "s3" {
     # bucket         = "your-tfstate-bucket"
     # key            = "<service>/terraform.tfstate"
     # region         = "eu-west-1"
-    # dynamodb_table = "terraform-state-lock"
+    use_lockfile     = true   # S3 native locking; dynamodb_table is deprecated
     # encrypt        = true
   }
 }
@@ -221,7 +223,7 @@ terraform {
 
 ### Remote backend
 - Always configure a remote backend — never use local state in shared repos
-- Use S3 backend with a `dynamodb_table` for state locking
+- Use the S3 backend with `use_lockfile = true` for state locking (needs Terraform >= 1.10). `dynamodb_table` is deprecated: flag it. Migrate by setting both, running `terraform init -reconfigure`, then removing `dynamodb_table`
 
 ### Tagging
 Always define a `locals` block with common tags and merge into every resource and module:
@@ -241,12 +243,14 @@ All four tags are required on every AWS resource: `Name`, `Environment`, `Team`,
 
 ### Module usage
 Prefer `terraform-aws-modules` over raw AWS provider resources:
-- Lambda → `terraform-aws-modules/lambda/aws ~> 7.0`
-- RDS → `terraform-aws-modules/rds/aws ~> 6.0`
-- S3 → `terraform-aws-modules/s3-bucket/aws ~> 4.0`
-- EKS → `terraform-aws-modules/eks/aws ~> 20.0`
-- VPC → `terraform-aws-modules/vpc/aws ~> 5.0`
-- IAM → `terraform-aws-modules/iam/aws ~> 5.0`
+- Lambda → `terraform-aws-modules/lambda/aws ~> 8.0`
+- RDS → `terraform-aws-modules/rds/aws ~> 7.0`
+- S3 → `terraform-aws-modules/s3-bucket/aws ~> 5.0`
+- EKS → `terraform-aws-modules/eks/aws ~> 21.0`
+- VPC → `terraform-aws-modules/vpc/aws ~> 6.0`
+- IAM → `terraform-aws-modules/iam/aws ~> 6.0`
+
+These majors target AWS provider 6.x. Check each module's `UPGRADE-*.md` before bumping an existing call: EKS 21 and IAM 6 rename inputs and submodules.
 
 Always pin module versions with `version = "~> X.Y"` — never use a git ref, branch, or omit the version.
 
@@ -272,24 +276,24 @@ If the repo contains only module definitions (no root module), skip the backend 
 ## NEW — Scaffold a New Terraform Resource
 
 ### Identify the resource type
-Extract from the argument (e.g. `new lambda`, `new rds`). If not provided, ask: "What resource type? (lambda / rds / s3 / eks / vpc / iam-role)"
+Extract from the argument (e.g. `new lambda`, `new rds`) or infer it from the request (lambda / rds / s3 / eks / vpc / iam-role). If it cannot be inferred, generate nothing and return the single open question.
 
-### Ask targeted questions (max 5)
+### Defaults (use when the request does not say)
 
-**Always ask:**
-1. Resource name? (e.g. `payments-processor`)
-2. Environment — fixed value or variable? (dev / staging / prod)
-3. AWS region — fixed value or variable?
+**Always:**
+1. Resource name: from the argument, else the directory name
+2. Environment: `var.environment`, no default
+3. AWS region: `var.region`, no default
 
 **Resource-specific:**
-- **lambda:** Runtime? Memory (MB)? Timeout (seconds)? VPC access needed?
-- **rds:** Engine (mysql/postgres)? Instance class? Multi-AZ?
-- **s3:** Public or private? Versioning? Lifecycle rules?
-- **eks:** Kubernetes version? Node instance type? Min/max nodes?
-- **vpc:** CIDR? Number of AZs? NAT gateway?
-- **iam-role:** Which service assumes this role? What permissions?
+- **lambda:** runtime as `var.runtime` (no default), 256 MB, 30 s timeout, no VPC
+- **rds:** postgres, instance class as `var.instance_class`, `multi_az = true`
+- **s3:** private, versioning enabled, no lifecycle rules
+- **eks:** `var.kubernetes_version` (no default), node type as a variable, min 2 / max 6 nodes
+- **vpc:** CIDR as `var.cidr`, 3 AZs, one NAT gateway per AZ
+- **iam-role:** trust only the named service; no permissions beyond what the request states (never `*`)
 
-Wait for answers before generating code.
+List every default you applied under open questions.
 
 ### Generated files
 
@@ -302,18 +306,18 @@ Wait for answers before generating code.
 **`versions.tf`**:
 ```hcl
 terraform {
-  required_version = "~> 1.7"
+  required_version = "~> 1.17"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "~> 6.0"
     }
   }
   backend "s3" {
     # bucket         = "your-tfstate-bucket"
     # key            = "<service>/<resource>/terraform.tfstate"
     # region         = "eu-west-1"
-    # dynamodb_table = "terraform-state-lock"
+    use_lockfile     = true   # S3 native locking; dynamodb_table is deprecated
     # encrypt        = true
   }
 }
@@ -338,18 +342,28 @@ Next steps:
 Find and read `versions.tf`, all `*.tf` files with module `source` and `version`, and `.terraform.lock.hcl`. Report the current versions.
 
 ### Identify the target
-If not provided, ask: "What are you upgrading, and to which version? (e.g. AWS provider 4.x → 5.x, Terraform 1.6 → 1.9)"
+If not provided, default to the AWS provider's next major from `.terraform.lock.hcl` (one major only) and list the chosen target under open questions.
 
 ### Breaking changes reference
 
+Confirm each item against the provider's official upgrade guide (`docs/guides/version-<N>-upgrade`) before reporting it.
+
+**AWS provider 5.x → 6.x:**
+- Every regional resource gains a `region` argument (per-resource region override); multi-region setups can drop extra provider aliases
+- `data.aws_region` `name` is deprecated, use `region`
+- `aws_s3_bucket` `region` is now the input argument; the computed bucket location moved to `bucket_region`
+- Resources for retired services removed (e.g. OpsWorks, SimpleDB, WorkLink): delete or `removed {}` them first
+- Current `terraform-aws-modules` majors (EKS 21, VPC 6, S3 5, IAM 6, Lambda 8, RDS 7) require provider 6.x, so bump modules and provider together
+
 **AWS provider 4.x → 5.x:**
-- `aws_s3_bucket` inline `acl`, `versioning`, `logging`, `lifecycle_rule`, `website`, `cors_rule`, `replication_configuration` → must be separate resources
-- `aws_security_group` inline `ingress`/`egress` → deprecated, use `aws_security_group_rule`
-- `aws_instance` IMDSv2 now required by default
+- EC2-Classic support removed (`aws_db_security_group`, `aws_redshift_security_group`, classic args on `aws_instance`/`aws_eip`)
+- `aws_eip` `vpc = true` deprecated, use `domain = "vpc"`
+- `aws_db_instance` `name` removed, use `db_name`
+- `aws_elasticache_replication_group` `number_cache_clusters` / `replication_group_description` renamed to `num_cache_clusters` / `description`
+- Inline `aws_s3_bucket` arguments (`acl`, `versioning`, `logging`, `lifecycle_rule`, ...) stay deprecated; move them to the separate `aws_s3_bucket_*` resources
 
 **AWS provider 3.x → 4.x:**
-- S3 ACL and policy resources separated
-- Default tags support added
+- `aws_s3_bucket` split: `acl`, `versioning`, `logging`, `lifecycle_rule`, `website`, `cors_rule`, `server_side_encryption_configuration`, `replication_configuration` moved to separate `aws_s3_bucket_*` resources (import each one)
 
 **Terraform core minor (1.x → 1.x):** Generally safe; check for deprecated function usage.
 
@@ -382,14 +396,14 @@ Steps
 7. Apply to production with a team member watching
 
 Rollback
-- Apply is transactional — if it fails, state is unchanged
+- Apply is not transactional: a failed apply keeps whatever it already changed, so run `terraform plan` to see the real state before retrying or reverting
 - To roll back code: revert the version bump and run terraform init -upgrade again
 ```
 
 Flag any resource that would be destroyed and recreated — these need manual sign-off.
 Do not suggest upgrading multiple major versions in one step.
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not wait for a reply. Produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only

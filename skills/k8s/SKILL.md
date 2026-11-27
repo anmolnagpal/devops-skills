@@ -64,7 +64,7 @@ kubernetes, k8s, eks, helm, values.yaml, chart, pod, deployment, service, ingres
 When an input is novel and no specific rule below matches, fall back to these:
 
 1. **Secrets never live in values** — reference a Kubernetes Secret or external-secrets; plaintext in `values.yaml` is committed forever.
-2. **Pin the image, federate the identity** — explicit immutable tag set at deploy; IRSA for AWS, never mounted static keys.
+2. **Pin the image, federate the identity**, explicit immutable tag set at deploy; EKS Pod Identity (or IRSA) for AWS, never mounted static keys.
 3. **Bound every workload** — requests *and* limits on every container; probes so the scheduler knows truth; ≥2 replicas for staging/prod.
 4. **Least privilege in the pod** — `runAsNonRoot`, no privilege escalation, read-only root FS.
 5. **Strict for prod, relaxed for dev** — `replicaCount: 1` and missing limits are acceptable only in dev.
@@ -82,7 +82,7 @@ add. Reused vs new-to-registry IDs are listed under the table. Severities are th
 | ID | Severity | Check |
 |----|----------|-------|
 | **SEC-SEC-001** | BLOCKING | Plaintext secret/password/token/apiKey inline in values |
-| **SEC-IAM-002** | BLOCKING | Static AWS credentials in env instead of IRSA |
+| **SEC-IAM-002** | BLOCKING | Static AWS credentials in env instead of EKS Pod Identity or IRSA |
 | **SEC-K8S-001** | ADVISORY | `securityContext` missing/incomplete (`runAsNonRoot`, `allowPrivilegeEscalation: false`, `readOnlyRootFilesystem`) |
 | **SEC-K8S-002** | BLOCKING | `privileged: true`, a `hostPath` volume, or `hostNetwork`/`hostPID`/`hostIPC` on a normal workload |
 | **SEC-K8S-003** | BLOCKING | RBAC over-grant: `ClusterRole` with wildcard verb **and** resource, or a binding to `cluster-admin` |
@@ -137,6 +137,8 @@ filename.
 
 ---
 
+**Agent mode.** Never stop to ask the user. When an input is missing, use the default documented here and end the output with an `Open questions for the PM` list naming each default you chose and what would change it.
+
 ## Step 1 — Determine the action
 
 Read the arguments provided:
@@ -144,8 +146,8 @@ Read the arguments provided:
 - `review` or `review <env>` → go to **REVIEW**
 - `new <service-name>` → go to **NEW**
 - No arguments → use Glob to check the current directory, then:
-  - If `values.yaml` or `Chart.yaml` exists → ask: "I can see Helm files here. Do you want to **review** (pre-deploy check) or create something **new**?"
-  - If the directory is empty → default to **NEW** and ask for the service name
+  - If `values.yaml` or `Chart.yaml` exists → default to **REVIEW**; list "wanted new instead?" under open questions
+  - If the directory is empty → default to **NEW** (service name rules below)
 
 ---
 
@@ -153,7 +155,7 @@ Read the arguments provided:
 
 Run before every EKS deployment. Find and read all values files (`values.yaml`, `values-dev.yaml`, `values-staging.yaml`, `values-prod.yaml`, `Chart.yaml`) and any `templates/` files if present.
 
-**Target environment:** Use the argument if provided. Otherwise infer from the file being reviewed, or ask.
+**Target environment:** Use the argument if provided. Otherwise infer from the file being reviewed; if nothing indicates it, assume prod (strictest gate) and list that under open questions.
 Production and staging checks are stricter than dev.
 
 ### Secrets
@@ -216,6 +218,17 @@ livenessProbe:
 ### Replica count
 - Minimum `replicaCount: 2` for staging and production
 - `replicaCount: 1` is only acceptable for dev environments
+- Spread replicas across zones so one AZ outage cannot take them all. `ScheduleAnyway` suits most apps; use `DoNotSchedule` only when losing zone balance is worse than a pending pod:
+
+```yaml
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app: <service-name>
+```
 
 ### Required labels
 Every workload must have these labels:
@@ -307,7 +320,18 @@ serviceAccount:
 Also flag any secret injected as a literal `env[].value` rather than `secretKeyRef` — that lands in `kubectl describe`, in the ReplicaSet spec, and in anyone's terminal scrollback.
 
 ### AWS access from pods
-Use IAM Roles for Service Accounts (IRSA) — never mount static AWS credentials:
+Never mount static AWS credentials. For new EKS workloads prefer **EKS Pod Identity**: the cluster needs the `eks-pod-identity-agent` addon, the role trusts `pods.eks.amazonaws.com`, and the link lives in Terraform, so the chart needs no annotation:
+
+```hcl
+resource "aws_eks_pod_identity_association" "app" {
+  cluster_name    = var.cluster_name
+  namespace       = "<namespace>"
+  service_account = "<service-name>"
+  role_arn        = aws_iam_role.app.arn
+}
+```
+
+IRSA is still fine for existing workloads and for clusters where the agent addon cannot run (e.g. Fargate pods):
 
 ```yaml
 serviceAccount:
@@ -338,16 +362,16 @@ If reviewing environment-specific overrides, assess the merged result for the ta
 ## NEW — Scaffold Helm Values for a New Service
 
 ### Identify the service name
-Extract from the argument. If not provided, ask: "What is the service name?"
+Extract from the argument, else from `Chart.yaml` or the directory name.
 
-### Ask targeted questions (max 5)
-1. What type of workload? (web service with HTTP / background worker / cron job)
-2. Container image repository? (e.g. `123456789.dkr.ecr.eu-west-1.amazonaws.com/my-service`)
-3. Does it expose an HTTP port? If yes, which port?
-4. Any environment variables or secrets? (list them — we'll wire them up correctly)
-5. Rough resource size: small (0.1 CPU / 128Mi) / medium (0.5 CPU / 512Mi) / large (1 CPU / 1Gi)?
+### Defaults (use when the request does not say)
+1. Workload type: web service with HTTP (other options: background worker / cron job)
+2. Image repository: placeholder `<image-repository>`
+3. HTTP port: 8080
+4. Environment variables and secrets: none; leave `env` and `envFrom` empty
+5. Resource size: small (0.1 CPU / 128Mi); medium is 0.5 CPU / 512Mi, large is 1 CPU / 1Gi
 
-Wait for answers before generating files.
+List every default you applied under open questions.
 
 ### Generated `values.yaml`
 
@@ -358,7 +382,7 @@ Wait for answers before generating files.
 replicaCount: 2
 
 image:
-  repository: <from answer>
+  repository: <from request or default>
   tag: ""           # Always set at deploy time: --set image.tag=$IMAGE_TAG
   pullPolicy: IfNotPresent
 
@@ -369,8 +393,8 @@ commonLabels:
 
 service:
   type: ClusterIP
-  port: <from answer>
-  targetPort: <from answer>
+  port: <from request or default>
+  targetPort: <from request or default>
 
 resources:
   requests:
@@ -412,6 +436,12 @@ securityContext:
 
 topologySpreadConstraints:
   - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app: <service-name>
+  - maxSkew: 1
     topologyKey: kubernetes.io/hostname
     whenUnsatisfiable: DoNotSchedule
     labelSelector:
@@ -427,6 +457,7 @@ autoscaling:
 serviceAccount:
   create: true
   annotations: {}
+  # Preferred: EKS Pod Identity (aws_eks_pod_identity_association), no annotation needed.
   # For IRSA:
   # annotations:
   #   eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME
@@ -449,11 +480,11 @@ Next steps:
 1. Update image.repository with your ECR URL
 2. Configure secrets via Kubernetes Secrets or external-secrets
 3. Update /health paths in readinessProbe and livenessProbe
-4. For IRSA: create the IAM role and add ARN to serviceAccount.annotations
+4. For AWS access: create the IAM role and an aws_eks_pod_identity_association (or, for IRSA, add the role ARN to serviceAccount.annotations)
 5. Run /k8s review before your first deploy
 ```
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not wait for a reply. Produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only

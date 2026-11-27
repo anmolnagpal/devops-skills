@@ -1,6 +1,6 @@
 {
   "schema": "clouddrove-skills-index/v1",
-  "count": 18,
+  "count": 17,
   "skills": [
     {
       "name": "adr",
@@ -31,7 +31,15 @@
       "allowed_tools": [
         "Glob",
         "Read",
-        "Bash"
+        "Bash(npm audit:*)",
+        "Bash(yarn npm audit:*)",
+        "Bash(yarn audit:*)",
+        "Bash(pnpm audit:*)",
+        "Bash(pip-audit:*)",
+        "Bash(govulncheck:*)",
+        "Bash(cargo audit:*)",
+        "Bash(bundle audit:*)",
+        "Bash(composer audit:*)"
       ],
       "frameworks": {
         "mitre_attack": [
@@ -58,8 +66,8 @@
       "description": "GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments, including individual stages, jobs, manual gates on prod stages, and pipeline credentials. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', 'is my pipeline gated before prod', 'add a stage', 'add a deploy job', 'add a helm deploy stage', 'my pipeline leaks credentials', 'why does staging deploy with prod credentials', 'staging and prod share a job', or when working in .gitlab-ci.yml files. Anything expressed as a pipeline, stage, or job belongs here.",
       "safety": "read-only",
       "category": "devops",
-      "version": "1.3.0",
-      "updated": "2026-07-05",
+      "version": "1.4.0",
+      "updated": "2026-11-27",
       "paths": [
         "**/.gitlab-ci.yml",
         "**/.gitlab-ci.yaml",
@@ -130,7 +138,14 @@
       "allowed_tools": [
         "Glob",
         "Read",
-        "Bash"
+        "Bash(bash ${CLAUDE_SKILL_DIR}/scripts/image-audit.sh:*)",
+        "Bash(bash ${CLAUDE_SKILL_DIR}/scripts/compose-check.sh:*)",
+        "Bash(docker image inspect:*)",
+        "Bash(docker history:*)",
+        "Bash(docker scout cves:*)",
+        "Bash(docker scout recommendations:*)",
+        "Bash(trivy image:*)",
+        "Bash(grype:*)"
       ],
       "frameworks": {
         "mitre_attack": [
@@ -156,13 +171,19 @@
       "description": "AWS cost optimization — waste detection, right-sizing, Savings Plans, RIs, EKS cost, multi-account governance. Use when user says 'reduce AWS bill', 'find waste', 'right-size this', 'should I buy SP or RI', 'gp2 vs gp3', 'EKS is expensive', 'NAT gateway cost', or asks about AWS cost optimization.",
       "safety": "runs-commands",
       "category": "devops",
-      "version": "0.3.0",
-      "updated": "2026-07-05",
+      "version": "0.4.0",
+      "updated": "2026-11-27",
       "paths": [],
       "allowed_tools": [
         "Glob",
         "Read",
-        "Bash"
+        "Bash(bash ${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh:*)",
+        "Bash(bash ${CLAUDE_SKILL_DIR}/scripts/ebs-gp2-to-gp3-audit.sh:*)",
+        "Bash(bash ${CLAUDE_SKILL_DIR}/scripts/untagged-spend.sh:*)",
+        "Bash(bash ${CLAUDE_SKILL_DIR}/scripts/reservation-coverage.sh:*)",
+        "Bash(aws ce get-cost-and-usage:*)",
+        "Bash(aws compute-optimizer get-ec2-instance-recommendations:*)",
+        "Bash(aws sts get-caller-identity:*)"
       ],
       "frameworks": {}
     },
@@ -171,8 +192,8 @@
       "description": "GitHub repository operations: PRs, issues, releases, branch protection, CODEOWNERS, Dependabot, and repo settings audits. Use when user says 'review my PR', 'create a release', 'cut a release', 'tag a release', 'set up branch protection', 'add CODEOWNERS', 'audit repo settings', 'is Dependabot configured', or asks about GitHub repo configuration. Repo settings and metadata, not workflow files; /clouddrove:github-actions owns .github/workflows.",
       "safety": "runs-commands",
       "category": "devops",
-      "version": "0.6.0",
-      "updated": "2026-07-07",
+      "version": "0.7.0",
+      "updated": "2026-11-27",
       "paths": [
         "**/.github/CODEOWNERS",
         "**/CODEOWNERS",
@@ -183,7 +204,12 @@
       "allowed_tools": [
         "Glob",
         "Read",
-        "Bash"
+        "Bash(gh api repos/:*)",
+        "Bash(gh run list:*)",
+        "Bash(gh release list:*)",
+        "Bash(gh release view:*)",
+        "Bash(gh auth status:*)",
+        "Bash(jq:*)"
       ],
       "frameworks": {
         "mitre_attack": [
@@ -209,8 +235,8 @@
       "description": "GitHub Actions workflow review, scaffolding, and security hardening. Use when user says 'review my workflow', 'check my actions', 'scaffold a workflow', 'is my CI correct', 'pin actions', 'OIDC to AWS', or when working in .github/workflows/*.yml files.",
       "safety": "read-only",
       "category": "devops",
-      "version": "0.4.0",
-      "updated": "2026-07-05",
+      "version": "0.5.0",
+      "updated": "2026-11-27",
       "paths": [
         "**/.github/workflows/*.yml",
         "**/.github/workflows/*.yaml",
@@ -454,17 +480,6 @@
       }
     },
     {
-      "name": "skill-creator",
-      "description": "Create, edit, evaluate, and debug the skills in this repo, including running their evals and fixing a description that fails to trigger. Use when user says 'help me build a new skill', 'add a skill for X', 'run the evals for the tf skill', 'run the behavioral evals', 'my skill is not triggering', 'fix this skill's description', 'improve this skill's rule catalog', 'add a rule ID', or 'benchmark a skill'. Operates on the skills themselves rather than on infrastructure: a request to review actual Terraform or Kubernetes belongs to that domain skill.",
-      "safety": "writes-files",
-      "category": "devops",
-      "version": "1.0.0",
-      "updated": "2026-04-16",
-      "paths": [],
-      "allowed_tools": null,
-      "frameworks": {}
-    },
-    {
       "name": "tf",
       "description": "Generic Terraform review, scaffolding, and version upgrades for AWS infrastructure using the terraform-aws-modules ecosystem. Use when user says 'review my terraform', 'before I raise an MR', 'scaffold a lambda/rds/s3/eks/vpc', 'check my .tf files', 'upgrade provider', or when working in .tf or .tfvars files. NOTE: if the repo has an `_modules/` directory wrapping `clouddrove/*/aws` modules, use /clouddrove:wrapper-tf instead — the two patterns conflict.",
       "safety": "read-only",
@@ -550,7 +565,12 @@
       "allowed_tools": [
         "Glob",
         "Read",
-        "Bash"
+        "Bash(terraform fmt -check:*)",
+        "Bash(terraform validate:*)",
+        "Bash(terraform init -backend=false:*)",
+        "Bash(tflint:*)",
+        "Bash(checkov:*)",
+        "Bash(trivy config:*)"
       ],
       "frameworks": {
         "mitre_attack": [

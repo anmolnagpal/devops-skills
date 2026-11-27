@@ -3,10 +3,10 @@ name: ci
 description: "GitLab CI/CD pipeline review and scaffolding for Terraform and Helm/EKS deployments, including individual stages, jobs, manual gates on prod stages, and pipeline credentials. Use when user says 'review my pipeline', 'check my gitlab-ci', 'scaffold a pipeline', 'is my CI correct', 'is my pipeline gated before prod', 'add a stage', 'add a deploy job', 'add a helm deploy stage', 'my pipeline leaks credentials', 'why does staging deploy with prod credentials', 'staging and prod share a job', or when working in .gitlab-ci.yml files. Anything expressed as a pipeline, stage, or job belongs here."
 safety: read-only
 metadata:
-  version: 1.3.0
+  version: 1.4.0
   author: Anmol Nagpal
   category: devops
-  updated: 2026-07-05
+  updated: 2026-11-27
 frameworks:
   mitre_attack:
     - T1195
@@ -123,8 +123,11 @@ Read the arguments provided:
 - `new helm` → go to **NEW > Helm Pipeline**
 - No arguments → use Glob to check the current directory, then:
   - If `.gitlab-ci.yml` exists → go to **REVIEW**
-  - If `.tf` files exist but no `.gitlab-ci.yml` → ask: "No pipeline found. Do you want me to **review** something or scaffold a **new** pipeline? (terraform / helm)"
-  - Otherwise → ask: "What do you need? **review** an existing pipeline, or create a **new** one? (terraform / helm)"
+  - If `.tf` files exist but no `.gitlab-ci.yml` → go to **NEW > Terraform Pipeline**
+  - If a Helm chart (`Chart.yaml`) exists but no `.gitlab-ci.yml` → go to **NEW > Helm Pipeline**
+  - Otherwise → report that no pipeline was found and list "review or new (terraform / helm)?" as an open question for the PM
+
+Agent mode: never stop to ask a question. Use the documented default and list open questions at the end of the output for the PM.
 
 ---
 
@@ -143,6 +146,7 @@ Identify whether this is a Terraform pipeline, Helm pipeline, or both, then appl
 ### Image versions
 - Always pin Docker image versions — never use `:latest`
 - Terraform CI image must match `required_version` in the repo's `versions.tf`
+- The `hashicorp/terraform` image needs `entrypoint: [""]` under `image:` (its entrypoint is `terraform`, so `script:` lines fail without it)
 
 ### Environment separation
 - Staging and production must always be separate jobs — never the same job with a variable switch
@@ -162,7 +166,7 @@ stages:
 - `validate`: runs `terraform fmt -check` and `terraform validate`
 - `plan`: runs on MRs and main branch; plan saved as a GitLab artifact
 - `apply`: runs only on the main/protected branch with `when: manual`
-- Never use `-auto-approve` in production apply jobs
+- Never use `-auto-approve` in production apply jobs; apply the reviewed plan artifact (`terraform apply tfplan`)
 - Never hardcode `TF_VAR_` values — all variables come from GitLab CI/CD variables
 - Remote backend only — never use local Terraform state
 
@@ -214,9 +218,9 @@ Summary: 2 blocking issue(s), 1 advisory issue(s). Fix blocking issues before me
 
 ### Terraform Pipeline
 
-Ask:
-1. What is the Terraform directory or workspace structure? (single root module / multiple environments as directories / Terraform workspaces?)
-2. Which GitLab CI/CD variable names hold AWS credentials? (default: `$AWS_ACCESS_KEY_ID`, `$AWS_SECRET_ACCESS_KEY`)
+Defaults (detect from the repo where possible; list anything guessed as an open question for the PM):
+1. Terraform layout: a single root module at `.` unless the repo shows environment directories or workspaces.
+2. AWS credential variables: `$AWS_ACCESS_KEY_ID`, `$AWS_SECRET_ACCESS_KEY`.
 
 Generate `.gitlab-ci.yml`:
 
@@ -225,7 +229,7 @@ Generate `.gitlab-ci.yml`:
 # Generated with /ci new terraform — review with /ci review before merging
 
 variables:
-  TF_VERSION: "1.7"
+  TF_VERSION: "1.17.2"
   TF_DIR: "."
 
 stages:
@@ -234,7 +238,9 @@ stages:
   - apply
 
 default:
-  image: hashicorp/terraform:${TF_VERSION}
+  image:
+    name: hashicorp/terraform:${TF_VERSION}
+    entrypoint: [""]   # the image entrypoint is `terraform`, which breaks script lines
   before_script:
     - terraform -version
     - terraform init
@@ -281,11 +287,11 @@ apply:
 
 ### Helm / EKS Pipeline
 
-Ask:
-1. Service name and Helm chart location?
-2. Namespace in EKS?
-3. GitLab CI/CD variable name for the kubeconfig? (e.g. `$KUBECONFIG_STAGING`, `$KUBECONFIG_PROD`)
-4. Container registry URL? (ECR or GitLab registry)
+Defaults (detect from the repo where possible; list anything guessed as an open question for the PM):
+1. Service name: the chart's `name` in `Chart.yaml`; chart location: the directory holding it.
+2. Namespace: the service name.
+3. Kubeconfig variables: `$KUBECONFIG_STAGING`, `$KUBECONFIG_PROD`.
+4. Registry: GitLab registry (`$CI_REGISTRY_IMAGE`) unless the repo references ECR.
 
 Generate `.gitlab-ci.yml`:
 
@@ -360,7 +366,7 @@ Next steps:
 3. Run /ci review to validate before merging
 ```
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not ask; produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only

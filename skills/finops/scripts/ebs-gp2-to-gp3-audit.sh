@@ -2,20 +2,17 @@
 set -euo pipefail
 
 # Audit gp2 EBS volumes and estimate monthly savings if migrated to gp3.
-# Optionally perform the online migration with --apply (asks for confirmation per volume).
+# Read-only: prints the modify-volume commands for a human to review and run.
 
-VERSION="0.1.0"
+VERSION="0.2.0"
 REGION=""
 ALL_REGIONS=false
-APPLY=false
 
 # Illustrative US-East pricing (per GB-month). Override with --gp2-price/--gp3-price if needed.
 GP2_PRICE=0.10
 GP3_PRICE=0.08
 
-YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
-RED='\033[0;31m'
 CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
@@ -25,12 +22,12 @@ usage() {
 Usage: $(basename "$0") [options]
 
 List all gp2 EBS volumes and estimate monthly savings from migrating to gp3.
-Optionally perform the online migration (no downtime) with --apply.
+Read-only. Prints the aws ec2 modify-volume commands for a human to run;
+it never changes a volume itself.
 
 Options:
   --region <r>          Single region (default: AWS_REGION or current profile region)
   --all-regions         Scan all enabled regions
-  --apply               Perform the migration. Asks per-volume confirmation.
   --gp2-price <p>       Override gp2 price per GB-month (default: ${GP2_PRICE})
   --gp3-price <p>       Override gp3 price per GB-month (default: ${GP3_PRICE})
   -h, --help            Show this help
@@ -45,7 +42,7 @@ Notes:
 Examples:
   $(basename "$0")
   $(basename "$0") --all-regions
-  $(basename "$0") --region us-east-1 --apply
+  $(basename "$0") --region us-east-1
 EOF
     exit 0
 }
@@ -54,7 +51,6 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         --region) REGION="$2"; shift 2 ;;
         --all-regions) ALL_REGIONS=true; shift ;;
-        --apply) APPLY=true; shift ;;
         --gp2-price) GP2_PRICE="$2"; shift 2 ;;
         --gp3-price) GP3_PRICE="$2"; shift 2 ;;
         -h|--help) usage ;;
@@ -115,20 +111,13 @@ for r in $REGIONS; do
     GRAND_TOTAL_GB=$((GRAND_TOTAL_GB + region_total_gb))
     GRAND_TOTAL_SAVINGS=$(awk -v a="$GRAND_TOTAL_SAVINGS" -v b="$region_savings" 'BEGIN {printf "%.2f", a+b}')
 
-    if $APPLY; then
-        echo -e "${YELLOW}--apply was passed. Migrating gp2 → gp3 for region ${r}...${NC}"
-        while IFS=$'\t' read -r vid size state iops; do
-            [[ -z "$vid" ]] && continue
-            read -r -p "Migrate ${vid} (${size} GiB)? [y/N] " ans </dev/tty
-            if [[ "$ans" =~ ^[Yy]$ ]]; then
-                aws ec2 modify-volume --region "$r" --volume-id "$vid" --volume-type gp3 \
-                    --output table --query 'VolumeModification.[VolumeId,ModificationState,TargetVolumeType]'
-            else
-                echo "Skipped ${vid}"
-            fi
-        done <<<"$vols"
-    fi
+    echo "  Commands for a human to review and run (online, no downtime):"
+    while IFS=$'\t' read -r vid _; do
+        [[ -z "$vid" ]] && continue
+        echo "    aws ec2 modify-volume --region ${r} --volume-id ${vid} --volume-type gp3"
+    done <<<"$vols"
+    echo
 done
 
 echo -e "${BOLD}Total: ${GRAND_TOTAL_VOLS} gp2 volumes, ${GRAND_TOTAL_GB} GiB, est. \$${GRAND_TOTAL_SAVINGS}/month savings${NC}"
-$APPLY || echo -e "${CYAN}Run with --apply to perform the online migration (no downtime).${NC}"
+echo -e "${CYAN}This script changed nothing. Review the printed commands before running them.${NC}"

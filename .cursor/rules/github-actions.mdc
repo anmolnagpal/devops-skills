@@ -100,8 +100,10 @@ write access to external collaborators, the exclusion doesn't apply.
 1. If the user message names a mode (`review`, `new`, `harden`) → execute that.
 2. Otherwise inspect the working directory:
    - If `.github/workflows/*.yml` exists → go to **REVIEW**
-   - If no workflows but `.tf` or `Dockerfile` exists → ask: "No workflows found. Scaffold a **new** one? (terraform / docker / release)"
-   - Otherwise ask: "What do you need? **review** / **new** / **harden**"
+   - If no workflows but `.tf` or `Dockerfile` exists → go to **NEW**
+   - Otherwise default to **REVIEW** of whatever CI config exists, and list "review, new, or harden?" as an open question for the PM at the end of the output
+
+Agent mode: never stop to ask a question. Use the documented default and list open questions at the end of the output for the PM.
 
 Always read every workflow file before commenting. Follow all `uses:` references to reusable workflows in the same repo and read those too.
 
@@ -162,15 +164,15 @@ Summary: 4 blocking issue(s), 2 advisory issue(s).
 
 ## NEW — Scaffold a new workflow
 
-Ask which template:
+Pick the template from the repo contents without asking: `.tf` files → **terraform**, a `Dockerfile` → **docker**, neither → **release**. If more than one fits, generate the terraform one and list the others as an open question for the PM.
 
-- **terraform** — fmt / validate / plan on PR, apply on merge with environment gate
+- **terraform**: fmt / validate / plan on PR; on merge, plan again, then apply that exact plan behind an environment gate
 - **docker** — build + push (GHCR or ECR) with provenance and SBOM
 - **release** — tag-driven changelog + artifact upload
 
 ### Terraform scaffold
 
-Generate `.github/workflows/terraform.yml`:
+Generate `.github/workflows/terraform.yml`. The apply job never runs `terraform apply -auto-approve` and never plans on its own: it applies the plan file a reviewer saw, after checking its sha256.
 
 ```yaml
 name: terraform
@@ -183,66 +185,91 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
-  id-token: write   # OIDC
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false   # never cancel a running apply
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@<sha40>  # v4.x
-      - uses: hashicorp/setup-terraform@<sha40>  # v3.x
-        with: { terraform_version: "1.9.x" }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with: { terraform_version: "1.17.2" }
       - run: terraform fmt -check -recursive
       - run: terraform init -backend=false
       - run: terraform validate
 
   plan:
     needs: validate
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write   # OIDC
+    outputs:
+      plan_sha256: ${{ steps.hash.outputs.sha256 }}
     steps:
-      - uses: actions/checkout@<sha40>  # v4.x
-      - uses: aws-actions/configure-aws-credentials@<sha40>  # v4.x
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: aws-actions/configure-aws-credentials@45666896f5d8e0f10ae255413f3a4cdd03bdc8f5  # v6.3.1
         with:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/gha-terraform-plan
           aws-region: ${{ vars.AWS_REGION }}
-      - uses: hashicorp/setup-terraform@<sha40>  # v3.x
-        with: { terraform_version: "1.9.x" }
-      - run: terraform init
-      - run: terraform plan -out=tfplan
-      - uses: actions/upload-artifact@<sha40>  # v4.x
-        with: { name: tfplan, path: tfplan, retention-days: 7 }
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with: { terraform_version: "1.17.2" }
+      - run: terraform init -input=false
+      - run: terraform plan -input=false -out=tfplan
+      - id: hash
+        run: |
+          sha256sum tfplan > tfplan.sha256
+          echo "sha256=$(cut -d' ' -f1 tfplan.sha256)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: tfplan
+          path: |
+            tfplan
+            tfplan.sha256
+          retention-days: 7   # the plan can hold secrets; keep it short-lived
 
   apply:
-    needs: validate
+    needs: plan
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    environment: production   # add required reviewers in repo settings
+    environment: prod   # required reviewers approve after reading the plan job log
+    permissions:
+      contents: read
+      id-token: write   # OIDC, subject repo:<org>/<repo>:environment:prod
     steps:
-      - uses: actions/checkout@<sha40>  # v4.x
-      - uses: aws-actions/configure-aws-credentials@<sha40>  # v4.x
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with: { name: tfplan }
+      - name: Verify plan sha256
+        env:
+          PLAN_SHA256: ${{ needs.plan.outputs.plan_sha256 }}
+        run: |
+          sha256sum -c tfplan.sha256
+          echo "${PLAN_SHA256}  tfplan" | sha256sum -c -
+      - uses: aws-actions/configure-aws-credentials@45666896f5d8e0f10ae255413f3a4cdd03bdc8f5  # v6.3.1
         with:
           role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/gha-terraform-apply
           aws-region: ${{ vars.AWS_REGION }}
-      - uses: hashicorp/setup-terraform@<sha40>  # v3.x
-        with: { terraform_version: "1.9.x" }
-      - run: terraform init
-      - run: terraform apply -auto-approve
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with: { terraform_version: "1.17.2" }
+      - run: terraform init -input=false
+      - run: terraform apply tfplan
 ```
 
-Tell the user to:
-1. Replace `<sha40>` with the SHA of the action version you want (run `gh api repos/<org>/<repo>/git/refs/tags/v4.2.2`)
-2. Create IAM roles `gha-terraform-plan` (read-only) and `gha-terraform-apply` (write) with OIDC trust policy for `repo:<org>/<repo>:*`
-3. Set repo vars `AWS_ACCOUNT_ID` and `AWS_REGION`
-4. In repo Settings → Environments, create `production` with required reviewers
+The second sha256 check compares against the hash passed as a job output, which does not travel inside the artifact, so a swapped artifact fails even if its `.sha256` file was swapped with it. Terraform also refuses a saved plan whose state has moved on, so a stale plan fails instead of applying.
+
+Include these setup steps in the output for a human:
+1. SHAs above were current when this skill was written. Before shipping, re-check each with `gh api repos/<owner>/<repo>/releases/latest --jq .tag_name` then `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`, and the Terraform version against `gh api repos/hashicorp/terraform/releases/latest`.
+2. Create IAM role `gha-terraform-plan` (read-only) with an OIDC trust whose `sub` is `StringEquals` to `repo:<org>/<repo>:pull_request` and `repo:<org>/<repo>:ref:refs/heads/main`.
+3. Create IAM role `gha-terraform-apply` (write) with an OIDC trust whose `sub` is `StringEquals` to `repo:<org>/<repo>:environment:prod` only. Never a wildcard such as `repo:<org>/<repo>:*`, which lets any branch, tag or PR assume the write role. See the trust policy under HARDEN.
+4. Set repo vars `AWS_ACCOUNT_ID` and `AWS_REGION`.
+5. In repo Settings → Environments, create `prod` with required reviewers, and restrict its deployment branches to `main`.
 
 ### Docker scaffold (GHCR + OIDC)
 
@@ -272,15 +299,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@<sha40>  # v4.x
-      - uses: docker/setup-buildx-action@<sha40>  # v3.x
-      - uses: docker/login-action@<sha40>  # v3.x
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550  # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: meta
-        uses: docker/metadata-action@<sha40>  # v5.x
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6.2.0
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -289,7 +316,7 @@ jobs:
             type=semver,pattern={{version}}
             type=sha
       - id: build
-        uses: docker/build-push-action@<sha40>  # v6.x
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
@@ -300,7 +327,7 @@ jobs:
           provenance: true
           sbom: true
       - if: github.event_name != 'pull_request'
-        uses: actions/attest-build-provenance@<sha40>  # v1.x
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8  # v4.2.2
         with:
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.build.outputs.digest }}
@@ -319,7 +346,7 @@ Walk the workflow files and propose patches for:
 
 1. Pin every `uses: action@vN` → `uses: action@<sha40>  # vN.M.P`. Suggest `pinact` or `actionlint` to automate.
 2. Add `permissions: contents: read` at top, then escalate per-job to least needed.
-3. Replace static AWS keys with OIDC + `role-to-assume`. Provide the trust policy snippet:
+3. Replace static AWS keys with OIDC + `role-to-assume`. Provide the trust policy snippet for the role a prod deploy assumes. Pin `sub` with `StringEquals` to the `prod` environment; never use a wildcard like `repo:<org>/<repo>:*` (any branch, tag or fork PR could then assume it):
 
 ```json
 {
@@ -329,8 +356,10 @@ Walk the workflow files and propose patches for:
     "Principal": { "Federated": "arn:aws:iam::<account>:oidc-provider/token.actions.githubusercontent.com" },
     "Action": "sts:AssumeRoleWithWebIdentity",
     "Condition": {
-      "StringEquals": { "token.actions.githubusercontent.com:aud": "sts.amazonaws.com" },
-      "StringLike":  { "token.actions.githubusercontent.com:sub": "repo:<org>/<repo>:*" }
+      "StringEquals": {
+        "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+        "token.actions.githubusercontent.com:sub": "repo:<org>/<repo>:environment:prod"
+      }
     }
   }]
 }
@@ -347,12 +376,13 @@ Output as a unified diff or per-file edit list, never silently rewrite.
 
 ## Notes for Claude
 
-- Never invent action SHAs — tell the user to look them up with `gh api repos/<owner>/<repo>/git/refs/tags/<tag>`.
+- Never invent action SHAs or versions. This skill has no shell, so it cannot look them up. Use the pins in the scaffolds above (each taken from the repo's latest release on 2026-11-27). For any other action, leave a `<sha40>  # <tag>` placeholder, print the lookup for a human (`gh api repos/<owner>/<repo>/releases/latest --jq .tag_name`, then `gh api repos/<owner>/<repo>/commits/<tag> --jq .sha`), and list each placeholder as an open question for the PM.
+- When reviewing a Terraform deploy that runs `terraform apply -auto-approve`, recommend the plan artifact pattern from the terraform scaffold (apply the reviewed `tfplan` after a sha256 check).
 - Reusable workflows belong in `.github/workflows/_<name>.yml` (underscore prefix is convention).
 - For self-hosted runners, prefer ephemeral (Actions Runner Controller on Kubernetes) over persistent.
 - Composite actions in `.github/actions/<name>/action.yml` need their own review pass.
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not ask; produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only

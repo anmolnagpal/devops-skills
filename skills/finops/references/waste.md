@@ -4,7 +4,7 @@ Idle resources, dev/test scheduling, snapshot/AMI cleanup, untagged spend, and a
 
 ## The Idle Resource Catalog
 
-These appear in nearly every AWS account. Run `scripts/find-idle-resources.sh` for an automated sweep.
+These appear in nearly every AWS account. Run `${CLAUDE_SKILL_DIR}/scripts/find-idle-resources.sh` for an automated sweep.
 
 | Resource | Why it costs money | How to detect |
 |---|---|---|
@@ -73,7 +73,7 @@ You can't optimize what you can't attribute.
 ### Drive Compliance
 
 1. **Enable cost allocation tags** in Billing console for the chosen tag keys.
-2. **Run `scripts/untagged-spend.sh`** to find offenders.
+2. **Run `${CLAUDE_SKILL_DIR}/scripts/untagged-spend.sh`** to find offenders.
 3. **AWS Config rules** to detect missing tags (`required-tags`).
 4. **SCP (Service Control Policy)** at the org level to deny resource creation without required tags — strong but disruptive; phase in.
 5. **Tag Policies** in AWS Organizations to enforce tag values match expected casing/format.

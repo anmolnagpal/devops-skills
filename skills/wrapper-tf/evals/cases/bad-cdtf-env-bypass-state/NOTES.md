@@ -15,7 +15,7 @@ blocks are individually valid and only collide when read together.
   all, so its state is local to whoever ran it last. Dev is still an environment
   with a backend requirement; the module-only exemption in the rule applies to
   `_modules/`, not to `environments/`.
-- `TF-STATE-002` — neither backend declares `dynamodb_table`, so two concurrent
+- `TF-STATE-002`, neither backend sets `use_lockfile = true`, so two concurrent
   applies can interleave. Consolidate to one finding naming both files.
 
 The wrapper module under `_modules/aurora/` is deliberately correct so no `CDTF-*`

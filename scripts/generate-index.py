@@ -114,7 +114,7 @@ def render_coverage(index: dict) -> str:
         "`scripts/generate-index.py`. Do not hand-edit.",
         "",
         f"{mapped} of {index['count']} skills carry framework mappings. "
-        "Skills without a security-relevant mapping (finops, skill-creator, adr) "
+        "Skills without a security-relevant mapping (finops, adr) "
         "are intentionally omitted.",
         "",
     ]

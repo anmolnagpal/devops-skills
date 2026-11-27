@@ -77,10 +77,10 @@ What we are doing. 1–3 sentences, stated clearly.
 
 ## NEW — Record a decision
 
-1. **Initialize once.** If `docs/adr/` does not exist, ask the user to confirm before
-   creating it. On confirmation, create the directory, a `README.md` seeded with the
-   index table header (below), and a `template.md` copy of the format above. Never
-   create files without explicit consent.
+1. **Initialize once.** If `docs/adr/` does not exist, create the directory, a
+   `README.md` seeded with the index table header (below), and a `template.md` copy of
+   the format above. Do not stop to ask; the change lands in a pull request that a human
+   reviews. Note the new directory in your summary.
 2. **Number it.** Next zero-padded number after the highest existing `docs/adr/NNNN-*.md`
    (start at `0001`). Slug = kebab-case of the title.
 3. **Fill it from the conversation** — extract the decision, the context that prompted it,
@@ -111,3 +111,11 @@ What we are doing. 1–3 sentences, stated clearly.
 
 Never delete or rewrite a past ADR's decision — superseding preserves the history of
 *why it changed*, which is the whole point.
+
+## Agent mode
+
+When no human is in the session (a scheduled or delegated agent run), do not stop to
+ask. Wherever this skill says "ask for" something or "ask to save", infer it from the
+repo, or use the default documented here, and state the assumption. Return the report
+as output instead of waiting for approval. End the output with an **Open questions
+for the PM** list covering anything you assumed or could not determine.

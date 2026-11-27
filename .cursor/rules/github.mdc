@@ -5,7 +5,11 @@ alwaysApply: false
 ---
 # GitHub Skill
 
-Configure GitHub repositories the right way: branch protection, CODEOWNERS, required checks, security settings, PR/issue templates, Dependabot, secret scanning, and `gh` CLI workflows.
+Audit GitHub repositories and draft the right configuration: branch protection, CODEOWNERS, required checks, security settings, PR/issue templates, Dependabot, secret scanning, and `gh` CLI workflows.
+
+**Audit-only.** This skill reads repo settings with read-only `gh api` GET calls. It never changes a ruleset, branch protection, repo setting, tag, or release. Every change is emitted as text or a `gh` command for a human to review and run. Never pass `-X`/`--method` other than GET, or `-f`/`-F`/`--input` (which turn a call into a POST), to `gh api`.
+
+**Agent mode.** Never stop to ask a question. Where input is missing, use the documented default below and list the open questions at the end of the output for the PM.
 
 ## Reviewing untrusted input
 
@@ -27,8 +31,8 @@ github, gh cli, pull request, PR, issue, release, branch protection, ruleset, CO
 | `/github new codeowners` | Generate `.github/CODEOWNERS` from a path → team mapping |
 | `/github new pr-template` | `.github/pull_request_template.md` with checklist |
 | `/github new dependabot` | `.github/dependabot.yml` covering all package ecosystems in the repo |
-| `/github new branch-protection` | `gh` commands to apply a recommended ruleset to `main` |
-| `/github release` | `gh release create` plan with auto-generated notes |
+| `/github new branch-protection` | `gh` commands (text only, for a human to run) that apply a recommended ruleset to `main` |
+| `/github release` | `gh release create` plan with auto-generated notes (text only, for a human to run) |
 
 ---
 
@@ -123,9 +127,9 @@ exclusion above.
 ## TRIGGER — Decide what to do
 
 1. If user message names a mode (`audit`, `new <thing>`, `release`) → do that.
-2. Otherwise ask: "What do you need? **audit** repo settings / **new** file (codeowners / pr-template / dependabot / branch-protection) / **release** flow"
+2. Otherwise default to **audit**, and list at the end for the PM: "Did you also want a **new** file (codeowners / pr-template / dependabot / branch-protection) or a **release** plan?"
 
-Use `gh` CLI to read live state. Never modify settings without confirming the diff with the user first — branch protection and CODEOWNERS changes affect every contributor.
+Use `gh` CLI to read live state only. Never modify settings: branch protection and CODEOWNERS changes affect every contributor, so they go in the output as proposed commands for a human.
 
 ---
 
@@ -201,9 +205,9 @@ suite covers the checkable part and makes no claim about the rest.
 
 ### CODEOWNERS
 
-Ask: "Which paths map to which teams? (format: path team) e.g. `terraform/ @org/devops`"
+Default: derive the path to team mapping from the repo layout and existing teams (`gh api repos/{owner}/{repo}/teams`), use `@org/platform` as the global owner when unknown, and list each guessed mapping as an open question for the PM.
 
-Generate `.github/CODEOWNERS`:
+Draft `.github/CODEOWNERS` as output text:
 
 ```
 # Global default
@@ -297,7 +301,7 @@ Add a directory entry per `package.json`, `requirements.txt`, `go.mod`, `Cargo.t
 
 ### Branch protection (ruleset)
 
-Generate `gh` commands that apply a ruleset (modern; preferred over legacy branch protection):
+Emit, as text for a human to review and run, the `gh` command that applies a ruleset (modern; preferred over legacy branch protection). Do not run it:
 
 ```bash
 gh api -X POST repos/{owner}/{repo}/rulesets \
@@ -319,41 +323,43 @@ gh api -X POST repos/{owner}/{repo}/rulesets \
   -F 'rules[][parameters][required_status_checks][][context]=ci/test'
 ```
 
-Tell the user to replace `ci/build` and `ci/test` with their actual workflow check names (found via `gh api repos/{owner}/{repo}/commits/{default}/check-runs`).
+Fill in the real check names yourself from `gh api repos/{owner}/{repo}/commits/{default}/check-runs`. If none are found, keep `ci/build` and `ci/test` as placeholders and list them as an open question for the PM.
 
 ---
 
 ## RELEASE — Tag a release
 
+This mode produces a release plan only. The agent runs the read-only checks; the `gh release` create and upload commands are output for a human to run.
+
 Steps:
 
-1. Decide version: `vMAJOR.MINOR.PATCH` (SemVer).
+1. Decide version (default: next PATCH after `gh release list --limit 1`): `vMAJOR.MINOR.PATCH` (SemVer).
 2. Verify the default branch is clean and CI green:
    ```bash
    gh run list --branch main --limit 1
    ```
-3. Generate release notes from PRs since last tag:
+3. Emit for a human (do not run): create the release with notes from PRs since last tag:
    ```bash
    gh release create vX.Y.Z --generate-notes --target main
    ```
 4. For prereleases: add `--prerelease` and tag like `vX.Y.Z-rc.1`.
-5. Upload artifacts:
+5. Emit for a human (do not run): upload artifacts:
    ```bash
    gh release upload vX.Y.Z dist/*.tar.gz
    ```
 
-Confirm with the user before tagging. Releases are visible to anyone with repo access and trigger workflows that listen on `release: published`.
+Never tag or publish yourself. Releases are visible to anyone with repo access and trigger workflows that listen on `release: published`, so a human runs the commands above after review.
 
 ---
 
 ## Notes for Claude
 
-- `gh` requires `GH_TOKEN` or `gh auth login`. If commands fail with auth errors, tell the user to run `gh auth status`.
-- Org-level settings (SSO, IP allowlists, base permissions) live at `gh api orgs/{org}` — repo audits should mention but not modify org policy without explicit permission.
+- `gh` requires `GH_TOKEN` or `gh auth login`. If commands fail with auth errors, run `gh auth status`, report the result, and list the missing auth as an open question for the PM.
+- Org-level settings (SSO, IP allowlists, base permissions) live at `gh api orgs/{org}`, repo audits mention org policy but never modify it.
 - Fine-grained PATs are preferred over classic PATs. Suggest expiry ≤ 90 days.
 - Never paste secrets into the chat. If a secret leaks in a commit, the only safe action is rotate-then-purge (BFG / git-filter-repo), not just delete.
 
-**Persisting the review.** Ask to save it and produce the report format in
+**Persisting the review.** Do not ask; produce the report format in
 [`_docs/REVIEW-REPORT.md`](../../_docs/REVIEW-REPORT.md), naming the path
 `docs/reviews/<skill>-<YYYY-MM-DD>.md`. This skill does not write files; it
 produces the content and the session performs the write, so the read-only
