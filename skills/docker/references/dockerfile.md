@@ -116,7 +116,7 @@ COPY . .
 USER appuser
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+  CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "app:create_app()"]
 ```
 
@@ -393,9 +393,10 @@ docker run --read-only --tmpfs /tmp myapp
 ARG DB_PASSWORD
 RUN echo "password=$DB_PASSWORD" > /app/config
 
-# RIGHT: Use secret mounts
+# RIGHT: Use secret mounts. The file exists only during this RUN step;
+# read it there and never copy the value into a layer.
 RUN --mount=type=secret,id=db_password \
-    cat /run/secrets/db_password > /app/config
+    DB_PASSWORD_FILE=/run/secrets/db_password ./scripts/migrate.sh
 ```
 
 ### HEALTHCHECK
@@ -454,7 +455,7 @@ ENV PORT=${DEFAULT_PORT}
 CMD ["node", "server.js"]
 ENTRYPOINT ["python", "app.py"]
 
-# Shell form: wraps in /bin/sh -c, does NOT receive signals
+# Shell form: runs under a /bin/sh wrapper, does NOT receive signals
 CMD node server.js
 ENTRYPOINT python app.py
 ```
@@ -558,7 +559,7 @@ RUN chown -R appuser:appgroup /app
 USER appuser
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+  CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
 ```
 

@@ -70,7 +70,7 @@ devops-skills/
 
 ## Add or improve a skill
 
-Start from `templates/skill/`, which carries the frontmatter, the standard
+Start from `templates/skill/` (rename `SKILL.md.template` to `SKILL.md`), which carries the frontmatter, the standard
 sections, and a delete-me checklist. Copying beats writing from empty.
 
 1. Skills live in `skills/<name>/SKILL.md` (single canonical source; one directory per skill, with `evals/` and references co-located). They ship as the `clouddrove` plugin.
